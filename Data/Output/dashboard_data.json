@@ -1,17 +1,30 @@
 {
   "meta": {
-    "generated_at": "2026-05-16T14:29:04.486495+00:00",
+    "generated_at": "2026-05-16T17:30:30.403113+00:00",
     "q2_target": 20000000,
-    "as_of": "14 May 2026"
+    "as_of": "14 May 2026",
+    "gmail_status": {
+      "ok": true,
+      "error": null,
+      "downloaded": [],
+      "unchanged": [
+        "Incoming Order Count Insurer Wise"
+      ],
+      "missing": [
+        "Revenue Generated Insurer Wise",
+        "Closed Case Count Insurer Wise"
+      ],
+      "new_files": false
+    }
   },
   "kpis": {
     "q2_target": 20000000,
-    "apr_revenue": 4952222.029999999,
-    "may_revenue": 2219422.0,
+    "apr_revenue": 4952222.03,
+    "may_revenue": 1255000.0,
     "jun_revenue": 0,
-    "q2_achieved": 7171644.029999999,
-    "gap": 12828355.97,
-    "achievement_pct": 35.9,
+    "q2_achieved": 6207222.03,
+    "gap": 13792777.969999999,
+    "achievement_pct": 31.0,
     "baseline_est": 15000000,
     "delta_required": 5000000,
     "delta_weighted": 5427330
@@ -48,22 +61,22 @@
       5995662.5,
       5880660.5,
       6494808.0,
-      4952222.029999999,
-      2219422.0
+      4952222.03,
+      1255000.0
     ]
   },
   "month_wise": [
     {
       "month": "April 2026",
       "target": 7682604,
-      "achieved": 4952222.029999999,
+      "achieved": 4952222.03,
       "pct": 64.5
     },
     {
       "month": "May 2026",
       "target": 6789792,
-      "achieved": 2219422.0,
-      "pct": 32.7
+      "achieved": 1255000.0,
+      "pct": 18.5
     },
     {
       "month": "June 2026",
@@ -182,51 +195,51 @@
     {
       "insurer": "Aditya Birla Sun Life Insurance",
       "incoming": 2691,
-      "closed": 996,
-      "conversion": 0.3701,
-      "revenue": 2323593.0
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "Ageas Federal Life Insurance",
       "incoming": 176,
-      "closed": 89,
-      "conversion": 0.5057,
-      "revenue": 252734.0
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "Bajaj Life Insurance Company",
       "incoming": 1458,
-      "closed": 1025,
-      "conversion": 0.703,
-      "revenue": 2437852.0
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "Cardiotrack Home Services",
       "incoming": 1,
-      "closed": 1,
-      "conversion": 1.0,
-      "revenue": 1298.03
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "ICICI Lombard",
       "incoming": 1057,
-      "closed": 734,
-      "conversion": 0.6944,
-      "revenue": 1852895.0
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "Pramerica Life Insurance",
       "incoming": 179,
-      "closed": 22,
-      "conversion": 0.1229,
-      "revenue": 26318.0
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "Star Union Daichi Life Insurance",
       "incoming": 213,
-      "closed": 81,
-      "conversion": 0.3803,
-      "revenue": 276954.0
+      "closed": 0,
+      "conversion": 0.0,
+      "revenue": 0
     },
     {
       "insurer": "Test Cardiotrack",
@@ -532,15 +545,7 @@
       "Star Union Daichi Life Insurance": 213,
       "Test Cardiotrack": 27
     },
-    "closed_by_insurer": {
-      "Aditya Birla Sun Life Insurance": 996,
-      "Ageas Federal Life Insurance": 89,
-      "Bajaj Life Insurance Company": 1025,
-      "Cardiotrack Home Services": 1,
-      "ICICI Lombard": 734,
-      "Pramerica Life Insurance": 22,
-      "Star Union Daichi Life Insurance": 81
-    }
+    "closed_by_insurer": {}
   },
   "orders_monthly": {
     "Mar 2022": {
@@ -551,12 +556,7 @@
         "MD India Max Life": 1,
         "MD India Tata AIA": 8
       },
-      "closed": {
-        "A8228Mph f7Rq7v0X": 1,
-        "Health Assure Tata AIA": 1,
-        "ICICI Lombard": 1,
-        "MD India Tata AIA": 7
-      }
+      "closed": {}
     },
     "Apr 2022": {
       "incoming": {
@@ -566,12 +566,7 @@
         "MD India Max Life": 106,
         "MD India Tata AIA": 192
       },
-      "closed": {
-        "HDFC Life Purge": 3,
-        "ICICI Lombard": 721,
-        "MD India Max Life": 84,
-        "MD India Tata AIA": 130
-      }
+      "closed": {}
     },
     "May 2022": {
       "incoming": {
@@ -582,14 +577,7 @@
         "MD India Tata AIA": 196,
         "Test Cardiotrack": 22
       },
-      "closed": {
-        "HDFC Life Purge": 3,
-        "Health Assure Tata AIA": 1,
-        "ICICI Lombard": 901,
-        "MD India Max Life": 71,
-        "MD India Tata AIA": 132,
-        "Test Cardiotrack": 4
-      }
+      "closed": {}
     },
     "Jun 2022": {
       "incoming": {
@@ -600,14 +588,7 @@
         "MD India Tata AIA": 212,
         "Test Cardiotrack": 4
       },
-      "closed": {
-        "HDFC Life Purge": 3,
-        "ICICI Lombard": 1110,
-        "MD India LIC": 13,
-        "MD India Max Life": 51,
-        "MD India Tata AIA": 151,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Jul 2022": {
       "incoming": {
@@ -618,14 +599,7 @@
         "MD India Tata AIA": 180,
         "Test Cardiotrack": 46
       },
-      "closed": {
-        "HDFC Life Purge": 32,
-        "ICICI Lombard": 969,
-        "MD India LIC": 191,
-        "MD India Max Life": 69,
-        "MD India Tata AIA": 131,
-        "Test Cardiotrack": 6
-      }
+      "closed": {}
     },
     "Aug 2022": {
       "incoming": {
@@ -637,14 +611,7 @@
         "MD India Tata AIA": 91,
         "Test Cardiotrack": 101
       },
-      "closed": {
-        "HDFC Life Purge": 2,
-        "ICICI Lombard": 881,
-        "MD India LIC": 162,
-        "MD India Max Life": 48,
-        "MD India Tata AIA": 59,
-        "Test Cardiotrack": 12
-      }
+      "closed": {}
     },
     "Sep 2022": {
       "incoming": {
@@ -655,13 +622,7 @@
         "MD India Max Life": 81,
         "Test Cardiotrack": 183
       },
-      "closed": {
-        "HDFC Life Purge": 59,
-        "ICICI Lombard": 955,
-        "MD India LIC": 35,
-        "MD India Max Life": 61,
-        "Test Cardiotrack": 3
-      }
+      "closed": {}
     },
     "Oct 2022": {
       "incoming": {
@@ -673,15 +634,7 @@
         "MD India Max Life": 24,
         "Test Cardiotrack": 780
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 2,
-        "Bajaj Allianz Life Insurance Company": 3,
-        "HDFC Life Purge": 79,
-        "ICICI Lombard": 628,
-        "MD India LIC": 30,
-        "MD India Max Life": 17,
-        "Test Cardiotrack": 11
-      }
+      "closed": {}
     },
     "Nov 2022": {
       "incoming": {
@@ -694,14 +647,7 @@
         "TATA AIA Life Insurance Company": 1,
         "Test Cardiotrack": 520
       },
-      "closed": {
-        "Bajaj Allianz Life Insurance Company": 15,
-        "Cardiotrack Home Services": 2,
-        "HDFC Life Purge": 147,
-        "ICICI Lombard": 680,
-        "MD India LIC": 26,
-        "Test Cardiotrack": 4
-      }
+      "closed": {}
     },
     "Dec 2022": {
       "incoming": {
@@ -715,15 +661,7 @@
         "TATA AIA Life Insurance Company": 2,
         "Test Cardiotrack": 393
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 1,
-        "Bajaj Allianz Life Insurance Company": 12,
-        "HDFC Life Purge": 145,
-        "ICICI Lombard": 874,
-        "MD India LIC": 21,
-        "TATA AIA Life Insurance Company": 2,
-        "Test Cardiotrack": 2
-      }
+      "closed": {}
     },
     "Jan 2023": {
       "incoming": {
@@ -737,17 +675,7 @@
         "TATA AIA Life Insurance Company Purge": 190,
         "Test Cardiotrack": 383
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 18,
-        "Bajaj Allianz Life Insurance Company": 15,
-        "Canara HSBC Life Insurance": 1,
-        "Cardiotrack Home Services": 9,
-        "HDFC Life Purge": 73,
-        "ICICI Lombard": 938,
-        "MD India LIC": 1,
-        "TATA AIA Life Insurance Company Purge": 19,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Feb 2023": {
       "incoming": {
@@ -764,19 +692,7 @@
         "TATA AIA Life Insurance Company Purge": 196,
         "Test Cardiotrack": 170
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 36,
-        "Bajaj Allianz Life Insurance Company": 7,
-        "Canara HSBC Life Insurance": 2,
-        "Cardiotrack Home Services": 7,
-        "HDFC Life Purge": 63,
-        "ICICI Lombard": 746,
-        "MD India LIC": 1,
-        "Pramerica Life Insurance": 1,
-        "Star Union Daichi Life Insurance": 1,
-        "TATA AIA Life Insurance Company Purge": 31,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Mar 2023": {
       "incoming": {
@@ -793,19 +709,7 @@
         "Test Cardiotrack": 38,
         "nA5N724T IpSA357U": 190
       },
-      "closed": {
-        "A8228Mph f7Rq7v0X": 8,
-        "Aditya Birla Sun Life Insurance": 30,
-        "Bajaj Allianz Life Insurance Company": 27,
-        "Canara HSBC Life Insurance": 3,
-        "Cardiotrack Home Services": 1,
-        "HDFC Life Purge": 149,
-        "ICICI LOMBARD": 1,
-        "ICICI Lombard": 706,
-        "Pramerica Life Insurance": 20,
-        "Shriram Life Insurance": 2,
-        "nA5N724T IpSA357U": 60
-      }
+      "closed": {}
     },
     "Apr 2023": {
       "incoming": {
@@ -820,16 +724,7 @@
         "Test Cardiotrack": 20,
         "nA5N724T IpSA357U": 113
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 6,
-        "A8228Mph f7Rq7v0X": 32,
-        "Aditya Birla Sun Life Insurance": 17,
-        "Bajaj Allianz Life Insurance Company": 21,
-        "Canara HSBC Life Insurance": 1,
-        "ICICI Lombard": 1606,
-        "Pramerica Life Insurance": 24,
-        "nA5N724T IpSA357U": 28
-      }
+      "closed": {}
     },
     "May 2023": {
       "incoming": {
@@ -844,18 +739,7 @@
         "Test Cardiotrack": 33,
         "nA5N724T IpSA357U": 159
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 35,
-        "A8228Mph f7Rq7v0X": 48,
-        "Aditya Birla Sun Life Insurance": 23,
-        "Bajaj Allianz Life Insurance Company": 2,
-        "Canara HSBC Life Insurance": 6,
-        "Cardiotrack Home Services": 3,
-        "ICICI Lombard": 1700,
-        "Pramerica Life Insurance": 1,
-        "Test Cardiotrack": 1,
-        "nA5N724T IpSA357U": 54
-      }
+      "closed": {}
     },
     "Jun 2023": {
       "incoming": {
@@ -871,19 +755,7 @@
         "nA5N724T IpSA357U": 38,
         "Cardiotrack Home Services": 3
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 100,
-        "A8228Mph f7Rq7v0X": 113,
-        "Aditya Birla Sun Life Insurance": 91,
-        "Bajaj Allianz Life Insurance Company": 268,
-        "Canara HSBC Life Insurance": 5,
-        "ICICI Lombard": 3644,
-        "Pramerica Life Insurance": 59,
-        "TATA AIA Life Insurance Company": 124,
-        "Test Cardiotrack": 6,
-        "nA5N724T IpSA357U": 16,
-        "Cardiotrack Home Services": 3
-      }
+      "closed": {}
     },
     "Aug 2023": {
       "incoming": {
@@ -901,72 +773,7 @@
         "India First Life Insurance": 1,
         "M7P4hW7Z Z9xz93cY": 24
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 73,
-        "A8228Mph f7Rq7v0X": 88,
-        "Aditya Birla Sun Life Insurance": 62,
-        "Bajaj Allianz Life Insurance Company": 31,
-        "Canara HSBC Life Insurance": 1,
-        "Cardiotrack Home Services": 1,
-        "ICICI Lombard": 2890,
-        "Pramerica Life Insurance": 40,
-        "TATA AIA Life Insurance Company": 65
-      }
-    },
-    "Sep 2023": {
-      "incoming": {},
-      "closed": {
-        "5MyHaB07 3VrA426d": 165,
-        "A8228Mph f7Rq7v0X": 86,
-        "Aditya Birla Sun Life Insurance": 61,
-        "Bajaj Allianz Life Insurance Company": 40,
-        "Canara HSBC Life Insurance": 12,
-        "ICICI Lombard": 2719,
-        "Pramerica Life Insurance": 7,
-        "TATA AIA Life Insurance Company": 30
-      }
-    },
-    "Oct 2023": {
-      "incoming": {},
-      "closed": {
-        "5MyHaB07 3VrA426d": 172,
-        "A8228Mph f7Rq7v0X": 55,
-        "Aditya Birla Sun Life Insurance": 89,
-        "Canara HSBC Life Insurance": 110,
-        "Cardiotrack Home Services": 2,
-        "ICICI Lombard": 2122,
-        "TATA AIA Life Insurance Company": 47
-      }
-    },
-    "Nov 2023": {
-      "incoming": {},
-      "closed": {
-        "5MyHaB07 3VrA426d": 120,
-        "A8228Mph f7Rq7v0X": 70,
-        "Aditya Birla Sun Life Insurance": 111,
-        "Canara HSBC Life Insurance": 105,
-        "Cardiotrack Home Services": 2,
-        "ICICI Lombard": 1699,
-        "India First Life Insurance": 1,
-        "M7P4hW7Z Z9xz93cY": 2,
-        "Pramerica Life Insurance": 7,
-        "TATA AIA Life Insurance Company": 47
-      }
-    },
-    "Dec 2023": {
-      "incoming": {},
-      "closed": {
-        "5MyHaB07 3VrA426d": 81,
-        "A8228Mph f7Rq7v0X": 101,
-        "Aditya Birla Sun Life Insurance": 49,
-        "Bajaj Allianz Life Insurance Company": 41,
-        "Canara HSBC Life Insurance": 146,
-        "Cardiotrack Home Services": 1,
-        "ICICI Lombard": 1495,
-        "M7P4hW7Z Z9xz93cY": 6,
-        "Pramerica Life Insurance": 40,
-        "TATA AIA Life Insurance Company": 76
-      }
+      "closed": {}
     },
     "Jan 2024": {
       "incoming": {
@@ -983,33 +790,7 @@
         "Acko Life Insurance": 1,
         "Cardiotrack Home Services": 1
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 132,
-        "A8228Mph f7Rq7v0X": 96,
-        "Aditya Birla Sun Life Insurance": 166,
-        "Bajaj Allianz Life Insurance Company": 81,
-        "Canara HSBC Life Insurance": 164,
-        "ICICI Lombard": 1771,
-        "M7P4hW7Z Z9xz93cY": 5,
-        "Pramerica Life Insurance": 21,
-        "TATA AIA Life Insurance Company": 92,
-        "Test Cardiotrack": 1
-      }
-    },
-    "Feb 2024": {
-      "incoming": {},
-      "closed": {
-        "5MyHaB07 3VrA426d": 305,
-        "A8228Mph f7Rq7v0X": 73,
-        "Acko Life Insurance": 1,
-        "Aditya Birla Sun Life Insurance": 51,
-        "Bajaj Allianz Life Insurance Company": 81,
-        "Canara HSBC Life Insurance": 152,
-        "Cardiotrack Home Services": 1,
-        "ICICI Lombard": 1894,
-        "M7P4hW7Z Z9xz93cY": 4,
-        "TATA AIA Life Insurance Company": 202
-      }
+      "closed": {}
     },
     "Mar 2024": {
       "incoming": {
@@ -1025,18 +806,7 @@
         "TATA AIA Life Insurance Company": 994,
         "Test Cardiotrack": 6
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 145,
-        "A8228Mph f7Rq7v0X": 154,
-        "Acko Life Insurance": 13,
-        "Aditya Birla Sun Life Insurance": 39,
-        "Bajaj Allianz Life Insurance Company": 100,
-        "Canara HSBC Life Insurance": 29,
-        "ICICI Lombard": 282,
-        "M7P4hW7Z Z9xz93cY": 6,
-        "TATA AIA Life Insurance Company": 632,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Apr 2024": {
       "incoming": {
@@ -1052,18 +822,7 @@
         "TATA AIA Life Insurance Company": 334,
         "Test Cardiotrack": 5
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 26,
-        "Acko Life Insurance": 111,
-        "Aditya Birla Sun Life Insurance": 20,
-        "Bajaj Allianz Life Insurance Company": 137,
-        "Canara HSBC Life Insurance": 29,
-        "HDFC Life": 69,
-        "ICICI Lombard": 770,
-        "M7P4hW7Z Z9xz93cY": 1,
-        "TATA AIA Life Insurance Company": 231,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "May 2024": {
       "incoming": {
@@ -1079,19 +838,7 @@
         "TATA AIA Life Insurance Company": 369,
         "Test Cardiotrack": 14
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 21,
-        "Acko Life Insurance": 197,
-        "Aditya Birla Sun Life Insurance": 48,
-        "Bajaj Allianz Life Insurance Company": 249,
-        "Canara HSBC Life Insurance": 119,
-        "HDFC Life": 75,
-        "ICICI Lombard": 1153,
-        "M7P4hW7Z Z9xz93cY": 3,
-        "Pramerica Life Insurance": 6,
-        "TATA AIA Life Insurance Company": 217,
-        "Test Cardiotrack": 3
-      }
+      "closed": {}
     },
     "Jun 2024": {
       "incoming": {
@@ -1109,21 +856,7 @@
         "TATA AIG Health Insurance Company Ltd.": 5,
         "Test Cardiotrack": 9
       },
-      "closed": {
-        "5MyHaB07 3VrA426d": 49,
-        "Acko Health - Insurance Limited": 55,
-        "Acko Life Insurance": 177,
-        "Aditya Birla Sun Life Insurance": 175,
-        "Ageas Federal Life Insurance": 3,
-        "Bajaj Allianz Life Insurance Company": 117,
-        "Canara HSBC Life Insurance": 121,
-        "HDFC Life": 55,
-        "ICICI Lombard": 1004,
-        "M7P4hW7Z Z9xz93cY": 5,
-        "TATA AIA Life Insurance Company": 51,
-        "TATA AIG Health Insurance Company Ltd.": 5,
-        "Test Cardiotrack": 2
-      }
+      "closed": {}
     },
     "Jul 2024": {
       "incoming": {
@@ -1140,19 +873,7 @@
         "SBI LIfe Insurance Company": 180,
         "Test Cardiotrack": 16
       },
-      "closed": {
-        "Acko Health - Insurance Limited": 86,
-        "Acko Life Insurance": 221,
-        "Aditya Birla Sun Life Insurance": 97,
-        "Ageas Federal Life Insurance": 13,
-        "Bajaj Allianz Life Insurance Company": 113,
-        "Canara HSBC Life Insurance": 115,
-        "HDFC Life": 37,
-        "ICICI Lombard": 1062,
-        "M7P4hW7Z Z9xz93cY": 16,
-        "SBI LIfe Insurance Company": 123,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Aug 2024": {
       "incoming": {
@@ -1168,19 +889,7 @@
         "SBI LIfe Insurance Company": 130,
         "Test Cardiotrack": 7
       },
-      "closed": {
-        "Acko Health - Insurance Limited": 218,
-        "Acko Life Insurance": 234,
-        "Aditya Birla Sun Life Insurance": 150,
-        "Ageas Federal Life Insurance": 15,
-        "Bajaj Allianz Life Insurance Company": 125,
-        "Canara HSBC Life Insurance": 93,
-        "HDFC Life": 61,
-        "ICICI Lombard": 906,
-        "M7P4hW7Z Z9xz93cY": 11,
-        "SBI LIfe Insurance Company": 90,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Sep 2024": {
       "incoming": {
@@ -1198,20 +907,7 @@
         "SBI LIfe Insurance Company": 33,
         "Test Cardiotrack": 6
       },
-      "closed": {
-        "Acko Health - Insurance Limited": 289,
-        "Acko Life Insurance": 197,
-        "Aditya Birla Sun Life Insurance": 49,
-        "Ageas Federal Life Insurance": 13,
-        "Bajaj Allianz Life Insurance Company": 146,
-        "Canara HSBC Life Insurance": 189,
-        "Cardiotrack Corporate Services": 21,
-        "Cardiotrack Home Services": 1,
-        "HDFC Life": 103,
-        "ICICI Lombard": 776,
-        "M7P4hW7Z Z9xz93cY": 6,
-        "SBI LIfe Insurance Company": 19
-      }
+      "closed": {}
     },
     "Oct 2024": {
       "incoming": {
@@ -1229,21 +925,7 @@
         "M7P4hW7Z Z9xz93cY": 17,
         "Test Cardiotrack": 7
       },
-      "closed": {
-        "Acko Health -  Insurance Limited": 55,
-        "Acko Health - Insurance Limited": 156,
-        "Acko Life Insurance": 241,
-        "Aditya Birla Sun Life Insurance": 80,
-        "Ageas Federal Life Insurance": 15,
-        "Bajaj Allianz Life Insurance Company": 211,
-        "Canara HSBC Life Insurance": 148,
-        "Cardiotrack Corporate Services": 2,
-        "Cardiotrack Home Services": 1,
-        "HDFC Life": 70,
-        "ICICI Lombard": 629,
-        "M7P4hW7Z Z9xz93cY": 6,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Nov 2024": {
       "incoming": {
@@ -1258,18 +940,7 @@
         "M7P4hW7Z Z9xz93cY": 6,
         "Test Cardiotrack": 3
       },
-      "closed": {
-        "Acko Health -  Insurance Limited": 208,
-        "Acko Life Insurance": 211,
-        "Aditya Birla Sun Life Insurance": 445,
-        "Ageas Federal Life Insurance": 2,
-        "Bajaj Allianz Life Insurance Company": 353,
-        "Canara HSBC Life Insurance": 118,
-        "HDFC Life": 80,
-        "ICICI Lombard": 953,
-        "M7P4hW7Z Z9xz93cY": 2,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Dec 2024": {
       "incoming": {
@@ -1286,18 +957,7 @@
         "Pramerica Life Insurance VMER": 1,
         "Test Cardiotrack": 2
       },
-      "closed": {
-        "Acko Health -  Insurance Limited": 28,
-        "Acko Life Insurance": 207,
-        "Aditya Birla Sun Life Insurance": 479,
-        "Ageas Federal Life Insurance": 34,
-        "Bajaj Allianz Life Insurance Company": 734,
-        "Canara HSBC Life Insurance": 133,
-        "Cardiotrack Home Services": 1,
-        "HDFC Life": 105,
-        "ICICI Lombard": 806,
-        "M7P4hW7Z Z9xz93cY": 58
-      }
+      "closed": {}
     },
     "Jan 2025": {
       "incoming": {
@@ -1314,18 +974,7 @@
         "Pramerica Life Insurance": 25,
         "Test Cardiotrack": 6
       },
-      "closed": {
-        "Acko Life Insurance": 2,
-        "Aditya Birla Sun Life Insurance": 354,
-        "Ageas Federal Life Insurance": 58,
-        "Bajaj Allianz Life Insurance Company": 1051,
-        "Canara HSBC Life Insurance": 96,
-        "Cardiotrack Home Services": 1,
-        "HDFC Life": 95,
-        "ICICI Lombard": 722,
-        "M7P4hW7Z Z9xz93cY": 1,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Feb 2025": {
       "incoming": {
@@ -1339,17 +988,7 @@
         "M7P4hW7Z Z9xz93cY": 9,
         "Test Cardiotrack": 2
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 234,
-        "Ageas Federal Life Insurance": 54,
-        "Bajaj Allianz Life Insurance Company": 1968,
-        "Canara HSBC Life Insurance": 75,
-        "Cardiotrack Home Services": 2,
-        "HDFC Life": 84,
-        "ICICI Lombard": 679,
-        "M7P4hW7Z Z9xz93cY": 1,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Mar 2025": {
       "incoming": {
@@ -1363,17 +1002,7 @@
         "TATA AIG Health Insurance Company Ltd.": 15,
         "Test Cardiotrack": 4
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 306,
-        "Ageas Federal Life Insurance": 44,
-        "Bajaj Allianz Life Insurance Company": 1407,
-        "Canara HSBC Life Insurance": 105,
-        "Cardiotrack Home Services": 3,
-        "HDFC Life": 167,
-        "ICICI Lombard": 527,
-        "TATA AIG Health Insurance Company Ltd.": 9,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Apr 2025": {
       "incoming": {
@@ -1387,16 +1016,7 @@
         "TATA AIG Health Insurance Company Ltd.": 5,
         "Test Cardiotrack": 1
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 188,
-        "Ageas Federal Life Insurance": 11,
-        "Bajaj Allianz Life Insurance Company": 739,
-        "Canara HSBC Life Insurance": 13,
-        "Cardiotrack Home Services": 3,
-        "HDFC Life": 89,
-        "ICICI Lombard": 469,
-        "TATA AIG Health Insurance Company Ltd.": 2
-      }
+      "closed": {}
     },
     "May 2025": {
       "incoming": {
@@ -1411,16 +1031,7 @@
         "ICICI Lombard": 286,
         "Test Cardiotrack": 15
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 284,
-        "Ageas Federal Life Insurance": 28,
-        "Bajaj Allianz Life Insurance Company": 957,
-        "Canara HSBC Life Insurance": 2,
-        "Cardiotrack Corporate Services": 6,
-        "Cardiotrack Home Services": 1,
-        "HDFC Life": 95,
-        "ICICI Lombard": 198
-      }
+      "closed": {}
     },
     "Jun 2025": {
       "incoming": {
@@ -1436,16 +1047,7 @@
         "Test - Cardiotrack": 13,
         "Test Cardiotrack": 54
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 312,
-        "Ageas Federal Life Insurance": 57,
-        "Bajaj Allianz Life Insurance Company": 512,
-        "Canara HSBC Life Insurance": 2,
-        "HDFC Life": 102,
-        "ICICI Lombard": 310,
-        "TATA AIG Health Insurance Company Ltd.": 1,
-        "Test Cardiotrack": 37
-      }
+      "closed": {}
     },
     "Jul 2025": {
       "incoming": {
@@ -1463,19 +1065,7 @@
         "Test - Cardiotrack": 1,
         "Test Cardiotrack": 18
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 470,
-        "Ageas Federal Life Insurance": 75,
-        "Bajaj Allianz Life Insurance Company": 1101,
-        "Canara HSBC Life Insurance": 22,
-        "Cardiotrack Corporate Services": 2,
-        "HDFC Life": 133,
-        "ICICI Lombard": 331,
-        "M7P4hW7Z Z9xz93cY": 38,
-        "Pramerica Life Insurance": 12,
-        "TATA AIG Health Insurance Company Ltd.": 2,
-        "Test Cardiotrack": 1
-      }
+      "closed": {}
     },
     "Aug 2025": {
       "incoming": {
@@ -1490,16 +1080,7 @@
         "TATA AIG Health Insurance Company Ltd.": 2,
         "Test Cardiotrack": 6
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 542,
-        "Ageas Federal Life Insurance": 37,
-        "Bajaj Allianz Life Insurance Company": 1105,
-        "Canara HSBC Life Insurance": 99,
-        "Cardiotrack Home Services": 2,
-        "HDFC Life": 107,
-        "ICICI Lombard": 256,
-        "M7P4hW7Z Z9xz93cY": 5
-      }
+      "closed": {}
     },
     "Sep 2025": {
       "incoming": {
@@ -1513,15 +1094,7 @@
         "TATA AIG Health Insurance Company Ltd.": 1,
         "Test Cardiotrack": 15
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 441,
-        "Ageas Federal Life Insurance": 46,
-        "Bajaj Allianz Life Insurance Company": 1011,
-        "Canara HSBC Life Insurance": 135,
-        "HDFC Life": 172,
-        "ICICI Lombard": 178,
-        "M7P4hW7Z Z9xz93cY": 5
-      }
+      "closed": {}
     },
     "Oct 2025": {
       "incoming": {
@@ -1535,17 +1108,7 @@
         "M7P4hW7Z Z9xz93cY": 5,
         "Test Cardiotrack": 5
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 556,
-        "Ageas Federal Life Insurance": 41,
-        "Bajaj Allianz Life Insurance Company": 365,
-        "Bajaj Life Insurance Company": 604,
-        "Canara HSBC Life Insurance": 109,
-        "HDFC Life": 135,
-        "ICICI Lombard": 105,
-        "M7P4hW7Z Z9xz93cY": 4,
-        "Test Cardiotrack": 2
-      }
+      "closed": {}
     },
     "Nov 2025": {
       "incoming": {
@@ -1562,17 +1125,7 @@
         "TATA AIG Health Insurance Company Ltd.": 3,
         "Test Cardiotrack": 1
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 1017,
-        "Ageas Federal Life Insurance": 33,
-        "Bajaj Life Insurance Company": 1136,
-        "Canara HSBC Life Insurance": 143,
-        "Cardiotrack Home Services": 4,
-        "HDFC Life": 56,
-        "ICICI Lombard": 169,
-        "M7P4hW7Z Z9xz93cY": 67,
-        "Pramerica Life Insurance": 3
-      }
+      "closed": {}
     },
     "Dec 2025": {
       "incoming": {
@@ -1585,14 +1138,7 @@
         "M7P4hW7Z Z9xz93cY": 158,
         "Test Cardiotrack": 2
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 1421,
-        "Ageas Federal Life Insurance": 40,
-        "Bajaj Life Insurance Company": 1149,
-        "Canara HSBC Life Insurance": 204,
-        "ICICI Lombard": 222,
-        "M7P4hW7Z Z9xz93cY": 74
-      }
+      "closed": {}
     },
     "Jan 2026": {
       "incoming": {
@@ -1607,17 +1153,7 @@
         "TATA AIG Health Insurance Company Ltd.": 2,
         "Test Cardiotrack": 17
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 1165,
-        "Ageas Federal Life Insurance": 30,
-        "Bajaj Life Insurance Company": 946,
-        "Canara HSBC Life Insurance": 122,
-        "Cardiotrack Home Services": 2,
-        "ICICI Lombard": 442,
-        "M7P4hW7Z Z9xz93cY": 39,
-        "Star Union Daichi Life Insurance": 57,
-        "Test Cardiotrack": 9
-      }
+      "closed": {}
     },
     "Feb 2026": {
       "incoming": {
@@ -1630,16 +1166,7 @@
         "Star Union Daichi Life Insurance": 270,
         "Test Cardiotrack": 4
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 1077,
-        "Ageas Federal Life Insurance": 49,
-        "Bajaj Life Insurance Company": 758,
-        "Canara HSBC Life Insurance": 1,
-        "Cardiotrack Home Services": 2,
-        "ICICI Lombard": 651,
-        "Star Union Daichi Life Insurance": 149,
-        "Test Cardiotrack": 3
-      }
+      "closed": {}
     },
     "Mar 2026": {
       "incoming": {
@@ -1651,14 +1178,7 @@
         "Star Union Daichi Life Insurance": 250,
         "Test Cardiotrack": 4
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 1203,
-        "Ageas Federal Life Insurance": 67,
-        "Bajaj Life Insurance Company": 969,
-        "Cardiotrack Home Services": 1,
-        "ICICI Lombard": 618,
-        "Star Union Daichi Life Insurance": 131
-      }
+      "closed": {}
     },
     "Apr 2026": {
       "incoming": {
@@ -1671,15 +1191,7 @@
         "Star Union Daichi Life Insurance": 172,
         "Test Cardiotrack": 12
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 714,
-        "Ageas Federal Life Insurance": 62,
-        "Bajaj Life Insurance Company": 713,
-        "Cardiotrack Home Services": 1,
-        "ICICI Lombard": 562,
-        "Pramerica Life Insurance": 22,
-        "Star Union Daichi Life Insurance": 69
-      }
+      "closed": {}
     },
     "May 2026": {
       "incoming": {
@@ -1691,90 +1203,84 @@
         "Star Union Daichi Life Insurance": 41,
         "Test Cardiotrack": 15
       },
-      "closed": {
-        "Aditya Birla Sun Life Insurance": 282,
-        "Ageas Federal Life Insurance": 27,
-        "Bajaj Life Insurance Company": 312,
-        "ICICI Lombard": 172,
-        "Star Union Daichi Life Insurance": 12
-      }
+      "closed": {}
     }
   },
   "orders_monthly_totals": [
     {
       "month": "Mar 2025",
       "incoming": 3897,
-      "closed": 2569
+      "closed": 0
     },
     {
       "month": "Apr 2025",
       "incoming": 2359,
-      "closed": 1514
+      "closed": 0
     },
     {
       "month": "May 2025",
       "incoming": 2670,
-      "closed": 1571
+      "closed": 0
     },
     {
       "month": "Jun 2025",
       "incoming": 2108,
-      "closed": 1333
+      "closed": 0
     },
     {
       "month": "Jul 2025",
       "incoming": 3595,
-      "closed": 2187
+      "closed": 0
     },
     {
       "month": "Aug 2025",
       "incoming": 3450,
-      "closed": 2153
+      "closed": 0
     },
     {
       "month": "Sep 2025",
       "incoming": 3229,
-      "closed": 1988
+      "closed": 0
     },
     {
       "month": "Oct 2025",
       "incoming": 3314,
-      "closed": 1921
+      "closed": 0
     },
     {
       "month": "Nov 2025",
       "incoming": 4941,
-      "closed": 2628
+      "closed": 0
     },
     {
       "month": "Dec 2025",
       "incoming": 6495,
-      "closed": 3110
+      "closed": 0
     },
     {
       "month": "Jan 2026",
       "incoming": 5391,
-      "closed": 2812
+      "closed": 0
     },
     {
       "month": "Feb 2026",
       "incoming": 4600,
-      "closed": 2690
+      "closed": 0
     },
     {
       "month": "Mar 2026",
       "incoming": 4950,
-      "closed": 2989
+      "closed": 0
     },
     {
       "month": "Apr 2026",
       "incoming": 3880,
-      "closed": 2143
+      "closed": 0
     },
     {
       "month": "May 2026",
       "incoming": 1922,
-      "closed": 805
+      "closed": 0
     }
   ],
   "monthly_targets": {
