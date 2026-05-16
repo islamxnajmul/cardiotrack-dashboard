@@ -134,6 +134,19 @@ git push -u origin main
 The `.gitignore` keeps `credentials.json`, `token.json`, `Quarter Target.xlsx`
 and the daily CSVs out of the repo automatically.
 
+**If you've run this step before and hit errors:**
+
+| Error | Fix |
+|---|---|
+| `fatal: remote origin already exists.` | Use `git remote set-url origin <URL>` instead of `git remote add origin <URL>` — it updates the existing remote in place. Check the current value first with `git remote -v`. |
+| `nothing to commit, working tree clean` | The commit was already made on a previous run. Skip straight to `git push -u origin main`. |
+| `error: failed to push some refs` / `Updates were rejected` | The remote already has commits (e.g. you initialised the repo with a README on GitHub). Run `git pull --rebase origin main` then `git push -u origin main`. |
+| `remote: Invalid username or token. Password authentication is not supported for Git operations.` | GitHub disabled password auth in 2021. **Easiest fix:** install [GitHub CLI](https://cli.github.com/) — `brew install gh` then `gh auth login` (pick GitHub.com → HTTPS → Yes → Login with web browser). Retry the push and it works. **Alternative:** create a Personal Access Token at https://github.com/settings/tokens?type=beta (Contents: Read+write on this repo), paste it as the "password" when git prompts, then run `git config --global credential.helper osxkeychain` so you only need to paste it once. |
+| `Permission denied (publickey)` | You're using SSH but no SSH key is set up. Easiest: switch to HTTPS with `git remote set-url origin https://github.com/<USER>/<REPO>.git` and follow the row above. |
+| `On branch master` instead of `main` | Older Git default. Run `git branch -M main` first. |
+
+You can re-run any of these commands safely — none of them destroy local work.
+
 ### Step 4 — Add three repo secrets (5 min)
 
 Generate the secret values with the helper:
