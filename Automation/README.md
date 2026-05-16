@@ -101,7 +101,7 @@ Cardiotrack sales/
 cd "/Users/najmulislam/Documents/Claude/Projects/Sales/Cardiotrack sales"
 
 # 1. Python deps
-pip3 install --user flask google-auth-oauthlib google-api-python-client openpyxl pandas
+pip3 install --user flask google-auth-oauthlib google-api-python-client openpyxl
 
 # 2. Gmail OAuth credentials (one-time)
 #    Google Cloud Console → APIs & Services → Credentials →

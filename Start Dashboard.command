@@ -33,7 +33,7 @@ fi
 echo "Checking Python dependencies…"
 if ! python3 -c "import flask" 2>/dev/null; then
   echo "  Flask not installed — installing now (one-time setup)…"
-  python3 -m pip install --user flask openpyxl pandas 2>&1 | tail -3
+  python3 -m pip install --user flask openpyxl 2>&1 | tail -3
   echo ""
 fi
 

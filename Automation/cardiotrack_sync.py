@@ -28,11 +28,11 @@ except ImportError:
     print("⚠  Gmail packages not installed. Run:  pip3 install google-auth-oauthlib google-api-python-client")
 
 try:
-    import openpyxl, pandas as pd
+    import openpyxl
     EXCEL_AVAILABLE = True
 except ImportError:
     EXCEL_AVAILABLE = False
-    print("⚠  Excel packages not installed. Run:  pip3 install openpyxl pandas")
+    print("⚠  Excel package not installed. Run:  pip3 install openpyxl")
 
 # ─── PATHS ────────────────────────────────────────────────────────────────────
 BASE = Path(__file__).parent.parent          # …/Cardiotrack sales/
@@ -1295,7 +1295,7 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False) -> dict:
         log.info("Step 1: Gmail sync skipped")
 
     if not EXCEL_AVAILABLE:
-        raise RuntimeError("openpyxl/pandas not installed")
+        raise RuntimeError("openpyxl not installed — run: pip3 install openpyxl")
 
     log.info("Step 2: Processing Excel data…")
     data = build_dashboard_data()
