@@ -1,0 +1,101 @@
+name: Daily Cardiotrack Sync
+
+# Runs every day at 00:00 UTC (05:30 IST) AND can be triggered manually from
+# the GitHub Actions UI ("Run workflow" button). Manual triggers are the
+# fallback for "I just edited Quarter Target — pull it now."
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write    # we commit the regenerated HTML+JSON back to the repo
+
+# Prevent two scheduled runs from racing into the same commit.
+concurrency:
+  group: cardiotrack-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --quiet \
+            google-auth-oauthlib \
+            google-api-python-client \
+            openpyxl
+
+      # The OAuth credentials and refresh token live in GitHub Secrets — never
+      # in the repo. We restore them to disk only for the duration of the run.
+      - name: Restore OAuth credentials from secrets
+        env:
+          CREDS: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          TOKEN: ${{ secrets.GOOGLE_TOKEN_JSON }}
+        run: |
+          mkdir -p Automation
+          printf '%s' "$CREDS" > Automation/credentials.json
+          printf '%s' "$TOKEN" > Automation/token.json
+          # Don't echo the contents — just confirm they landed.
+          echo "credentials.json: $(wc -c < Automation/credentials.json) bytes"
+          echo "token.json:       $(wc -c < Automation/token.json) bytes"
+
+      - name: Pull Quarter Target.xlsx from Google Drive
+        env:
+          QUARTER_TARGET_FILE_ID: ${{ secrets.QUARTER_TARGET_FILE_ID }}
+        run: python3 Automation/drive_pull.py
+
+      - name: Run sync (Gmail → CSVs → JSON → HTML)
+        run: python3 Automation/cardiotrack_sync.py
+
+      # Wipe the secrets back off disk so they can never end up in a commit.
+      - name: Scrub OAuth artefacts
+        if: always()
+        run: |
+          rm -f Automation/credentials.json Automation/token.json
+          rm -f "Data/Input/Quarter Target.xlsx"
+
+      # Cloudflare Pages auto-deploys on every push to the default branch.
+      - name: Commit results
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Data/Output/ Automation/sync_log.json 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit (data unchanged since last run)."
+          else
+            git commit -m "Daily sync: $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
+
+      - name: Workflow summary
+        if: always()
+        run: |
+          echo "## Sync result" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f Data/Output/dashboard_data.json ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            python3 -c "
+          import json
+          d = json.load(open('Data/Output/dashboard_data.json'))
+          out = {
+              'generated_at': d['meta'].get('generated_at'),
+              'q2_achieved':  d['kpis'].get('q2_achieved'),
+              'may_revenue':  d['kpis'].get('may_revenue'),
+              'jun_revenue':  d['kpis'].get('jun_revenue'),
+              'gmail_status': d['meta'].get('gmail_status', {}),
+          }
+          print(json.dumps(out, indent=2))" >> "$GITHUB_STEP_SUMMARY" || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -1,0 +1,30 @@
+# Never commit OAuth secrets
+Automation/credentials.json
+Automation/token.json
+
+# Logs
+Automation/*.log
+Automation/launchd.*.log
+
+# Quarter Target comes from Google Drive on each run, never the repo
+Data/Input/Quarter Target.xlsx
+
+# The Gmail-downloaded CSVs are regenerated every run — don't pollute history
+Data/Input/Incoming_Order_Count_Insurer_Wise.csv
+Data/Input/Revenue_Generated_Insurer_Wise.csv
+Data/Input/Closed_Case_Count_Insurer_Wise.csv
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editor folders
+.vscode/
+.idea/

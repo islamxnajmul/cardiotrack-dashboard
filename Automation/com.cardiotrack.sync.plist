@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Cardiotrack daily Gmail + dashboard sync
+  =========================================
+  Runs cardiotrack_sync.py every day at 00:00 local time.
+
+  Install:
+      cp Automation/com.cardiotrack.sync.plist ~/Library/LaunchAgents/
+      launchctl load   ~/Library/LaunchAgents/com.cardiotrack.sync.plist
+      launchctl start  com.cardiotrack.sync         # run once immediately to verify
+
+  Stop / uninstall:
+      launchctl unload ~/Library/LaunchAgents/com.cardiotrack.sync.plist
+      rm               ~/Library/LaunchAgents/com.cardiotrack.sync.plist
+
+  Notes:
+    - Adjust ProgramArguments[0] if your python3 is not at /usr/bin/python3.
+      Run `which python3` to find yours.
+    - Logs land at Automation/sync.log (script) + Automation/launchd.{out,err}.log
+      (stdout/stderr from launchd).
+    - Skip a missed run if Mac was asleep at midnight? launchd will fire the
+      job as soon as the Mac wakes — that's the macOS default.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.cardiotrack.sync</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/najmulislam/Documents/Claude/Projects/Sales/Cardiotrack sales/Automation/cardiotrack_sync.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/najmulislam/Documents/Claude/Projects/Sales/Cardiotrack sales</string>
+
+    <!-- Daily at 00:00 local time -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>0</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- If the Mac was asleep at 00:00, fire as soon as it wakes -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/najmulislam/Documents/Claude/Projects/Sales/Cardiotrack sales/Automation/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/najmulislam/Documents/Claude/Projects/Sales/Cardiotrack sales/Automation/launchd.err.log</string>
+
+    <!-- Make HOME and PATH look sensible for OAuth refresh -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>

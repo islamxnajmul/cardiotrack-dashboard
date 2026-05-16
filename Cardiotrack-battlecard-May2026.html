@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardiotrack Competitive Battlecard — May 2026</title>
+<style>
+  :root {
+    --bg-primary: #0a0d14;
+    --bg-elevated: #0f131c;
+    --bg-surface: #161b28;
+    --bg-hover: #1e2536;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.72);
+    --text-muted: rgba(255,255,255,0.45);
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --you-win: #10b981;
+    --they-win: #ef4444;
+    --tie: #f59e0b;
+    --border: rgba(255,255,255,0.08);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg-primary); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; }
+
+  header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e2a45 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px 20px;
+  }
+  .header-inner { max-width: 1200px; margin: 0 auto; }
+  header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  header h1 span { color: var(--accent); }
+  .header-meta { margin-top: 6px; color: var(--text-muted); font-size: 12px; }
+  .header-meta b { color: var(--text-secondary); }
+
+  .tabs-bar {
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .tabs-bar::-webkit-scrollbar { height: 3px; }
+  .tabs-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .tab-btn {
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    padding: 14px 18px; font-size: 13px; font-weight: 500; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: all 180ms;
+  }
+  .tab-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-panel { display: none; max-width: 1200px; margin: 0 auto; padding: 32px; }
+  .tab-panel.active { display: block; }
+
+  /* Matrix */
+  .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text-primary); }
+  .matrix-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .matrix-table th, .matrix-table td { padding: 10px 14px; border: 1px solid var(--border); text-align: center; }
+  .matrix-table th { background: var(--bg-surface); font-weight: 600; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .matrix-table th:first-child, .matrix-table td:first-child { text-align: left; font-weight: 500; width: 200px; }
+  .matrix-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .win  { color: var(--you-win);  font-weight: 600; }
+  .lose { color: var(--they-win); }
+  .tie  { color: var(--tie); }
+
+  .wl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+  .wl-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .wl-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .wl-section { margin-bottom: 10px; }
+  .wl-section .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; }
+  .wl-section.win .label { color: var(--you-win); }
+  .wl-section.lose .label { color: var(--they-win); }
+  .wl-section ul { padding-left: 16px; }
+  .wl-section li { color: var(--text-secondary); font-size: 12px; margin-bottom: 3px; }
+
+  /* Competitor Cards */
+  .comp-header { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+  .comp-title { flex: 1; }
+  .comp-title h2 { font-size: 20px; font-weight: 700; }
+  .comp-title .tagline { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-blue  { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+  .badge-red   { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .badge-green { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+  .badge-amber { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+
+  .stats-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .stat-pill { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; text-align: center; min-width: 110px; }
+  .stat-pill .val { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .stat-pill .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media(max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+  .card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .card h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .card ul { padding-left: 16px; }
+  .card li { color: var(--text-secondary); font-size: 13px; margin-bottom: 5px; }
+  .card.win-card h3 { color: var(--you-win); }
+  .card.lose-card h3 { color: var(--they-win); }
+
+  .talk-tracks { margin-bottom: 20px; }
+  .track { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; }
+  .track .scenario { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--accent); margin-bottom: 8px; }
+  .track p { color: var(--text-secondary); font-size: 13px; }
+
+  .landmines { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius); padding: 18px; }
+  .landmines h3 { color: var(--tie); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .landmines ol { padding-left: 18px; }
+  .landmines li { color: var(--text-secondary); font-size: 13px; margin-bottom: 8px; }
+
+  .cardiotrack-card .diff-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .diff-item { background: var(--bg-surface); border: 1px solid rgba(16,185,129,0.2); border-radius: var(--radius); padding: 16px; }
+  .diff-item .icon { font-size: 20px; margin-bottom: 8px; }
+  .diff-item h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .diff-item p { color: var(--text-muted); font-size: 12px; }
+
+  .separator { height: 1px; background: var(--border); margin: 24px 0; }
+  .full-width { grid-column: 1 / -1; }
+
+  .pricing-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .pricing-table th, .pricing-table td { padding: 9px 14px; border: 1px solid var(--border); }
+  .pricing-table th { background: var(--bg-surface); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>🫀 <span>Cardiotrack</span> Competitive Battlecard</h1>
+    <div class="header-meta">
+      Generated: <b>May 2026</b> &nbsp;|&nbsp; Segment: <b>Insurance Pre-Policy &amp; Health Screening (India)</b> &nbsp;|&nbsp;
+      Competitors: <b>Gowellnext · HealthIndia TPA · MD India · MediBuddy</b>
+    </div>
+  </div>
+</header>
+
+<div class="tabs-bar">
+  <button class="tab-btn active" data-tab="matrix">📊 Matrix</button>
+  <button class="tab-btn" data-tab="cardiotrack">🫀 Cardiotrack</button>
+  <button class="tab-btn" data-tab="gowellnext">Gowellnext</button>
+  <button class="tab-btn" data-tab="healthindia">HealthIndia TPA</button>
+  <button class="tab-btn" data-tab="mdindia">MD India</button>
+  <button class="tab-btn" data-tab="medibuddy">MediBuddy</button>
+</div>
+
+<!-- ============================================================ MATRIX ============================================================ -->
+<div class="tab-panel active" id="tab-matrix">
+  <p class="section-title">Head-to-Head Comparison</p>
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th>Feature / Dimension</th>
+        <th>🫀 Cardiotrack</th>
+        <th>Gowellnext</th>
+        <th>HealthIndia TPA</th>
+        <th>MD India</th>
+        <th>MediBuddy</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Primary Business</td>
+        <td class="win">Pre-policy insurance screening</td>
+        <td>Pre-policy + health checks</td>
+        <td>TPA (claims) + pre-policy</td>
+        <td>TPA (claims) + pre-policy</td>
+        <td class="lose">Consumer health + insurance distrib.</td>
+      </tr>
+      <tr>
+        <td>AI / GenAI Platform</td>
+        <td class="win">✅ Ethos.AI (proprietary AgenticAI)</td>
+        <td class="lose">❌ None</td>
+        <td class="lose">❌ None</td>
+        <td class="lose">❌ None</td>
+        <td class="tie">⚠️ Basic digital tools</td>
+      </tr>
+      <tr>
+        <td>Stress ECG at Home</td>
+        <td class="win">✅ Proprietary (Cardiovisor)</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+      </tr>
+      <tr>
+        <td>Post-Policy Screening</td>
+        <td class="win">✅ Yes</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+      </tr>
+      <tr>
+        <td>End-to-End Automation</td>
+        <td class="win">✅ GenAI-driven workflow</td>
+        <td class="tie">⚠️ Tech-enabled, not AI</td>
+        <td class="lose">❌ Manual-heavy</td>
+        <td class="lose">❌ Manual-heavy</td>
+        <td class="lose">❌</td>
+      </tr>
+      <tr>
+        <td>Insurance Insurer Clients</td>
+        <td class="tie">Growing (Bajaj, ABSLI, ICICI, Ageas…)</td>
+        <td class="win">Large (not disclosed)</td>
+        <td class="win">31 insurers (LIC, SBI Life, Max Life)</td>
+        <td class="win">IRDA TPA #005, major insurers</td>
+        <td class="tie">TATA AIA, HDFC Life (distrib. only)</td>
+      </tr>
+      <tr>
+        <td>Network Scale</td>
+        <td class="tie">Growing</td>
+        <td class="win">3,000+ centres, 700+ cities</td>
+        <td class="win">8,650+ hospitals</td>
+        <td class="win">20,000+ hospitals, 5,000+ diag. centres</td>
+        <td class="win">125,000+ doctors, 7,700+ centres</td>
+      </tr>
+      <tr>
+        <td>Life Insurance Focus</td>
+        <td class="win">✅ Purpose-built for underwriting</td>
+        <td class="tie">⚠️ Both health &amp; life</td>
+        <td class="win">✅ Yes (LIC, SBI Life, Max Life)</td>
+        <td class="win">✅ Yes</td>
+        <td class="lose">❌ Distribution only</td>
+      </tr>
+      <tr>
+        <td>Portable Cardiac Devices</td>
+        <td class="win">✅ Cardiovisor (diagnostic-grade)</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+        <td class="lose">❌</td>
+      </tr>
+      <tr>
+        <td>Founded / Legacy Trust</td>
+        <td>Newer</td>
+        <td>2017 (8 yrs)</td>
+        <td class="win">2002 (23 yrs)</td>
+        <td class="win">2000 (25 yrs)</td>
+        <td class="tie">2000 (consumer)</td>
+      </tr>
+      <tr>
+        <td>IRDA TPA License</td>
+        <td class="lose">❌ Not a licensed TPA</td>
+        <td class="lose">❌</td>
+        <td class="win">✅ Yes</td>
+        <td class="win">✅ Yes (#005)</td>
+        <td class="lose">❌</td>
+      </tr>
+      <tr>
+        <td>Pricing Transparency</td>
+        <td class="win">Per-case, transparent</td>
+        <td class="tie">Custom quotes</td>
+        <td class="lose">Bundled/opaque</td>
+        <td class="lose">Bundled/opaque</td>
+        <td class="tie">Consumer pricing visible</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="separator"></div>
+  <p class="section-title">Quick Win/Loss Guide</p>
+  <div class="wl-grid">
+    <div class="wl-card">
+      <h4>vs. Gowellnext</h4>
+      <div class="wl-section win">
+        <div class="label">✅ You Win When</div>
+        <ul>
+          <li>Insurer wants AI-driven underwriting</li>
+          <li>Stress ECG or cardiac-specific screening required</li>
+          <li>Speed and automation are key purchase criteria</li>
+          <li>Post-policy monitoring is in scope</li>
+        </ul>
+      </div>
+      <div class="wl-section lose">
+        <div class="label">⚠️ Watch Out When</div>
+        <ul>
+          <li>Prospect needs Tier 3+ city coverage (700+ cities)</li>
+          <li>Pure volume at lowest cost is the brief</li>
+        </ul>
+      </div>
+    </div>
+    <div class="wl-card">
+      <h4>vs. HealthIndia TPA</h4>
+      <div class="wl-section win">
+        <div class="label">✅ You Win When</div>
+        <ul>
+          <li>New insurer not locked into legacy TPA contracts</li>
+          <li>AI-powered reporting &amp; turnaround speed matter</li>
+          <li>Insurer wants a pre-policy specialist, not a TPA</li>
+        </ul>
+      </div>
+      <div class="wl-section lose">
+        <div class="label">⚠️ Watch Out When</div>
+        <ul>
+          <li>Incumbent TPA relationship (31 insurers already)</li>
+          <li>IRDA TPA licensing is a compliance requirement</li>
+        </ul>
+      </div>
+    </div>
+    <div class="wl-card">
+      <h4>vs. MD India</h4>
+      <div class="wl-section win">
+        <div class="label">✅ You Win When</div>
+        <ul>
+          <li>Pre-policy is the primary use case, not claims TPA</li>
+          <li>Insurer wants a dedicated partner, not bundled service</li>
+          <li>Digital-first, fast turnaround is required</li>
+          <li>Cardiac/Stress ECG capability is on the list</li>
+        </ul>
+      </div>
+      <div class="wl-section lose">
+        <div class="label">⚠️ Watch Out When</div>
+        <ul>
+          <li>Insurer wants one-stop TPA for claims + pre-policy</li>
+          <li>IRDA license #005 is cited as mandatory</li>
+        </ul>
+      </div>
+    </div>
+    <div class="wl-card">
+      <h4>vs. MediBuddy</h4>
+      <div class="wl-section win">
+        <div class="label">✅ Almost Always Win</div>
+        <ul>
+          <li>MediBuddy is NOT in the pre-policy underwriting space</li>
+          <li>Their insurance role = distribution partner, not screening</li>
+          <li>Use this fact to remove them from shortlists early</li>
+        </ul>
+      </div>
+      <div class="wl-section lose">
+        <div class="label">⚠️ Watch Out When</div>
+        <ul>
+          <li>Insurer confuses consumer health platform with underwriting vendor</li>
+          <li>Brand name creates halo effect in evaluation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ CARDIOTRACK ============================================================ -->
+<div class="tab-panel" id="tab-cardiotrack">
+  <div class="comp-header">
+    <div class="comp-title">
+      <h2>🫀 Cardiotrack — Your Differentiators</h2>
+      <div class="tagline">Purpose-built AI-powered pre-policy &amp; post-policy cardiac screening for insurance underwriting</div>
+      <div class="badges">
+        <span class="badge badge-green">AgenticAI Platform</span>
+        <span class="badge badge-blue">Stress ECG at Home</span>
+        <span class="badge badge-green">Post-Policy Screening</span>
+        <span class="badge badge-blue">Portable Cardiovisor</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="section-title">Unique Differentiators</p>
+  <div class="cardiotrack-card">
+    <div class="diff-grid">
+      <div class="diff-item">
+        <div class="icon">🤖</div>
+        <h4>Ethos.AI (AgenticAI / GenAI)</h4>
+        <p>Proprietary GenAI platform automating end-to-end underwriting workflows. No competitor has this. Reduces manual review time and flags anomalies automatically.</p>
+      </div>
+      <div class="diff-item">
+        <div class="icon">❤️</div>
+        <h4>Stress ECG at Home</h4>
+        <p>Only company offering Stress ECG at the applicant's doorstep using Cardiovisor — a portable, diagnostic-grade cardiac device. Critical for life insurance underwriting.</p>
+      </div>
+      <div class="diff-item">
+        <div class="icon">📋</div>
+        <h4>Post-Policy Screening</h4>
+        <p>Screening doesn't stop at issuance. Cardiotrack offers post-policy monitoring — a capability no competitor offers — creating continuous risk signals for the insurer.</p>
+      </div>
+      <div class="diff-item">
+        <div class="icon">🏥</div>
+        <h4>Insurance Underwriting Specialist</h4>
+        <p>Unlike TPAs (MD India, HealthIndia) who treat pre-policy as a secondary service to claims, Cardiotrack is purpose-built for underwriting. Deep domain focus = better outcomes.</p>
+      </div>
+      <div class="diff-item">
+        <div class="icon">⚡</div>
+        <h4>End-to-End Automation</h4>
+        <p>GenAI-driven case intake, scheduling, reporting, and follow-up. Faster TAT than manual-heavy competitors. Directly impacts insurer NPS and conversion rates.</p>
+      </div>
+      <div class="diff-item">
+        <div class="icon">📱</div>
+        <h4>Portable Diagnostic Devices</h4>
+        <p>Cardiovisor brings clinical-grade diagnostics to Tier 2/3 cities without requiring lab infrastructure. Expands serviceable geography without a fixed network.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="separator"></div>
+  <p class="section-title">Q2 2026 Insurer Portfolio</p>
+  <table class="matrix-table">
+    <thead>
+      <tr><th>Insurer</th><th>May Daily Target (Cases)</th><th>May Revenue Target</th><th>Priority</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Bajaj Allianz</td><td>56</td><td>₹24.6L</td><td class="lose">🔴 Critical</td></tr>
+      <tr><td>ABSLI</td><td>55</td><td>₹18.0L</td><td class="win">✅ Near Target</td></tr>
+      <tr><td>Canara HSBC</td><td>0 (blocked)</td><td>—</td><td class="tie">⚠️ On Hold</td></tr>
+      <tr><td>ICICI Prudential</td><td>46</td><td>₹19.6L</td><td>🟡 Focus</td></tr>
+      <tr><td>Ageas Federal</td><td>7</td><td>₹2.6L</td><td>🟢 Stable</td></tr>
+      <tr><td>SUD Life</td><td>11</td><td>₹1.1L</td><td>🟢 Stable</td></tr>
+      <tr><td>Pramerica</td><td>5</td><td>₹2.0L</td><td>🟢 Stable</td></tr>
+      <tr><td><b>TOTAL</b></td><td><b>179</b></td><td><b>₹67.9L</b></td><td></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ GOWELLNEXT ============================================================ -->
+<div class="tab-panel" id="tab-gowellnext">
+  <div class="comp-header">
+    <div class="comp-title">
+      <h2>Gowellnext (Welnext)</h2>
+      <div class="tagline">Tech-powered pre-policy health check network across India</div>
+      <div class="badges">
+        <span class="badge badge-amber">Founded 2017</span>
+        <span class="badge badge-blue">3,000+ Centres</span>
+        <span class="badge badge-blue">700+ Cities</span>
+        <span class="badge badge-amber">₹34.5Cr Revenue</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-pill"><div class="val">304</div><div class="lbl">Employees</div></div>
+    <div class="stat-pill"><div class="val">3,000+</div><div class="lbl">Centres</div></div>
+    <div class="stat-pill"><div class="val">700+</div><div class="lbl">Cities</div></div>
+    <div class="stat-pill"><div class="val">150+</div><div class="lbl">Doctors</div></div>
+    <div class="stat-pill"><div class="val">₹34.5Cr</div><div class="lbl">Revenue</div></div>
+    <div class="stat-pill"><div class="val">2017</div><div class="lbl">Founded</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card win-card">
+      <h3>✅ Where Cardiotrack Wins</h3>
+      <ul>
+        <li>AI-powered underwriting vs. tech-enabled (no GenAI at Welnext)</li>
+        <li>Stress ECG at home — Welnext cannot match this</li>
+        <li>Post-policy screening as a differentiator</li>
+        <li>Faster TAT via end-to-end GenAI automation</li>
+        <li>Purpose-built for life &amp; health insurance (they do both but no specialisation)</li>
+      </ul>
+    </div>
+    <div class="card lose-card">
+      <h3>⚠️ Where Gowellnext Wins</h3>
+      <ul>
+        <li>Much larger fixed network — 3,000+ centres vs. Cardiotrack's growing network</li>
+        <li>700+ cities — deeper Tier 2/3 reach</li>
+        <li>8 years of incumbent relationships with insurers</li>
+        <li>Higher volume throughput at potentially lower cost</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="section-title">Talk Tracks</p>
+  <div class="talk-tracks">
+    <div class="track">
+      <div class="scenario">🚀 If they come up early in the evaluation</div>
+      <p>"Gowellnext has built a solid network. The question for your underwriting team is: are you optimizing for <em>coverage</em> or <em>decision quality</em>? Our Ethos.AI platform doesn't just collect data — it flags risk anomalies automatically and gives your underwriters AI-assisted summaries. No competitor has this. What does your current turnaround look like, and where do you lose the most cases post-screening?"</p>
+    </div>
+    <div class="track">
+      <div class="scenario">🔄 If they are the incumbent and you're trying to displace</div>
+      <p>"We often come in alongside Gowellnext for specific high-risk or cardiac cases where Stress ECG is required. Our Cardiovisor device means we can do diagnostic-grade ECG at the applicant's home — no Gowellnext centre needed. Would it make sense to run a parallel pilot for your top-sum-assured cases and compare conversion rates and dispute rates?"</p>
+    </div>
+    <div class="track">
+      <div class="scenario">📊 Pricing conversation</div>
+      <p>"We price per case, so your cost scales exactly with volume — no fixed infrastructure cost. Gowellnext's network has fixed overhead which is priced into their rates. When we run the same test panel, our AI-powered process has lower rework rates because the report quality is higher upfront."</p>
+    </div>
+  </div>
+
+  <div class="landmines">
+    <h3>💣 Landmine Questions to Ask</h3>
+    <ol>
+      <li>"Does your current vendor provide Stress ECG at the applicant's home, or only at a centre?" <em>(Welnext cannot do home-based Stress ECG)</em></li>
+      <li>"How does your current partner handle cases where the applicant doesn't show up at the centre?" <em>(Centre-dependent model = missed cases)</em></li>
+      <li>"Do you receive AI-generated risk summaries along with the report, or just raw data?" <em>(No competitor offers this)</em></li>
+      <li>"What is your current rework/dispute rate on reports?" <em>(AI automation reduces this significantly)</em></li>
+      <li>"Does your vendor offer any post-policy screening capability for existing policyholders?" <em>(Unique to Cardiotrack)</em></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ HEALTHINDIA ============================================================ -->
+<div class="tab-panel" id="tab-healthindia">
+  <div class="comp-header">
+    <div class="comp-title">
+      <h2>HealthIndia TPA</h2>
+      <div class="tagline">IRDA-licensed TPA offering claims administration &amp; pre-policy health checks — 23 years of legacy trust</div>
+      <div class="badges">
+        <span class="badge badge-blue">IRDA Licensed TPA</span>
+        <span class="badge badge-amber">Founded 2002</span>
+        <span class="badge badge-blue">31 Insurer Clients</span>
+        <span class="badge badge-amber">7.5M+ Checkups</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-pill"><div class="val">1,100+</div><div class="lbl">Employees</div></div>
+    <div class="stat-pill"><div class="val">31</div><div class="lbl">Insurer Clients</div></div>
+    <div class="stat-pill"><div class="val">7.5M+</div><div class="lbl">Checkups Done</div></div>
+    <div class="stat-pill"><div class="val">8,650+</div><div class="lbl">Hospital Network</div></div>
+    <div class="stat-pill"><div class="val">2002</div><div class="lbl">Founded</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card win-card">
+      <h3>✅ Where Cardiotrack Wins</h3>
+      <ul>
+        <li>Pre-policy is <em>primary</em> for us, <em>secondary</em> for HealthIndia (claims TPA first)</li>
+        <li>AI-powered reporting vs. legacy manual process</li>
+        <li>Stress ECG at home — zero overlap with HealthIndia</li>
+        <li>Faster report turnaround via GenAI automation</li>
+        <li>Innovation velocity — HealthIndia is a 23-year-old legacy company</li>
+        <li>Not locked into bureaucratic TPA processes</li>
+      </ul>
+    </div>
+    <div class="card lose-card">
+      <h3>⚠️ Where HealthIndia Wins</h3>
+      <ul>
+        <li>IRDA TPA license — regulatory credibility with compliance teams</li>
+        <li>31 insurer clients — deep existing relationships</li>
+        <li>23 years of trust — procurement committees feel "safe"</li>
+        <li>One-stop TPA: claims + pre-policy under one contract</li>
+        <li>LIC, SBI Life, Max Life relationships hard to displace</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="section-title">Talk Tracks</p>
+  <div class="talk-tracks">
+    <div class="track">
+      <div class="scenario">🏛️ When compliance team raises the IRDA TPA license requirement</div>
+      <p>"IRDA TPA licensing is designed for claims administration, not pre-policy screening. We operate as a healthcare service provider under the IRDAI regulatory framework — the same model used by diagnostics chains like SRL and Thyrocare that insurers work with daily. Our agreements are structured accordingly and reviewed by our insurer legal teams. Would your compliance team like a call to walk through the regulatory positioning?"</p>
+    </div>
+    <div class="track">
+      <div class="scenario">🔄 When HealthIndia is the incumbent pre-policy provider</div>
+      <p>"When was the last time your HealthIndia reports included an AI-generated risk summary that your underwriters could act on immediately? Our Ethos.AI platform doesn't just deliver the screening data — it surfaces the risk signals automatically. I'd love to run a parallel pilot on 50 cases and show you the difference in report quality and TAT."</p>
+    </div>
+    <div class="track">
+      <div class="scenario">📋 When they're evaluating both claims TPA and pre-policy together</div>
+      <p>"We'd actually recommend keeping claims TPA and pre-policy screening separate. The reason: TPAs optimise their pre-policy service around claims efficiency, not underwriting accuracy. We're purpose-built for underwriting. Best-in-class insurers run specialist vendors at each step. What is your biggest pain point today — TAT, report quality, or case completion rate?"</p>
+    </div>
+  </div>
+
+  <div class="landmines">
+    <h3>💣 Landmine Questions to Ask</h3>
+    <ol>
+      <li>"Is pre-policy screening a separate team at your current TPA, or shared with claims?" <em>(TPAs deprioritise pre-policy when claims volume spikes)</em></li>
+      <li>"When your current provider misses a case or returns an incomplete report, what's the process to rectify?" <em>(Legacy TPAs are slow on rework)</em></li>
+      <li>"Has your team seen AI-assisted risk flagging in pre-policy reports from your current vendor?" <em>(HealthIndia doesn't have this)</em></li>
+      <li>"Does your current vendor offer Stress ECG at the applicant's home?" <em>(They don't)</em></li>
+      <li>"If you could change one thing about your current pre-policy process, what would it be?" <em>(Opens the door to TAT, quality, or coverage issues)</em></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ MD INDIA ============================================================ -->
+<div class="tab-panel" id="tab-mdindia">
+  <div class="comp-header">
+    <div class="comp-title">
+      <h2>MD India</h2>
+      <div class="tagline">India's largest TPA by network — claims-first with pre-policy as an add-on service</div>
+      <div class="badges">
+        <span class="badge badge-blue">IRDA TPA #005</span>
+        <span class="badge badge-amber">Founded 2000</span>
+        <span class="badge badge-blue">20,000+ Hospitals</span>
+        <span class="badge badge-blue">ISO Certified</span>
+        <span class="badge badge-amber">7,000+ Employees</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-pill"><div class="val">7,000+</div><div class="lbl">Employees</div></div>
+    <div class="stat-pill"><div class="val">20,000+</div><div class="lbl">Hospital Network</div></div>
+    <div class="stat-pill"><div class="val">5,000+</div><div class="lbl">Diagnostic Centres</div></div>
+    <div class="stat-pill"><div class="val">TPA #005</div><div class="lbl">IRDA License</div></div>
+    <div class="stat-pill"><div class="val">ISO</div><div class="lbl">Certified</div></div>
+    <div class="stat-pill"><div class="val">2000</div><div class="lbl">Founded</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card win-card">
+      <h3>✅ Where Cardiotrack Wins</h3>
+      <ul>
+        <li>MD India treats pre-policy as secondary to their claims TPA business</li>
+        <li>We're a dedicated specialist — undivided focus on underwriting quality</li>
+        <li>Ethos.AI GenAI platform — nothing like it in MD India's stack</li>
+        <li>Stress ECG at home via Cardiovisor (unique globally)</li>
+        <li>Post-policy screening — not offered by MD India</li>
+        <li>Faster innovation cycles vs. 25-year-old TPA bureaucracy</li>
+        <li>Per-case transparent pricing vs. bundled TPA contracts</li>
+      </ul>
+    </div>
+    <div class="card lose-card">
+      <h3>⚠️ Where MD India Wins</h3>
+      <ul>
+        <li>Largest hospital network in India — 20,000+ hospitals</li>
+        <li>IRDA TPA #005 — gold standard for compliance-driven buyers</li>
+        <li>25 years of insurer trust — almost all major life &amp; health insurers</li>
+        <li>Claims + pre-policy bundled = one contract, one team</li>
+        <li>ISO certification — procurement procurement checklist item</li>
+        <li>Brand name = safe choice for risk-averse procurement</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="section-title">Talk Tracks</p>
+  <div class="talk-tracks">
+    <div class="track">
+      <div class="scenario">🏢 When MD India brand name comes up as the "safe" choice</div>
+      <p>"MD India is a great claims TPA. The question is: when did their business last innovate specifically for pre-policy underwriting? Their 20,000-hospital network was built for cashless claims, not cardiac screening. We've built Cardiovisor, the only portable Stress ECG device that goes to the applicant's home. That's the innovation your underwriting team is actually asking for — can we walk through a case comparison?"</p>
+    </div>
+    <div class="track">
+      <div class="scenario">📦 When the insurer wants one vendor for claims + pre-policy</div>
+      <p>"The bundled TPA model sounds convenient, but the economics don't work in your favour for pre-policy. MD India's pre-policy SLA gets deprioritised when claims volume spikes — that's the nature of their business. Top-quartile insurers are moving to specialist vendors at each stage: one TPA for claims, one specialist for underwriting. Your loss ratio improves when underwriting accuracy is treated as a priority, not an add-on."</p>
+    </div>
+    <div class="track">
+      <div class="scenario">🔬 Technical evaluation / pilot stage</div>
+      <p>"We'd welcome a head-to-head pilot. Give us 100 cases — the same panel you'd give MD India — and compare: report TAT, AI risk flags surfaced, rework rate, and cost per case. We're confident you'll see a measurable difference in report quality, especially for cardiac cases where our Stress ECG capability has no parallel."</p>
+    </div>
+  </div>
+
+  <div class="landmines">
+    <h3>💣 Landmine Questions to Ask</h3>
+    <ol>
+      <li>"In your current TPA's pre-policy team, how many FTEs are dedicated exclusively to underwriting screening vs. claims?" <em>(Claims teams dominate TPA bandwidth)</em></li>
+      <li>"What happens to your pre-policy SLAs during high-volume claims periods like monsoon or year-end?" <em>(TPA bandwidth gets consumed by claims)</em></li>
+      <li>"Has your team seen a Stress ECG done at the applicant's home by any vendor?" <em>(Only Cardiotrack offers this)</em></li>
+      <li>"If your sum-assured threshold for ECG is ₹50L+, how are you currently handling cases in Tier 2 cities where the applicant can't reach an ECG lab?" <em>(Opens the Cardiovisor conversation)</em></li>
+      <li>"Do your current pre-policy reports come with any AI-generated risk annotations?" <em>(MD India doesn't have this)</em></li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ MEDIBUDDY ============================================================ -->
+<div class="tab-panel" id="tab-medibuddy">
+  <div class="comp-header">
+    <div class="comp-title">
+      <h2>MediBuddy</h2>
+      <div class="tagline">Consumer health platform — NOT a pre-policy underwriting competitor</div>
+      <div class="badges">
+        <span class="badge badge-red">Not a Direct Competitor</span>
+        <span class="badge badge-amber">Insurance Distribution Only</span>
+        <span class="badge badge-blue">125,000+ Doctors</span>
+        <span class="badge badge-blue">7,700+ Diag. Centres</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-pill"><div class="val">125K+</div><div class="lbl">Doctors</div></div>
+    <div class="stat-pill"><div class="val">7,700+</div><div class="lbl">Diag. Centres</div></div>
+    <div class="stat-pill"><div class="val">TATA AIA</div><div class="lbl">Insurance Partner</div></div>
+    <div class="stat-pill"><div class="val">HDFC Life</div><div class="lbl">Insurance Partner</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px; border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05);">
+    <h3 style="color: var(--they-win);">⚠️ Critical Positioning Note</h3>
+    <ul>
+      <li>MediBuddy is a <strong>consumer health &amp; corporate wellness</strong> platform — they help employees book doctors and diagnostics</li>
+      <li>Their "insurance" relationships (TATA AIA, HDFC Life) are <strong>distribution partnerships</strong> — they sell insurance to their user base</li>
+      <li>They do NOT provide pre-policy underwriting screening services to insurers</li>
+      <li>If MediBuddy appears in an insurer's shortlist, it signals confusion — use this as an opportunity to clarify the evaluation criteria</li>
+    </ul>
+  </div>
+
+  <div class="two-col">
+    <div class="card win-card">
+      <h3>✅ Why You Always Win vs. MediBuddy</h3>
+      <ul>
+        <li>Different category entirely — you serve the insurer, they serve the consumer</li>
+        <li>Purpose-built for underwriting; MediBuddy is built for corporate wellness</li>
+        <li>Stress ECG, cardiac screening, AI risk flagging — none of this is their business</li>
+        <li>Post-policy screening, Cardiovisor — not in their product at all</li>
+        <li>If they're on the shortlist, they've been misclassified</li>
+      </ul>
+    </div>
+    <div class="card lose-card">
+      <h3>⚠️ Only Risk</h3>
+      <ul>
+        <li>Brand recognition creates a halo effect with non-technical evaluators</li>
+        <li>Large network creates perception of capability they don't have</li>
+        <li>Some insurers may confuse "we partner with MediBuddy for wellness" with pre-policy screening capability</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="section-title">How to Handle MediBuddy on a Shortlist</p>
+  <div class="talk-tracks">
+    <div class="track">
+      <div class="scenario">📋 When MediBuddy appears in the vendor evaluation</div>
+      <p>"I want to make sure the evaluation criteria are set correctly — MediBuddy is a consumer health platform and corporate wellness provider. Their insurance partnerships are distribution arrangements where they sell insurance policies to their user base. They don't provide pre-policy underwriting screening to insurers. Would it be worth clarifying with your procurement team what specific capabilities are being evaluated, to ensure you're comparing the right vendors?"</p>
+    </div>
+    <div class="track">
+      <div class="scenario">🔍 If an insurer says 'we already use MediBuddy'</div>
+      <p>"That's great — they're excellent for employee health benefits and corporate wellness. For pre-policy underwriting screening, that's a different workflow entirely — it requires clinical diagnostic protocols, AI-driven risk flagging, and often Stress ECG capability for high-sum-assured cases. MediBuddy isn't set up for that. What are you currently using for your pre-policy screening?"</p>
+    </div>
+  </div>
+
+  <div class="landmines">
+    <h3>💣 Clarifying Questions (to disqualify MediBuddy from the eval)</h3>
+    <ol>
+      <li>"Can MediBuddy provide pre-policy screening reports directly to your underwriting team with risk annotations?" <em>(They can't — it's not their product)</em></li>
+      <li>"Does MediBuddy have a Stress ECG capability at the applicant's home?" <em>(No)</em></li>
+      <li>"Who at MediBuddy would own the SLA for pre-policy case completion?" <em>(No one — it's not their business)</em></li>
+      <li>"Is MediBuddy an IRDA-registered screener for life insurance pre-policy use cases?" <em>(No — they're a consumer platform)</em></li>
+    </ol>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cardiotrack | Q2 FY2026 Sales Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0D1B2A;--teal:#1B7F79;--blue:#1B4F72;--subblue:#2E86C1;
+    --green:#27AE60;--red:#C0392B;--amber:#E8A838;--purple:#6C3483;
+    --bg:#F0F4F8;--card:#FFFFFF;--border:#D5D8DC;--text:#1a1a2e;
+    --text2:#5D6D7E;--prospect:#D6EAF8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  /* ── HEADER ── */
+  .header{background:linear-gradient(135deg,var(--navy) 0%,var(--blue) 100%);
+    padding:18px 28px;display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .header-left h1{font-size:1.4rem;color:#fff;font-weight:700;letter-spacing:.5px}
+  .header-left p{font-size:.8rem;color:#90CAF9;margin-top:3px}
+  .header-right{display:flex;gap:12px;align-items:center}
+  .sync-info{font-size:.75rem;color:#90CAF9;text-align:right}
+  .btn{padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600;transition:.2s}
+  .btn-refresh{background:var(--teal);color:#fff}.btn-refresh:hover{background:#155f5b}
+  .btn-sync{background:var(--amber);color:var(--navy)}.btn-sync:hover{background:#c98c22}
+
+  /* ── LAYOUT ── */
+  .main{padding:20px 24px;max-width:1600px;margin:0 auto}
+  .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px}
+  .grid-12{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin-bottom:20px}
+  .grid-21{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:20px}
+  @media(max-width:1100px){.grid-5{grid-template-columns:repeat(3,1fr)}.grid-3{grid-template-columns:1fr 1fr}.grid-2{grid-template-columns:1fr}}
+  @media(max-width:700px){.grid-5,.grid-3,.grid-2,.grid-12,.grid-21{grid-template-columns:1fr}}
+
+  /* ── CARDS ── */
+  .card{background:var(--card);border-radius:12px;padding:18px;
+    box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid var(--border)}
+  .card-title{font-size:.72rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.8px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+
+  /* ── KPI CARDS ── */
+  .kpi{border-radius:12px;padding:16px 18px;color:#fff;position:relative;overflow:hidden;
+    box-shadow:0 4px 15px rgba(0,0,0,.15)}
+  .kpi::after{content:'';position:absolute;right:-20px;top:-20px;width:90px;height:90px;
+    border-radius:50%;background:rgba(255,255,255,.08)}
+  .kpi .label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.8px;opacity:.85}
+  .kpi .value{font-size:1.45rem;font-weight:800;margin:6px 0 4px;line-height:1}
+  .kpi .sub{font-size:.72rem;opacity:.8}
+  .kpi-target{background:linear-gradient(135deg,var(--blue),#154360)}
+  .kpi-apr{background:linear-gradient(135deg,var(--green),#1a7a42)}
+  .kpi-may{background:linear-gradient(135deg,var(--teal),#125754)}
+  .kpi-q2{background:linear-gradient(135deg,#1565C0,#0D47A1)}
+  .kpi-gap{background:linear-gradient(135deg,var(--red),#922B21)}
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap{margin:6px 0}
+  .progress-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text2);margin-bottom:4px}
+  .progress-bar{height:10px;background:#E8EAF0;border-radius:8px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:8px;transition:width .8s ease}
+  .fill-green{background:linear-gradient(90deg,var(--green),#58D68D)}
+  .fill-blue{background:linear-gradient(90deg,var(--subblue),#5DADE2)}
+  .fill-amber{background:linear-gradient(90deg,var(--amber),#F4D03F)}
+  .fill-red{background:linear-gradient(90deg,var(--red),#E74C3C)}
+
+  /* ── TABLES ── */
+  table{width:100%;border-collapse:collapse;font-size:.8rem}
+  th{background:var(--navy);color:#fff;padding:8px 10px;text-align:center;font-weight:600;font-size:.72rem;letter-spacing:.3px}
+  th:first-child{text-align:left}
+  td{padding:7px 10px;border-bottom:1px solid #F0F0F0;text-align:center}
+  td:first-child{text-align:left;font-weight:500}
+  tr:nth-child(even) td{background:#F9FAFB}
+  tr.total-row td{background:var(--navy)!important;color:#fff;font-weight:700}
+  tr:hover td{background:#EBF5FB}
+  tr.total-row:hover td{background:var(--navy)!important}
+
+  /* ── BADGES ── */
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700}
+  .badge-green{background:#D5F5E3;color:#1E8449}
+  .badge-amber{background:#FEF9E7;color:#B7770D}
+  .badge-red{background:#FADBD8;color:#922B21}
+  .badge-blue{background:#D6EAF8;color:#1A5276}
+  .badge-purple{background:#E8DAEF;color:#6C3483}
+
+  /* ── SECTION HEADER ── */
+  .section-hdr{background:linear-gradient(90deg,var(--subblue),var(--teal));
+    color:#fff;padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;
+    margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+  /* ── PIPELINE HEAT ── */
+  .prob-high{color:#1E8449;font-weight:700;background:#D5F5E3;padding:2px 6px;border-radius:4px}
+  .prob-med{color:#B7770D;font-weight:700;background:#FEF9E7;padding:2px 6px;border-radius:4px}
+  .prob-low{color:#922B21;font-weight:700;background:#FADBD8;padding:2px 6px;border-radius:4px}
+
+  /* ── STATUS DOTS ── */
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .dot-green{background:var(--green)}
+  .dot-amber{background:var(--amber)}
+  .dot-red{background:var(--red)}
+  .dot-blue{background:var(--subblue)}
+  .dot-grey{background:#AAB7B8}
+
+  /* ── CHART CONTAINER ── */
+  .chart-wrap{position:relative;width:100%}
+  .chart-wrap canvas{max-height:260px}
+  .chart-wrap-tall canvas{max-height:320px}
+
+  /* ── FOOTER ── */
+  .footer{text-align:center;padding:20px;font-size:.72rem;color:var(--text2)}
+
+  /* ── LOADING ── */
+  #loading{position:fixed;inset:0;background:rgba(13,27,42,.92);display:flex;
+    align-items:center;justify-content:center;z-index:999;color:#fff;font-size:1.1rem;
+    flex-direction:column;gap:14px}
+  .spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);
+    border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── TABS ── */
+  .tabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;
+    border:1px solid var(--border);background:var(--card);color:var(--text2);transition:.15s}
+  .tab.active{background:var(--subblue);color:#fff;border-color:var(--subblue)}
+  .tab-panel{display:none}.tab-panel.active{display:block}
+
+  /* ── PROSPECT ROW ── */
+  tr.prospect-row td{background:#EBF5FB!important;color:#1A5276;font-style:italic}
+  tr.prospect-row:hover td{background:#D6EAF8!important}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><span>Loading dashboard…</span></div>
+
+<div class="header">
+  <div class="header-left">
+    <h1>🫀 Cardiotrack &nbsp;|&nbsp; Q2 FY2026 Sales Dashboard</h1>
+    <p id="subtitle">Apr – Jun 2026 &nbsp;·&nbsp; Target: ₹2,00,00,000</p>
+  </div>
+  <div class="header-right">
+    <div class="sync-info">
+      <div>Last synced: <span id="last-sync">—</span></div>
+      <div id="server-state">Mode: <span id="mode-label">checking…</span></div>
+    </div>
+    <button class="btn btn-refresh" onclick="refreshFromExcel()" title="Re-read Excel files">⟳ Refresh</button>
+    <button class="btn btn-sync" onclick="syncFromGmail()" title="Pull latest report emails from Gmail">✉ Sync Gmail</button>
+  </div>
+</div>
+
+<div class="main" id="main-content" style="display:none">
+
+  <!-- KPI CARDS -->
+  <div class="grid-5">
+    <div class="kpi kpi-target">
+      <div class="label">Q2 Target</div>
+      <div class="value" id="kpi-target">—</div>
+      <div class="sub">Apr – Jun 2026</div>
+    </div>
+    <div class="kpi kpi-apr">
+      <div class="label">April Achieved</div>
+      <div class="value" id="kpi-apr">—</div>
+      <div class="sub">✅ 100% Realized</div>
+    </div>
+    <div class="kpi kpi-may">
+      <div class="label">May (To date)</div>
+      <div class="value" id="kpi-may">—</div>
+      <div class="sub">🔄 Partial – 12 days</div>
+    </div>
+    <div class="kpi kpi-q2">
+      <div class="label">Q2 So Far</div>
+      <div class="value" id="kpi-q2">—</div>
+      <div class="sub" id="kpi-q2-pct">—% of target</div>
+    </div>
+    <div class="kpi kpi-gap">
+      <div class="label">Gap to Target</div>
+      <div class="value" id="kpi-gap">—</div>
+      <div class="sub">Remaining</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BARS -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">🎯 Q2 Revenue Progress Tracker</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+      <div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>April Revenue (Realized)</span><span id="pb-apr-val">—</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-green" id="pb-apr" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>May Revenue (Partial)</span><span id="pb-may-val">—</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-blue" id="pb-may" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Existing Baseline (Q2 Est.)</span><span>₹1,50,00,000</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-amber" style="width:75%"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Delta Pipeline (Weighted)</span><span id="pb-delta-val">—</span></div>
+          <div class="progress-bar"><div class="progress-fill fill-red" id="pb-delta" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📈 Monthly Revenue Trend (Last 15 Months)</div>
+      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📅 Q2 Month-Wise: Target vs Achieved</div>
+      <div class="chart-wrap"><canvas id="monthChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER REVENUE + PIE -->
+  <div class="grid-21">
+    <div class="card">
+      <div class="section-hdr">👥 Customer-Wise Revenue — April 2026 (Realized)</div>
+      <div style="overflow-x:auto">
+        <table id="apr-table">
+          <thead><tr>
+            <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th>
+            <th>Revenue (₹)</th><th>Avg/Order (₹)</th><th>Share %</th>
+          </tr></thead>
+          <tbody id="apr-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🥧 April Revenue Share</div>
+      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ORDER TARGETS — required incoming + closed for May & June -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="section-hdr">🎯 Order Targets — Required to hit Q2</div>
+    <p style="font-size:.72rem;color:var(--text2);margin-bottom:14px">
+      Numbers needed to clear the ₹2 Cr Q2 target.
+      Pulled from the <em>Plan</em> sheet of <code>Quarter Target.xlsx</code> and the live Gmail CSVs.
+      Auto-refreshes whenever the daily sync runs.
+    </p>
+    <div id="targets-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+      <!-- two cards (May & June) injected by renderOrderTargets() -->
+    </div>
+  </div>
+
+  <!-- ORDER PIPELINE -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="section-hdr">📦 Order Pipeline Health</div>
+
+    <!-- Month-filter tabs -->
+    <div id="orders-tabs" class="tabs" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+      <div class="tab active" data-month="Q2"        onclick="filterOrders('Q2')">All Q2</div>
+      <div class="tab"        data-month="Apr 2026"  onclick="filterOrders('Apr 2026')">April 2026</div>
+      <div class="tab"        data-month="May 2026"  onclick="filterOrders('May 2026')">May 2026</div>
+      <div class="tab"        data-month="Jun 2026"  onclick="filterOrders('Jun 2026')">June 2026</div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">
+          Incoming vs Closed Orders by Insurer — <span id="orders-period">All Q2</span>
+        </p>
+        <div class="chart-wrap"><canvas id="ordersChart"></canvas></div>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="orders-table">
+          <thead id="orders-thead"><tr>
+            <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th><th>Status</th>
+          </tr></thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Monthly trend chart — incoming + closed orders -->
+    <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
+      <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">
+        📈 Monthly trend — Incoming vs Closed Orders (last 15 months)
+      </p>
+      <div class="chart-wrap" style="height:280px"><canvas id="ordersTrendChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PIPELINE HEALTH TABS -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="section-hdr">🔥 Pipeline Health — Delta ₹50L Tracker</div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+      <div style="background:#D5F5E3;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:.68rem;color:#1E8449;font-weight:700;text-transform:uppercase">Existing Weighted</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#1E8449" id="pipe-existing">—</div>
+      </div>
+      <div style="background:#D6EAF8;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:.68rem;color:#1A5276;font-weight:700;text-transform:uppercase">Prospect Weighted</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#1A5276" id="pipe-prospect">—</div>
+      </div>
+      <div style="background:#FEF9E7;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:.68rem;color:#B7770D;font-weight:700;text-transform:uppercase">Total Pipeline</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#B7770D" id="pipe-total">—</div>
+      </div>
+      <div style="background:#FADBD8;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:.68rem;color:#922B21;font-weight:700;text-transform:uppercase">Delta Required</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#922B21">₹50,00,000</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('tab-may','tabs-pipe')">May 2026</div>
+      <div class="tab" onclick="switchTab('tab-jun','tabs-pipe')">June 2026</div>
+      <div class="tab" onclick="switchTab('tab-chart','tabs-pipe')">Chart View</div>
+    </div>
+
+    <div id="tabs-pipe">
+      <div class="tab-panel active" id="tab-may">
+        <div style="overflow-x:auto">
+          <table><thead><tr>
+            <th>Opportunity</th><th>Type</th><th>Delta (₹)</th><th>Prob %</th>
+            <th>Weighted (₹)</th><th>Key Action</th><th>Heat</th>
+          </tr></thead>
+          <tbody id="may-pipe-tbody"></tbody></table>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-jun">
+        <div style="overflow-x:auto">
+          <table><thead><tr>
+            <th>Opportunity</th><th>Type</th><th>Delta (₹)</th><th>Prob %</th>
+            <th>Weighted (₹)</th><th>Key Action</th><th>Heat</th>
+          </tr></thead>
+          <tbody id="jun-pipe-tbody"></tbody></table>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-chart">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="chart-wrap-tall"><canvas id="pipeBarChart"></canvas></div>
+          <div class="chart-wrap-tall"><canvas id="existProspChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEY ACTIONS -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="section-hdr">✅ Key Action Items — Q2 FY2026 Delta ₹50L Drive</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Initiative</th><th>Month</th><th>Potential</th><th>Owner</th><th>Deadline</th><th>Status</th>
+        </tr></thead>
+        <tbody id="actions-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="footer">
+  Cardiotrack Q2 FY2026 Sales Dashboard &nbsp;·&nbsp; Auto-refreshes every 5 minutes &nbsp;·&nbsp;
+  Data source: Gmail + Quarter Target.xlsx &nbsp;·&nbsp;
+  <span id="footer-time">—</span>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// CHART INSTANCES (kept for destroy/recreate on refresh)
+// ─────────────────────────────────────────────────────────────────
+const charts = {};
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────────
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const fmtL = n => '₹' + (n/100000).toFixed(1) + 'L';
+const pct = (a,b) => b ? Math.round(a/b*100*10)/10 : 0;
+
+function probBadge(p) {
+  const pp = Math.round(p * 100);
+  if (pp >= 80) return `<span class="prob-high">${pp}%</span>`;
+  if (pp >= 50) return `<span class="prob-med">${pp}%</span>`;
+  return `<span class="prob-low">${pp}%</span>`;
+}
+
+function convBadge(c) {
+  const pp = Math.round(c * 100);
+  if (pp >= 75) return `<span class="badge badge-green">${pp}%</span>`;
+  if (pp >= 40) return `<span class="badge badge-amber">${pp}%</span>`;
+  return `<span class="badge badge-red">${pp}%</span>`;
+}
+
+function statusBadge(s) {
+  const map = {
+    'Confirmed':'green','On Track':'green','Realized':'green',
+    'In Progress':'blue','Monitor':'blue','Dependent':'blue',
+    'Pending':'amber','Negotiation':'amber','In Discussion':'amber',
+    'Blocked':'red','Not Started':'red','Early Stage':'red','Low Prob':'red',
+  };
+  const cls = map[s] || 'amber';
+  return `<span class="badge badge-${cls}">${s}</span>`;
+}
+
+function heatBadge(type, prob) {
+  if (prob >= 0.9) return '<span class="badge badge-green">🟢 High</span>';
+  if (prob === 1.0) return '<span class="badge badge-green">✅ Confirmed</span>';
+  if (prob >= 0.6) return '<span class="badge badge-amber">🟡 Medium</span>';
+  if (type === 'Prospect' && prob < 0.3) return '<span class="badge badge-red">🔴 Low</span>';
+  return '<span class="badge badge-red">🔴 Action Needed</span>';
+}
+
+function shortName(n) {
+  return n.replace(' Life Insurance','').replace(' Sun Life Insurance','')
+          .replace(' Insurance Company','').replace(' Life','')
+          .replace(' Daichi','').replace(' Federal','');
+}
+
+function switchTab(id, groupId) {
+  document.querySelectorAll(`#${groupId} .tab-panel`).forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tabs = document.querySelectorAll(`.tabs .tab`);
+  tabs.forEach((t,i) => {
+    const panels = document.querySelectorAll(`#${groupId} .tab-panel`);
+    if (panels[i]) t.classList.toggle('active', panels[i].id === id);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// RENDER FUNCTIONS
+// ─────────────────────────────────────────────────────────────────
+function renderKPIs(d) {
+  const k = d.kpis;
+  document.getElementById('kpi-target').textContent = fmtL(k.q2_target);
+  document.getElementById('kpi-apr').textContent    = fmtL(k.apr_revenue);
+  document.getElementById('kpi-may').textContent    = fmtL(k.may_revenue);
+  document.getElementById('kpi-q2').textContent     = fmtL(k.q2_achieved);
+  document.getElementById('kpi-q2-pct').textContent = k.achievement_pct + '% of target';
+  document.getElementById('kpi-gap').textContent    = fmtL(k.gap);
+
+  // Progress bars
+  const q2t = k.q2_target;
+  document.getElementById('pb-apr').style.width     = pct(k.apr_revenue, q2t) + '%';
+  document.getElementById('pb-apr-val').textContent = fmtL(k.apr_revenue);
+  document.getElementById('pb-may').style.width     = pct(k.may_revenue, q2t) + '%';
+  document.getElementById('pb-may-val').textContent = fmtL(k.may_revenue);
+  document.getElementById('pb-delta').style.width   = pct(k.delta_weighted, q2t) + '%';
+  document.getElementById('pb-delta-val').textContent = fmtL(k.delta_weighted);
+}
+
+function renderTrendChart(d) {
+  destroyChart('trend');
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  charts['trend'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: d.monthly_trend.labels.map(shortName),
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: d.monthly_trend.values,
+        borderColor: '#2E86C1',
+        backgroundColor: 'rgba(46,134,193,.12)',
+        fill: true,
+        tension: .4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        borderWidth: 2.5,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend:{ display:false }, tooltip:{
+        callbacks:{ label: ctx => '  ' + fmt(ctx.raw) }
+      }},
+      scales: {
+        y:{ ticks:{ callback: v => fmtL(v) }, grid:{ color:'#EEF2F5' }},
+        x:{ ticks:{ font:{size:10}, maxRotation:45 }, grid:{ display:false }},
+      }
+    }
+  });
+}
+
+function renderMonthChart(d) {
+  destroyChart('month');
+  const ctx = document.getElementById('monthChart').getContext('2d');
+  charts['month'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: d.month_wise.map(r => r.month.replace(' 2026','')),
+      datasets: [
+        { label:'Target', data: d.month_wise.map(r=>r.target),
+          backgroundColor:'rgba(27,79,114,.25)', borderColor:'#1B4F72', borderWidth:2 },
+        { label:'Achieved', data: d.month_wise.map(r=>r.achieved),
+          backgroundColor: d.month_wise.map(r =>
+            r.pct>=75?'rgba(39,174,96,.8)':r.pct>=40?'rgba(232,168,56,.8)':'rgba(192,57,43,.8)'),
+          borderRadius: 4 }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ tooltip:{callbacks:{label:c=>'  '+fmt(c.raw)}} },
+      scales:{
+        y:{ticks:{callback:v=>fmtL(v)},grid:{color:'#EEF2F5'}},
+        x:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderAprTable(d) {
+  const tbody = document.getElementById('apr-tbody');
+  const total = d.kpis.apr_revenue || 1;
+  let rows = '';
+  d.apr_customers.forEach(c => {
+    const share = (c.revenue / total * 100).toFixed(1);
+    rows += `<tr>
+      <td>${c.insurer}</td>
+      <td>${c.incoming.toLocaleString()}</td>
+      <td>${c.closed_cases.toLocaleString()}</td>
+      <td>${convBadge(c.conversion)}</td>
+      <td style="font-weight:600">${fmt(c.revenue)}</td>
+      <td>${Math.round(c.avg_order).toLocaleString()}</td>
+      <td><span class="badge badge-blue">${share}%</span></td>
+    </tr>`;
+  });
+  rows += `<tr class="total-row">
+    <td>TOTAL</td><td>—</td><td>${d.apr_customers.reduce((s,c)=>s+c.closed_cases,0).toLocaleString()}</td>
+    <td>—</td><td>${fmt(total)}</td><td>—</td><td>100%</td>
+  </tr>`;
+  tbody.innerHTML = rows;
+}
+
+function renderPieChart(d) {
+  destroyChart('pie');
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  const colors = ['#2E86C1','#27AE60','#E8A838','#C0392B','#8E44AD','#1B7F79','#1A5276'];
+  charts['pie'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: d.apr_customers.map(c=>shortName(c.insurer)),
+      datasets:[{
+        data: d.apr_customers.map(c=>c.revenue),
+        backgroundColor: colors,
+        borderWidth: 2, borderColor:'#fff'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'right', labels:{font:{size:10},padding:8}},
+        tooltip:{callbacks:{label:c=>` ${fmt(c.raw)} (${(c.raw/d.kpis.apr_revenue*100).toFixed(1)}%)`}}
+      }
+    }
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ORDER TARGETS — required incoming + closed for May & June
+// ─────────────────────────────────────────────────────────────────
+// Values come from `d.monthly_targets` (parsed from the Plan sheet) and
+// `d.orders_monthly` (live Gmail CSV totals). The card auto-rerenders on
+// every loadData() — which fires on Refresh, Sync, and initial paint —
+// so the gap badge stays current.
+function renderOrderTargets(d) {
+  const grid = document.getElementById('targets-grid');
+  if (!grid) return;
+  const targets = d.monthly_targets || {};
+  const PLAN_MONTHS = [
+    {key:'May 2026', label:'May 2026', accent:'#1B7F79'},
+    {key:'Jun 2026', label:'June 2026', accent:'#6C3483'},
+  ];
+
+  grid.innerHTML = PLAN_MONTHS.map(m => {
+    const t = targets[m.key] || {incoming_required:0, closed_required:0};
+    const actual = d.orders_monthly?.[m.key] || {};
+    const incActual = sumValues(actual.incoming || {});
+    const clActual  = sumValues(actual.closed   || {});
+    const incReq = t.incoming_required || 0;
+    const clReq  = t.closed_required   || 0;
+    const incGap = Math.max(incReq - incActual, 0);
+    const clGap  = Math.max(clReq  - clActual,  0);
+    const incPct = incReq ? Math.min(Math.round(incActual / incReq * 100), 100) : 0;
+    const clPct  = clReq  ? Math.min(Math.round(clActual  / clReq  * 100), 100) : 0;
+
+    return `
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:linear-gradient(135deg,#fff 0%,#F8FAFC 100%)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+          <div style="font-weight:700;color:${m.accent};font-size:.95rem">${m.label}</div>
+          <div style="font-size:.7rem;color:var(--text2)">required to hit Q2</div>
+        </div>
+        ${targetMetric('Incoming orders', incReq, incActual, incGap, incPct, m.accent)}
+        ${targetMetric('Closed orders',   clReq,  clActual,  clGap,  clPct,  m.accent)}
+      </div>`;
+  }).join('');
+}
+
+function targetMetric(label, required, actual, gap, pct, accent) {
+  const status = gap === 0
+    ? `<span class="badge badge-green">On track</span>`
+    : `<span style="font-size:.7rem;color:#C0392B;font-weight:600">${gap.toLocaleString()} more needed</span>`;
+  return `
+    <div style="margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+        <div style="font-size:.78rem;color:var(--text);font-weight:600">${label}</div>
+        ${status}
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <div style="font-size:1.35rem;font-weight:800;color:${accent}">${required.toLocaleString()}</div>
+        <div style="font-size:.72rem;color:var(--text2)">required &nbsp;·&nbsp; ${actual.toLocaleString()} so far &nbsp;·&nbsp; ${pct}%</div>
+      </div>
+      <div style="background:#EEF2F5;height:6px;border-radius:3px;overflow:hidden">
+        <div style="background:${accent};height:100%;width:${pct}%;transition:width .4s ease"></div>
+      </div>
+    </div>`;
+}
+
+function sumValues(obj) {
+  return Object.values(obj || {}).reduce((s,v) => s + (Number(v)||0), 0);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ORDER PIPELINE — month-aware rendering
+// ─────────────────────────────────────────────────────────────────
+// `ordersFilter` is the currently selected tab: 'Q2' (all of Apr+May+Jun),
+// or a specific month label like 'Apr 2026'. The chart + table + period
+// label re-render whenever it changes.
+let ordersFilter = 'Q2';
+let ordersData   = null;   // most recent JSON, captured by renderOrders()
+
+function _ordersForMonth(d, month) {
+  // Returns {incoming:{insurer:n}, closed:{insurer:n}} for the chosen window.
+  if (month === 'Q2') {
+    return {
+      incoming: d.q2_orders?.incoming_by_insurer || {},
+      closed:   d.q2_orders?.closed_by_insurer   || {},
+    };
+  }
+  const m = (d.orders_monthly || {})[month];
+  return {
+    incoming: m?.incoming || {},
+    closed:   m?.closed   || {},
+  };
+}
+
+function filterOrders(month) {
+  ordersFilter = month;
+  // Toggle active tab
+  document.querySelectorAll('#orders-tabs .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.month === month);
+  });
+  // Update the period label next to the chart
+  const labelEl = document.getElementById('orders-period');
+  if (labelEl) labelEl.textContent = (month === 'Q2') ? 'All Q2' : month;
+  // Re-render chart + table with the new window
+  if (ordersData) {
+    renderOrdersChart(ordersData);
+    renderOrdersTable(ordersData);
+  }
+}
+
+function renderOrdersChart(d) {
+  ordersData = d;
+  destroyChart('orders');
+  const ctx = document.getElementById('ordersChart').getContext('2d');
+  const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
+
+  const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
+  const targetMap   = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+
+  // Build label set as the union of insurers when targets exist (so insurers
+  // with non-zero required and zero actual still appear on the chart).
+  const insurerSet = new Set([
+    ...Object.keys(inc),
+    ...Object.keys(cl),
+    ...(showTargets ? Object.keys(targetMap) : []),
+  ]);
+  const labels = Array.from(insurerSet)
+    .filter(k => !k.includes('Test') && !k.includes('Cardiotrack'))
+    .sort((a,b) => {
+      if (showTargets) {
+        const ar = targetMap[a]?.incoming_required || 0;
+        const br = targetMap[b]?.incoming_required || 0;
+        if (ar !== br) return br - ar;
+      }
+      return (inc[b]||0) - (inc[a]||0);
+    })
+    .slice(0, 8);
+
+  const datasets = [
+    {label:'Incoming (actual)', data:labels.map(l=>inc[l]||0), backgroundColor:'rgba(46,134,193,.85)', borderRadius:3, order:2},
+    {label:'Closed (actual)',   data:labels.map(l=>cl[l]||0),  backgroundColor:'rgba(39,174,96,.85)',  borderRadius:3, order:2},
+  ];
+
+  if (showTargets) {
+    // Overlay required values as lines so the actual-vs-required gap is obvious.
+    datasets.push({
+      label: 'Incoming required',
+      data: labels.map(l => targetMap[l]?.incoming_required || 0),
+      type: 'line',
+      borderColor: '#1B4F72',
+      backgroundColor: 'rgba(27,79,114,.15)',
+      borderWidth: 2.2,
+      borderDash: [5,4],
+      pointRadius: 3.5,
+      pointBackgroundColor: '#1B4F72',
+      tension: 0.2,
+      order: 1,
+    });
+    datasets.push({
+      label: 'Closed required',
+      data: labels.map(l => targetMap[l]?.closed_required || 0),
+      type: 'line',
+      borderColor: '#1E8449',
+      backgroundColor: 'rgba(30,132,73,.15)',
+      borderWidth: 2.2,
+      borderDash: [3,3],
+      pointRadius: 3.5,
+      pointBackgroundColor: '#1E8449',
+      tension: 0.2,
+      order: 1,
+    });
+  }
+
+  charts['orders'] = new Chart(ctx,{
+    type:'bar',
+    data:{ labels: labels.map(shortName), datasets },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}},
+        tooltip:{callbacks:{label:c=>`  ${c.dataset.label}: ${c.raw.toLocaleString()}`}}
+      },
+      scales:{y:{grid:{color:'#EEF2F5'},beginAtZero:true},x:{ticks:{font:{size:9},maxRotation:30},grid:{display:false}}}
+    }
+  });
+}
+
+function renderOrdersTable(d) {
+  const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
+  const tbody = document.getElementById('orders-tbody');
+  const thead = document.getElementById('orders-thead');
+
+  // Targets exist only for May/June and only when one of those tabs is active.
+  // For All Q2 / April we stick with the simpler 5-column actuals view.
+  const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
+  const targetMap   = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+
+  // Build the union of insurers from BOTH the actuals AND the targets — so an
+  // insurer with a June target but 0 actuals (e.g. nothing billed yet) still
+  // shows up in the table with its required numbers.
+  const insurerSet = new Set([
+    ...Object.keys(inc),
+    ...Object.keys(cl),
+    ...(showTargets ? Object.keys(targetMap) : []),
+  ]);
+  const insurers = Array.from(insurerSet)
+    .filter(k => !k.includes('Test') && !k.includes('Cardiotrack'))
+    .sort((a,b) => {
+      // Sort by what's most relevant for the chosen view
+      if (showTargets) {
+        const ar = targetMap[a]?.incoming_required || 0;
+        const br = targetMap[b]?.incoming_required || 0;
+        if (ar !== br) return br - ar;
+      }
+      return (inc[b]||0) - (inc[a]||0);
+    })
+    .slice(0, 10);
+
+  // Swap headers depending on mode
+  if (showTargets) {
+    thead.innerHTML = `<tr>
+      <th>Insurer</th>
+      <th title="Actual / Required incoming orders">Incoming<br><span style="font-weight:400;color:var(--text2);font-size:.65rem">actual / required</span></th>
+      <th title="Actual / Required closed orders">Closed<br><span style="font-weight:400;color:var(--text2);font-size:.65rem">actual / required</span></th>
+      <th>Gap</th>
+      <th>Status</th>
+    </tr>`;
+  } else {
+    thead.innerHTML = `<tr>
+      <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th><th>Status</th>
+    </tr>`;
+  }
+
+  let rows = '';
+  insurers.forEach(ins => {
+    const i = inc[ins] || 0;
+    const c = cl[ins]  || 0;
+    const conv = i ? c / i : 0;
+
+    if (showTargets) {
+      const t = targetMap[ins] || {incoming_required:0, closed_required:0};
+      const reqInc = t.incoming_required || 0;
+      const reqCl  = t.closed_required   || 0;
+      const incGap = Math.max(reqInc - i, 0);
+      const clGap  = Math.max(reqCl  - c, 0);
+      const incPct = reqInc ? Math.min(Math.round(i / reqInc * 100), 999) : null;
+      const clPct  = reqCl  ? Math.min(Math.round(c / reqCl  * 100), 999) : null;
+      const gapTotal = incGap + clGap;
+      const status = ins.includes('Canara')
+        ? '<span class="badge badge-red">🔴 Blocked</span>'
+        : (gapTotal === 0)
+          ? '<span class="badge badge-green">On track</span>'
+          : (reqInc && incPct >= 60 && reqCl && clPct >= 60)
+            ? '<span class="badge badge-amber">Catching up</span>'
+            : '<span class="badge badge-red">At Risk</span>';
+
+      rows += `<tr>
+        <td>${shortName(ins)}</td>
+        <td>
+          <div style="font-weight:600">${i.toLocaleString()} / <span style="color:#1B4F72">${reqInc.toLocaleString()}</span></div>
+          ${reqInc ? `<div style="font-size:.68rem;color:${incPct>=80?'#27AE60':incPct>=40?'#E8A838':'#C0392B'}">${incPct}%</div>` : ''}
+        </td>
+        <td>
+          <div style="font-weight:600">${c.toLocaleString()} / <span style="color:#1B4F72">${reqCl.toLocaleString()}</span></div>
+          ${reqCl ? `<div style="font-size:.68rem;color:${clPct>=80?'#27AE60':clPct>=40?'#E8A838':'#C0392B'}">${clPct}%</div>` : ''}
+        </td>
+        <td>
+          ${incGap > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${incGap.toLocaleString()} in</div>` : ''}
+          ${clGap  > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${clGap.toLocaleString()} cl</div>`  : ''}
+          ${gapTotal === 0 ? '<span style="color:#27AE60;font-size:.72rem">✓</span>' : ''}
+        </td>
+        <td>${status}</td>
+      </tr>`;
+    } else {
+      const status = ins.includes('Canara')
+        ? '<span class="badge badge-red">🔴 Blocked</span>'
+        : conv >= 0.75 ? '<span class="badge badge-green">Strong</span>'
+        : conv >= 0.4  ? '<span class="badge badge-amber">Monitor</span>'
+        : '<span class="badge badge-red">At Risk</span>';
+      rows += `<tr><td>${shortName(ins)}</td><td>${i.toLocaleString()}</td><td>${c.toLocaleString()}</td><td>${convBadge(conv)}</td><td>${status}</td></tr>`;
+    }
+  });
+
+  tbody.innerHTML = rows || `<tr><td colspan="${showTargets?5:5}" style="text-align:center;color:var(--text2);padding:18px">No data for this period</td></tr>`;
+}
+
+function renderOrdersTrendChart(d) {
+  destroyChart('ordersTrend');
+  const ctx = document.getElementById('ordersTrendChart')?.getContext('2d');
+  if (!ctx) return;
+  const series = d.orders_monthly_totals || [];
+  if (!series.length) return;
+  charts['ordersTrend'] = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels: series.map(r=>r.month),
+      datasets:[
+        {label:'Incoming', data:series.map(r=>r.incoming), backgroundColor:'rgba(46,134,193,.78)', borderRadius:3, order:2},
+        {label:'Closed',   data:series.map(r=>r.closed),   backgroundColor:'rgba(39,174,96,.78)',  borderRadius:3, order:2},
+        {label:'Conversion %', data:series.map(r=>r.incoming?Math.round(r.closed/r.incoming*100):0),
+         type:'line', borderColor:'#E8A838', backgroundColor:'rgba(232,168,56,.15)',
+         tension:0.3, borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#E8A838',
+         yAxisID:'y1', order:1},
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{
+          if (c.dataset.label === 'Conversion %') return `  Conversion: ${c.raw}%`;
+          return `  ${c.dataset.label}: ${c.raw.toLocaleString()}`;
+        }}}
+      },
+      scales:{
+        x:{ticks:{font:{size:10},maxRotation:35},grid:{display:false}},
+        y:{title:{display:true,text:'Order count',font:{size:10}},grid:{color:'#EEF2F5'},beginAtZero:true},
+        y1:{position:'right',title:{display:true,text:'Conversion %',font:{size:10}},grid:{display:false},beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+function renderPipeline(d) {
+  const pipeline = d.pipeline || [];
+  // Prefer the explicit p.month field (set by the parser); fall back to name
+  // parsing when older JSON is loaded. Q2-wide rows (no month) are shown in
+  // the June tab so they don't go invisible.
+  const monthOf = p => p.month || (p.name?.includes('May') ? 'May'
+                                : p.name?.includes('June') ? 'June' : 'Q2');
+  const mayPipe = pipeline.filter(p => monthOf(p) === 'May');
+  const junPipe = pipeline.filter(p => monthOf(p) === 'June' || monthOf(p) === 'Q2');
+  const mayTotal = mayPipe.reduce((s,p)=>s+p.weighted,0);
+  const junTotal = junPipe.reduce((s,p)=>s+p.weighted,0);
+
+  document.getElementById('pipe-existing').textContent = fmtL(d.pipeline_by_type?.existing_weighted||0);
+  document.getElementById('pipe-prospect').textContent = fmtL(d.pipeline_by_type?.prospect_weighted||0);
+  document.getElementById('pipe-total').textContent    = fmtL((d.pipeline_by_type?.existing_weighted||0)+(d.pipeline_by_type?.prospect_weighted||0));
+
+  function pipeRows(pipe) {
+    return pipe.map(p=>{
+      const isProspect = p.type?.includes('Prospect');
+      const rowClass = isProspect ? 'class="prospect-row"' : '';
+      const m = monthOf(p);
+      const cleanName = (p.name||'').replace(' - May','').replace(' - June','');
+      const q2Tag = (m === 'Q2') ? ' <span class="badge badge-amber" style="font-size:.65rem">Q2-wide</span>' : '';
+      return `<tr ${rowClass}>
+        <td>${cleanName}${q2Tag}</td>
+        <td><span class="badge ${isProspect?'badge-blue':'badge-green'}">${isProspect?'Prospect':'Existing'}</span></td>
+        <td style="font-weight:600">${fmt(p.delta)}</td>
+        <td>${probBadge(p.probability)}</td>
+        <td style="font-weight:700;color:#1B4F72">${fmt(p.weighted)}</td>
+        <td style="font-size:.75rem;color:var(--text2)">${p.key_action||'—'}</td>
+        <td>${heatBadge(p.type,p.probability)}</td>
+      </tr>`;
+    }).join('') +
+    `<tr class="total-row"><td>TOTAL</td><td>—</td><td>—</td><td>—</td>
+     <td>${fmt(pipe.reduce((s,p)=>s+p.weighted,0))}</td><td>—</td><td>—</td></tr>`;
+  }
+
+  document.getElementById('may-pipe-tbody').innerHTML = pipeRows(mayPipe);
+  document.getElementById('jun-pipe-tbody').innerHTML = pipeRows(junPipe);
+
+  // Pipeline bar chart
+  destroyChart('pipeBar');
+  const ctxB = document.getElementById('pipeBarChart').getContext('2d');
+  const top8 = [...pipeline].sort((a,b)=>b.weighted-a.weighted).slice(0,8);
+  charts['pipeBar'] = new Chart(ctxB,{
+    type:'bar',
+    data:{
+      labels: top8.map(p=>{
+        const m = monthOf(p);
+        const base = (p.name||'').replace(' Life Insurance','').replace(' Sun Life Insurance','').replace(' - May','').replace(' - June','');
+        const tag = m === 'May' ? '(M)' : m === 'June' ? '(J)' : '(Q2)';
+        return base + ' ' + tag;
+      }),
+      datasets:[{
+        label:'Weighted Revenue (₹)',
+        data: top8.map(p=>p.weighted),
+        backgroundColor: top8.map(p=>p.type?.includes('Prospect')?'rgba(27,82,172,.7)':'rgba(39,174,96,.7)'),
+        borderRadius:4
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)}}},
+      scales:{x:{ticks:{callback:v=>fmtL(v)},grid:{color:'#EEF2F5'}},y:{ticks:{font:{size:9}},grid:{display:false}}}
+    }
+  });
+
+  // Existing vs Prospect donut
+  destroyChart('existProsp');
+  const ctxP = document.getElementById('existProspChart').getContext('2d');
+  charts['existProsp'] = new Chart(ctxP,{
+    type:'doughnut',
+    data:{
+      labels:['Existing Customers','Prospects'],
+      datasets:[{
+        data:[d.pipeline_by_type?.existing_weighted||0, d.pipeline_by_type?.prospect_weighted||0],
+        backgroundColor:['rgba(39,174,96,.8)','rgba(46,134,193,.8)'],
+        borderWidth:3, borderColor:'#fff'
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom'},
+        title:{display:true,text:'Existing vs Prospect Pipeline Split',font:{size:11}},
+        tooltip:{callbacks:{label:c=>' '+fmt(c.raw)+' ('+Math.round(c.raw/((d.pipeline_by_type?.existing_weighted||0)+(d.pipeline_by_type?.prospect_weighted||1))*100)+'%)'}}
+      }
+    }
+  });
+}
+
+function renderActions(d) {
+  const actions = d.key_actions || [];
+  const tbody = document.getElementById('actions-tbody');
+  tbody.innerHTML = actions.map(a=>`<tr>
+    <td style="font-weight:500">${a.initiative}</td>
+    <td><span class="badge ${a.month==='May'?'badge-amber':'badge-purple'}">${a.month}</span></td>
+    <td style="font-weight:600;color:var(--blue)">${a.potential}</td>
+    <td>${a.owner||'—'}</td>
+    <td style="font-size:.75rem">${a.deadline}</td>
+    <td>${statusBadge(a.status)}</td>
+  </tr>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────
+// MAIN LOAD
+// ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    // Try to fetch external JSON; fall back to embedded data
+    let data;
+    try {
+      const resp = await fetch('dashboard_data.json?t=' + Date.now());
+      data = await resp.json();
+    } catch(e) {
+      data = window.__EMBEDDED_DATA__;
+    }
+    if (!data) throw new Error('No data available');
+
+    renderKPIs(data);
+    renderTrendChart(data);
+    renderMonthChart(data);
+    renderAprTable(data);
+    renderPieChart(data);
+    renderOrderTargets(data);
+    renderOrdersChart(data);
+    renderOrdersTable(data);
+    renderOrdersTrendChart(data);
+    renderPipeline(data);
+    renderActions(data);
+
+    const ts = new Date(data.meta?.generated_at || Date.now());
+    document.getElementById('last-sync').textContent = ts.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+    document.getElementById('footer-time').textContent = 'Generated: ' + ts.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+    document.getElementById('subtitle').textContent =
+      `Apr – Jun 2026  ·  Target: ₹2,00,00,000  ·  As of: ${data.meta?.as_of||''}`;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+
+  } catch(err) {
+    console.error(err);
+    document.getElementById('loading').innerHTML =
+      `<div style="color:#ff6b6b;text-align:center">
+        <div style="font-size:2rem">⚠️</div>
+        <div>Failed to load data</div>
+        <div style="font-size:.8rem;margin-top:8px">${err.message}</div>
+        <button class="btn btn-refresh" onclick="loadData()" style="margin-top:12px">Retry</button>
+      </div>`;
+  }
+}
+
+// Embed the data directly so the file works offline too (opened without server)
+window.__EMBEDDED_DATA__ = __DASHBOARD_DATA__;
+
+// ─────────────────────────────────────────────────────────────────
+// SERVER DETECTION + REFRESH BUTTONS
+// ─────────────────────────────────────────────────────────────────
+// When opened via http://localhost:5173 (Flask), the /api/status endpoint
+// answers and we use /api/refresh + /api/sync for the buttons. When the file
+// is opened directly (file://…), we fall back to re-loading embedded data
+// and the Sync button is disabled.
+let SERVER_AVAILABLE = false;
+
+async function detectServer() {
+  // Two ways to end up "offline": (a) the page was opened directly via file://
+  // or (b) opened via http but no Flask server answers /api/status. Either way
+  // pressing Refresh can't actually re-read Excel — and we MUST tell the user.
+  if (location.protocol === 'file:') {
+    SERVER_AVAILABLE = false;
+    document.getElementById('mode-label').innerHTML = '<span style="color:#E8A838">📁 static snapshot (file://)</span>';
+    markRefreshOffline();
+    return;
+  }
+  try {
+    const r = await fetch('/api/status', {cache:'no-store'});
+    if (r.ok) {
+      SERVER_AVAILABLE = true;
+      document.getElementById('mode-label').innerHTML = '<span style="color:#27AE60">● live (server)</span>';
+      return;
+    }
+  } catch(_){}
+  document.getElementById('mode-label').innerHTML = '<span style="color:#E8A838">📁 static snapshot (no server)</span>';
+  markRefreshOffline();
+}
+
+function markRefreshOffline() {
+  // Make BOTH action buttons visually muted so the user understands they
+  // won't re-read live data.
+  const r = document.querySelector('.btn-refresh');
+  const s = document.querySelector('.btn-sync');
+  if (s) { s.disabled = true; s.style.opacity = 0.4; s.title = 'Start Automation/server.py to enable Gmail sync'; }
+  if (r) { r.title = 'Click for instructions on refreshing static-snapshot mode'; }
+}
+
+async function refreshFromExcel() {
+  if (!SERVER_AVAILABLE) {
+    // We CANNOT re-read Excel from pure browser JS (no filesystem access).
+    // Be explicit about it rather than silently re-rendering embedded data.
+    showOfflineRefreshDialog();
+    return;
+  }
+  setButtonsBusy(true, '⟳ Re-reading Excel…');
+  try {
+    const r = await fetch('/api/refresh', {method:'POST'});
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'refresh failed');
+    await loadData();
+  } catch(e) {
+    alert('Refresh failed: ' + e.message);
+  } finally {
+    setButtonsBusy(false);
+  }
+}
+
+function showOfflineRefreshDialog() {
+  const cmd = "python3 'Automation/cardiotrack_sync.py' --rebuild";
+  const serverCmd = "python3 'Automation/server.py'";
+  const html = `
+    <div id="offlineModal" style="position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;max-width:560px;padding:26px 28px;box-shadow:0 10px 50px rgba(0,0,0,.4);font-family:inherit">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="font-size:1.6rem">📁</div>
+          <h2 style="font-size:1.1rem;color:#0D1B2A;margin:0">This dashboard is a static snapshot</h2>
+        </div>
+        <p style="color:#5D6D7E;font-size:.88rem;line-height:1.55;margin-bottom:14px">
+          You're viewing the HTML file directly (<code style="background:#F0F4F8;padding:1px 5px;border-radius:3px">file://</code>),
+          so the browser can't re-read your Excel files. To see the latest data, do one of:
+        </p>
+        <div style="background:#F0F4F8;border-radius:8px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:.75rem;font-weight:700;color:#1B4F72;text-transform:uppercase;margin-bottom:6px">Option 1 — One-time rebuild</div>
+          <code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.78rem;user-select:all">${cmd}</code>
+          <div style="font-size:.72rem;color:#5D6D7E;margin-top:6px">Then refresh this browser tab (⌘R).</div>
+        </div>
+        <div style="background:#F0F4F8;border-radius:8px;padding:12px 14px;margin-bottom:16px">
+          <div style="font-size:.75rem;font-weight:700;color:#1B4F72;text-transform:uppercase;margin-bottom:6px">Option 2 — Run the live server (recommended)</div>
+          <code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.78rem;user-select:all">${serverCmd}</code>
+          <div style="font-size:.72rem;color:#5D6D7E;margin-top:6px">Then open <strong>http://localhost:5173</strong> — the Refresh button there will re-read Excel on-demand.</div>
+        </div>
+        <div style="font-size:.78rem;color:#5D6D7E;margin-bottom:14px">
+          <strong>Snapshot built:</strong> <span id="snapshotBuiltAt">—</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button onclick="document.getElementById('offlineModal').remove()" style="padding:8px 16px;background:#1B7F79;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Got it</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  const ts = window.__EMBEDDED_DATA__?.meta?.generated_at;
+  if (ts) {
+    document.getElementById('snapshotBuiltAt').textContent =
+      new Date(ts).toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
+  }
+}
+
+async function syncFromGmail() {
+  if (!SERVER_AVAILABLE) { showOfflineRefreshDialog(); return; }
+  if (!confirm('Pull the latest 3 report emails from Gmail and rebuild?')) return;
+  setButtonsBusy(true, '✉ Syncing from Gmail…');
+  try {
+    const r = await fetch('/api/sync', {method:'POST'});
+    const j = await r.json();
+    if (!j.ok) {
+      showGmailErrorDialog(j.error || 'Gmail sync failed', null);
+      return;
+    }
+    await loadData();
+    // Show a transient summary of what actually happened.
+    showGmailSyncResult(j.gmail || {});
+  } catch(e) {
+    showGmailErrorDialog(e.message, null);
+  } finally {
+    setButtonsBusy(false);
+  }
+}
+
+function showGmailSyncResult(g) {
+  const dl = (g.downloaded || []).length;
+  const un = (g.unchanged  || []).length;
+  const mi = (g.missing    || []).length;
+  const lines = [];
+  if (dl) lines.push(`✓ Downloaded: ${(g.downloaded||[]).join(', ')}`);
+  if (un) lines.push(`= Unchanged (same content): ${(g.unchanged||[]).join(', ')}`);
+  if (mi) lines.push(`✗ Missing in inbox: ${(g.missing||[]).join(', ')}`);
+  if (!lines.length) lines.push('No reports processed.');
+  showToast(`Gmail sync complete\n${lines.join('\n')}`,
+            mi > 0 ? 'warning' : 'success');
+}
+
+function showGmailErrorDialog(msg, hint) {
+  const escMsg  = String(msg).replace(/</g,'&lt;');
+  const escHint = hint ? `<div style="font-size:.78rem;color:#5D6D7E;margin-top:8px">${hint}</div>` : '';
+  const html = `
+    <div id="gmailErrModal" style="position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;max-width:540px;padding:24px 26px;box-shadow:0 10px 50px rgba(0,0,0,.4);font-family:inherit">
+        <h2 style="font-size:1.05rem;color:#C0392B;margin-bottom:10px">⚠️ Gmail sync failed</h2>
+        <div style="background:#FDEDEC;border-left:3px solid #C0392B;padding:10px 12px;border-radius:5px;font-size:.85rem;color:#641E16;white-space:pre-wrap">${escMsg}</div>
+        ${escHint}
+        <div style="font-size:.78rem;color:#5D6D7E;margin-top:12px">Full diagnostics in <code style="background:#F0F4F8;padding:1px 5px;border-radius:3px">Automation/sync.log</code>.</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button onclick="document.getElementById('gmailErrModal').remove()" style="padding:8px 16px;background:#1B4F72;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Close</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showToast(message, type='info') {
+  const colors = {
+    success: ['#27AE60','#fff'],
+    warning: ['#E8A838','#0D1B2A'],
+    info:    ['#1B4F72','#fff'],
+    error:   ['#C0392B','#fff'],
+  };
+  const [bg, fg] = colors[type] || colors.info;
+  const id = 't_' + Date.now();
+  const html = `
+    <div id="${id}" style="position:fixed;bottom:24px;right:24px;background:${bg};color:${fg};
+         padding:12px 18px;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.25);
+         z-index:9999;font-size:.85rem;white-space:pre-line;max-width:420px;
+         animation:slideUp .25s ease">${String(message).replace(/</g,'&lt;')}</div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  setTimeout(() => document.getElementById(id)?.remove(), 6000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// GMAIL CONFIG STATUS BANNER
+// ─────────────────────────────────────────────────────────────────
+async function checkGmailAuthStatus() {
+  if (!SERVER_AVAILABLE) return;
+  try {
+    const r = await fetch('/api/auth_status', {cache:'no-store'});
+    if (!r.ok) return;
+    const s = await r.json();
+    if (s.configured) return;       // all good, no banner needed
+    showGmailConfigBanner(s.hint || 'Gmail OAuth not configured. The Sync button will fail.');
+  } catch(_){}
+}
+
+function showGmailConfigBanner(hint) {
+  if (document.getElementById('gmailConfigBanner')) return;     // already shown
+  const banner = `
+    <div id="gmailConfigBanner" style="background:linear-gradient(90deg,#C0392B,#8E2C20);color:#fff;
+         padding:9px 18px;font-size:.82rem;font-weight:500;display:flex;align-items:center;gap:12px;justify-content:center">
+      <span style="font-size:1rem">⚠️</span>
+      <span><strong>Gmail not configured</strong> — sync will fail until you add credentials.json.
+        Reports in <code style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:3px">Data/Input/</code> are stale.</span>
+      <button onclick="showGmailSetupDialog()" style="margin-left:8px;background:#fff;color:#C0392B;border:none;padding:5px 12px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">How to fix</button>
+    </div>`;
+  document.body.insertAdjacentHTML('afterbegin', banner);
+}
+
+function showGmailSetupDialog() {
+  const html = `
+    <div id="gmailSetupModal" style="position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;max-width:620px;padding:26px 28px;box-shadow:0 10px 50px rgba(0,0,0,.4);font-family:inherit;max-height:85vh;overflow-y:auto">
+        <h2 style="font-size:1.1rem;color:#0D1B2A;margin-bottom:14px">🔑 Set up Gmail OAuth</h2>
+        <ol style="font-size:.85rem;color:var(--text);line-height:1.7;margin-left:18px">
+          <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#1B4F72">Google Cloud Console → Credentials</a>.</li>
+          <li>Click <strong>Create Credentials → OAuth client ID → Desktop app</strong>.</li>
+          <li>Enable the <strong>Gmail API</strong> for the project (APIs & Services → Library → search "Gmail").</li>
+          <li>Download the OAuth client JSON.</li>
+          <li>Save it as:<br><code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.75rem;user-select:all;margin-top:6px">Automation/credentials.json</code></li>
+          <li>Click <strong>✉ Sync Gmail</strong> again — a browser tab will open for OAuth consent.</li>
+        </ol>
+        <div style="font-size:.78rem;color:#5D6D7E;margin-top:14px;background:#F0F4F8;padding:10px;border-radius:6px">
+          The OAuth scope is read-only (<code>gmail.readonly</code>) — the script cannot send or delete emails.
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px">
+          <button onclick="document.getElementById('gmailSetupModal').remove()" style="padding:8px 16px;background:#1B7F79;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Got it</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function maybeShowStaleBanner() {
+  // If the embedded data is more than an hour old AND we're in static-snapshot
+  // mode, drop a sticky banner so it's impossible to miss.
+  if (SERVER_AVAILABLE) return;
+  const ts = window.__EMBEDDED_DATA__?.meta?.generated_at;
+  if (!ts) return;
+  const ageMin = (Date.now() - new Date(ts).getTime()) / 60000;
+  if (ageMin < 60) return;
+  const ageLabel = ageMin > 1440
+    ? `${Math.round(ageMin/1440)} day(s)`
+    : ageMin > 60 ? `${Math.round(ageMin/60)} hour(s)` : `${Math.round(ageMin)} min`;
+  const banner = `
+    <div style="background:linear-gradient(90deg,#E8A838,#E67E22);color:#0D1B2A;padding:8px 18px;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:10px;justify-content:center">
+      <span style="font-size:1rem">⚠️</span>
+      <span>This dashboard snapshot is <strong>${ageLabel} old</strong>. Rebuild to see latest Excel data.</span>
+      <button onclick="showOfflineRefreshDialog()" style="margin-left:8px;background:#0D1B2A;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:.75rem;font-weight:600;cursor:pointer">How to refresh</button>
+    </div>`;
+  document.body.insertAdjacentHTML('afterbegin', banner);
+}
+
+function setButtonsBusy(busy, label) {
+  const r = document.querySelector('.btn-refresh');
+  const s = document.querySelector('.btn-sync');
+  [r, s].forEach(b => { if(b){ b.disabled = busy; b.style.opacity = busy ? 0.5 : 1; }});
+  if (busy && label && r) r.textContent = label;
+  if (!busy && r) r.textContent = '⟳ Refresh';
+}
+
+// Initial paint
+detectServer()
+  .then(loadData)
+  .then(maybeShowStaleBanner)
+  .then(checkGmailAuthStatus);
+</script>
+</body>
+</html>
