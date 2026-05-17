@@ -342,13 +342,21 @@ def _subject_matches(subject: str, report_name: str) -> bool:
     return _norm_subject(report_name) in nsubj
 
 
-def sync_gmail() -> dict:
+def sync_gmail(force: bool = False) -> dict:
     """Search inbox for the 3 report emails, download new attachments only.
 
+    Args:
+        force: When True, ignore processed_message_ids — always grab the
+            single newest message for each report. Use this for user-initiated
+            'Sync Gmail' button clicks where the explicit intent is "give me
+            the freshest data." The daily scheduled cron passes force=False so
+            it doesn't re-download identical content on every run.
+
     De-dupe strategy is two-layered:
-      1. processed_message_ids   → skip messages we've already opened
-      2. attachment_hashes       → even on a new message, skip if the file bytes
-                                   match something we've already saved
+      1. processed_message_ids   → skip messages we've already opened (force=False only)
+      2. attachment_hashes       → even on a new message, mark 'unchanged' if
+                                   the file bytes match something we've already saved
+                                   (informational; file is always written either way)
 
     Returns a status dict:
         {
@@ -361,7 +369,9 @@ def sync_gmail() -> dict:
         }
     """
     status = {"ok": True, "error": None, "downloaded": [], "unchanged": [],
-              "missing": [], "new_files": False}
+              "missing": [], "new_files": False, "force": force,
+              # report_name → ISO timestamp of the source email's internalDate
+              "source_email_dates": {}}
 
     if not GMAIL_AVAILABLE:
         status.update(ok=False, error="Google API packages not installed (pip3 install "
@@ -417,10 +427,16 @@ def sync_gmail() -> dict:
         # a successful download. If we permanently blacklisted on every miss,
         # a single false-negative (e.g. transient subject-normalisation bug)
         # would silently make us skip that email forever.
+        #
+        # When force=True (user clicked "Sync Gmail" expecting fresh data),
+        # ignore processed_message_ids entirely — always grab the newest
+        # matching message. The on-disk file is overwritten with whatever the
+        # newest email contains, regardless of whether we've seen that
+        # message ID before.
         rejected_in_session = []    # for verbose logging only
         for ref in msg_refs:
             msg_id = ref["id"]
-            if msg_id in processed:
+            if msg_id in processed and not force:
                 log.debug(f"  Already processed msg {msg_id[:12]}… ({report_name})")
                 continue
 
@@ -469,6 +485,15 @@ def sync_gmail() -> dict:
                 log.error(f"  Download failed: {e}")
                 rejected_in_session.append((msg_id, subject, f"download-error: {e}"))
                 continue
+
+            # Record the source email's date — Gmail's internalDate is ms since epoch.
+            try:
+                internal_ms = int(message.get("internalDate", 0))
+                if internal_ms:
+                    iso = datetime.fromtimestamp(internal_ms/1000, tz=timezone.utc).isoformat()
+                    status["source_email_dates"][report_name] = iso
+            except Exception:
+                pass
 
             # Hash-level de-dupe: if the same bytes were saved for the same
             # report previously, the input is unchanged — don't flag as new.
@@ -1269,7 +1294,8 @@ def rebuild_html(data: dict):
 # MAIN
 # ══════════════════════════════════════════════════════════════════════════════
 
-def run_sync(skip_gmail: bool = False, require_gmail: bool = False) -> dict:
+def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
+             force_gmail: bool = False) -> dict:
     """End-to-end: pull from Gmail (optional), rebuild JSON, rebuild HTML.
 
     Args:
@@ -1285,8 +1311,8 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False) -> dict:
     """
     gmail_status = None
     if not skip_gmail:
-        log.info("Step 1: Gmail sync…")
-        gmail_status = sync_gmail()
+        log.info(f"Step 1: Gmail sync{' (force mode)' if force_gmail else ''}…")
+        gmail_status = sync_gmail(force=force_gmail)
         if not gmail_status.get("ok"):
             log.error(f"  Gmail step failed: {gmail_status.get('error')}")
             if require_gmail:
@@ -1303,6 +1329,23 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False) -> dict:
     # Embed the Gmail status in the dashboard data so the UI can surface it.
     if gmail_status is not None:
         data.setdefault("meta", {})["gmail_status"] = gmail_status
+
+    # Also stamp each input file's mtime so the UI can show "Revenue data is
+    # from a CSV last refreshed at <time>" — answers the question
+    # "is the displayed number actually fresh?"
+    meta_files = {}
+    for label, path in (("revenue_csv", REVENUE_FILE),
+                        ("incoming_csv", INCOMING_FILE),
+                        ("closed_csv",   CLOSED_FILE),
+                        ("quarter_target_xlsx", QUARTER_TARGET_FILE)):
+        if path.exists():
+            mt = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            meta_files[label] = {
+                "name":  path.name,
+                "mtime": mt.isoformat(),
+                "size":  path.stat().st_size,
+            }
+    data.setdefault("meta", {})["files"] = meta_files
 
     log.info("Step 3: Writing dashboard_data.json…")
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -1432,10 +1475,12 @@ def main():
         return
 
     rebuild_only = "--rebuild" in sys.argv
+    force_mode   = "--force" in sys.argv
     log.info("=" * 60)
-    log.info(f"Cardiotrack Sync  {'(rebuild only)' if rebuild_only else '(full sync)'}")
+    mode_label = "rebuild only" if rebuild_only else ("force sync" if force_mode else "full sync")
+    log.info(f"Cardiotrack Sync  ({mode_label})")
     log.info("=" * 60)
-    run_sync(skip_gmail=rebuild_only)
+    run_sync(skip_gmail=rebuild_only, force_gmail=force_mode)
 
 
 if __name__ == "__main__":

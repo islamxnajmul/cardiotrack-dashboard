@@ -1,8 +1,30 @@
 {
   "meta": {
-    "generated_at": "2026-05-17T09:05:17.017685+00:00",
+    "generated_at": "2026-05-17T15:43:46.696720+00:00",
     "q2_target": 20000000,
-    "as_of": "14 May 2026"
+    "as_of": "14 May 2026",
+    "files": {
+      "revenue_csv": {
+        "name": "Revenue_Generated_Insurer_Wise.csv",
+        "mtime": "2026-05-16T13:48:04.067003+00:00",
+        "size": 18244
+      },
+      "incoming_csv": {
+        "name": "Incoming_Order_Count_Insurer_Wise.csv",
+        "mtime": "2026-05-16T13:48:02.859156+00:00",
+        "size": 14111
+      },
+      "closed_csv": {
+        "name": "Closed_Case_Count_Insurer_Wise.csv",
+        "mtime": "2026-05-16T13:48:05.262829+00:00",
+        "size": 12651
+      },
+      "quarter_target_xlsx": {
+        "name": "Quarter Target.xlsx",
+        "mtime": "2026-05-15T07:08:34.498552+00:00",
+        "size": 51692
+      }
+    }
   },
   "kpis": {
     "q2_target": 20000000,

@@ -93,20 +93,65 @@ def api_refresh():
 def api_sync():
     """Full pipeline: Gmail → Excel → JSON → HTML.
 
+    User-initiated 'Sync Gmail' clicks default to force=True — the user's
+    explicit intent is "give me the freshest data", so dedup is bypassed and
+    the newest matching email's attachment is downloaded regardless of
+    processed_message_ids.
+
     Returns the full Gmail status dict so the UI can show "downloaded X /
     unchanged Y / missing Z" — not just a green check.
     """
+    # `?force=false` opts out (matches the scheduled-cron behaviour). Defaults true.
+    force = (request.args.get("force", "true").lower() != "false")
     try:
-        data = sync.run_sync(skip_gmail=False, require_gmail=True)
+        data = sync.run_sync(skip_gmail=False, require_gmail=True, force_gmail=force)
         gmail = data.get("meta", {}).get("gmail_status", {})
         return jsonify({
             "ok":            True,
             "generated_at":  data["meta"]["generated_at"],
+            "force":         force,
             "gmail":         gmail,
         })
     except Exception as e:
         log.exception("sync failed")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/csv_status")
+def api_csv_status():
+    """Freshness diagnostic — what CSV files are on disk, how old, and what
+    each says about May/Jun 2026 revenue. The dashboard polls this on load
+    to surface stale-CSV warnings BEFORE the user wonders why numbers look off.
+    """
+    out = {"ok": True, "files": {}, "totals_by_month_2026": {}}
+    for label, path in (("revenue", sync.REVENUE_FILE),
+                        ("incoming", sync.INCOMING_FILE),
+                        ("closed",   sync.CLOSED_FILE)):
+        if path.exists():
+            mt = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+            out["files"][label] = {
+                "name":   path.name,
+                "mtime":  mt.isoformat(),
+                "size":   path.stat().st_size,
+                "age_hours": round((datetime.now(timezone.utc) - mt).total_seconds()/3600, 1),
+            }
+        else:
+            out["files"][label] = {"name": path.name, "missing": True}
+
+    # Quick re-sum of the revenue CSV for sanity-check display
+    try:
+        rev = sync.read_revenue_file(sync.REVENUE_FILE)
+        for r in rev:
+            m = (r.get("month") or "").strip()
+            if "2026" in m:
+                out["totals_by_month_2026"][m] = out["totals_by_month_2026"].get(m, 0) + r["amount"]
+    except Exception as e:
+        out["totals_error"] = str(e)
+
+    # Surface Gmail last-sync timestamp too
+    sl = sync.load_sync_log() if sync.SYNC_LOG.exists() else {}
+    out["last_gmail_sync"] = sl.get("last_sync")
+    return jsonify(out)
 
 
 @app.route("/api/auth_status")

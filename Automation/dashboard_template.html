@@ -1171,11 +1171,23 @@ function showGmailSyncResult(g) {
   const mi = (g.missing    || []).length;
   const lines = [];
   if (dl) lines.push(`✓ Downloaded: ${(g.downloaded||[]).join(', ')}`);
-  if (un) lines.push(`= Unchanged (same content): ${(g.unchanged||[]).join(', ')}`);
-  if (mi) lines.push(`✗ Missing in inbox: ${(g.missing||[]).join(', ')}`);
+  if (un) lines.push(`= Unchanged: ${(g.unchanged||[]).join(', ')}`);
+  if (mi) lines.push(`✗ Missing: ${(g.missing||[]).join(', ')}`);
+  // Show source-email dates so the user can verify they got the LATEST data,
+  // not a stale email that just happened to match the search.
+  const dates = g.source_email_dates || {};
+  for (const [rpt, iso] of Object.entries(dates)) {
+    const dt = new Date(iso).toLocaleString('en-IN', {timeZone:'Asia/Kolkata',
+                                                       day:'2-digit', month:'short',
+                                                       hour:'2-digit', minute:'2-digit'});
+    lines.push(`  ${rpt.split(' ')[0]}: email dated ${dt}`);
+  }
   if (!lines.length) lines.push('No reports processed.');
   showToast(`Gmail sync complete\n${lines.join('\n')}`,
             mi > 0 ? 'warning' : 'success');
+  // Re-check freshness banner — the file is now fresh, so any old banner
+  // should be cleared.
+  document.getElementById('csvFreshBanner')?.remove();
 }
 
 function showGmailErrorDialog(msg, hint) {
@@ -1212,6 +1224,37 @@ function showToast(message, type='info') {
          animation:slideUp .25s ease">${String(message).replace(/</g,'&lt;')}</div>`;
   document.body.insertAdjacentHTML('beforeend', html);
   setTimeout(() => document.getElementById(id)?.remove(), 6000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// CSV FRESHNESS — proactive stale-data warning
+// ─────────────────────────────────────────────────────────────────
+// On every load, ask the server how old each CSV file is. If the Revenue
+// CSV is more than 12 hours old, show a banner with a "Sync now" button
+// so the user notices BEFORE wondering why numbers look stale.
+async function checkCsvFreshness() {
+  if (!SERVER_AVAILABLE) return;
+  try {
+    const r = await fetch('/api/csv_status', {cache:'no-store'});
+    if (!r.ok) return;
+    const s = await r.json();
+    const rev = s.files?.revenue;
+    if (!rev || rev.missing) return;
+    const ageH = rev.age_hours;
+    if (ageH < 12) return;  // fresh enough — no banner
+
+    const may = s.totals_by_month_2026?.['May 2026'];
+    const ageLabel = ageH > 48 ? `${Math.round(ageH/24)} day(s)` : `${Math.round(ageH)} hours`;
+    const banner = `
+      <div id="csvFreshBanner" style="background:linear-gradient(90deg,#E8A838,#D68A1F);color:#0D1B2A;padding:9px 18px;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:12px;justify-content:center">
+        <span style="font-size:1rem">⏱</span>
+        <span>Revenue CSV is <strong>${ageLabel} old</strong>${may?` &nbsp;·&nbsp; May 2026 in file: ₹${(may/100000).toFixed(1)}L`:''} &nbsp;·&nbsp; click <strong>✉ Sync Gmail</strong> to refresh.</span>
+        <button onclick="syncFromGmail()" style="margin-left:8px;background:#0D1B2A;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">Sync now</button>
+        <button onclick="document.getElementById('csvFreshBanner').remove()" style="background:rgba(13,27,42,.1);color:#0D1B2A;border:none;padding:5px 10px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">Dismiss</button>
+      </div>`;
+    // Append below any existing banners (e.g. Gmail-not-configured red banner)
+    document.body.insertAdjacentHTML('afterbegin', banner);
+  } catch(_){}
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1297,7 +1340,8 @@ function setButtonsBusy(busy, label) {
 detectServer()
   .then(loadData)
   .then(maybeShowStaleBanner)
-  .then(checkGmailAuthStatus);
+  .then(checkGmailAuthStatus)
+  .then(checkCsvFreshness);
 </script>
 </body>
 </html>
