@@ -1,6 +1,10 @@
 {
   "meta": {
+<<<<<<< HEAD
     "generated_at": "2026-05-17T03:40:32.778108+00:00",
+=======
+    "generated_at": "2026-05-16T17:20:44.907430+00:00",
+>>>>>>> 839ccca (Save local progress)
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "gmail_status": {

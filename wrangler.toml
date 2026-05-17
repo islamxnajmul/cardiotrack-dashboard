@@ -1,0 +1,7 @@
+# Cloudflare Pages — config-as-code
+# Tells Pages to serve files from Data/Output/ regardless of UI settings.
+# Docs: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "cardiotrack-dashboard"
+pages_build_output_dir = "Data/Output"
+compatibility_date = "2025-01-01"
