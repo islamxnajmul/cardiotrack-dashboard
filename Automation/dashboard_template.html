@@ -130,6 +130,27 @@
   /* ── PROSPECT ROW ── */
   tr.prospect-row td{background:#EBF5FB!important;color:#1A5276;font-style:italic}
   tr.prospect-row:hover td{background:#D6EAF8!important}
+
+  /* ── TOP-LEVEL VIEW SWITCHER (Sales vs Account Managers) ──────────────── */
+  .view-tabs{
+    background:#0D1B2A;padding:0 28px;display:flex;gap:0;border-bottom:1px solid #1B4F72;
+    box-shadow:0 2px 8px rgba(0,0,0,.2)
+  }
+  .view-tab{
+    padding:11px 22px;background:transparent;border:none;color:#90CAF9;font-size:.88rem;
+    font-weight:600;cursor:pointer;letter-spacing:.3px;
+    border-bottom:3px solid transparent;transition:.2s;display:flex;align-items:center;gap:7px
+  }
+  .view-tab:hover{color:#fff;background:rgba(255,255,255,.04)}
+  .view-tab.active{color:#fff;border-bottom-color:#1B7F79;background:rgba(27,127,121,.12)}
+  .view-tab .vt-emoji{font-size:1rem}
+
+  .dash-view{display:none}
+  .dash-view.active{display:block}
+
+  /* AM view iframe takes the rest of the viewport */
+  #view-am{padding:0;margin:0;background:#f8fafc}
+  #am-iframe{display:block;width:100%;height:calc(100vh - 110px);border:0}
 </style>
 </head>
 <body>
@@ -150,6 +171,19 @@
     <button class="btn btn-sync" onclick="syncFromGmail()" title="Pull latest report emails from Gmail">✉ Sync Gmail</button>
   </div>
 </div>
+
+<!-- TOP-LEVEL VIEW SWITCHER -->
+<div class="view-tabs">
+  <button class="view-tab active" data-view="sales" onclick="switchView('sales')">
+    <span class="vt-emoji">📊</span> Sales (Q2 FY2026)
+  </button>
+  <button class="view-tab" data-view="am" onclick="switchView('am')">
+    <span class="vt-emoji">👥</span> Account Managers
+  </button>
+</div>
+
+<!-- ───────────── SALES VIEW (existing dashboard) ───────────── -->
+<div id="view-sales" class="dash-view active">
 
 <div class="main" id="main-content" style="display:none">
 
@@ -369,12 +403,53 @@
 </div><!-- /main -->
 
 <div class="footer">
-  Cardiotrack Q2 FY2026 Sales Dashboard &nbsp;·&nbsp; Auto-refreshes every 5 minutes &nbsp;·&nbsp;
+  Cardiotrack Q2 FY2026 Sales Dashboard &nbsp;·&nbsp;
   Data source: Gmail + Quarter Target.xlsx &nbsp;·&nbsp;
   <span id="footer-time">—</span>
 </div>
 
+</div><!-- /#view-sales -->
+
+<!-- ───────────── ACCOUNT MANAGERS VIEW ─────────────
+     Self-contained iframe — preserves the standalone dashboard's CSS/JS
+     in isolation so its `.tab`/`.card`/`.kpi` rules don't fight the
+     main dashboard's same-named classes. Loaded lazily on first switch. -->
+<div id="view-am" class="dash-view">
+  <iframe id="am-iframe" title="Account Managers Insurer Performance Dashboard"
+          data-src="Account_Managers_Dashboard.html"
+          loading="lazy"></iframe>
+</div>
+
 <script>
+// ─────────────────────────────────────────────────────────────────
+// TOP-LEVEL VIEW SWITCHER (Sales ↔ Account Managers)
+// ─────────────────────────────────────────────────────────────────
+// The AM iframe is loaded LAZILY — only on the first time the user
+// clicks the "Account Managers" tab — to keep the initial Sales page
+// load fast. The data-src attribute holds the URL; we swap it into
+// src on first activation. The iframe also persists state when the
+// user toggles back to Sales (we just hide it, don't unload).
+function switchView(name) {
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === name);
+  });
+  document.querySelectorAll('.dash-view').forEach(v => {
+    v.classList.toggle('active', v.id === 'view-' + name);
+  });
+  if (name === 'am') {
+    const f = document.getElementById('am-iframe');
+    if (f && !f.src && f.dataset.src) f.src = f.dataset.src;
+  }
+  // Update URL hash so reloads remember the view
+  try { history.replaceState(null, '', '#' + name); } catch(_){}
+}
+
+// On load, honour ?view= or #view in the URL so direct links work
+(function restoreViewFromUrl() {
+  const fromHash = (location.hash || '').replace(/^#/,'');
+  if (fromHash === 'am') switchView('am');
+})();
+
 // ─────────────────────────────────────────────────────────────────
 // CHART INSTANCES (kept for destroy/recreate on refresh)
 // ─────────────────────────────────────────────────────────────────

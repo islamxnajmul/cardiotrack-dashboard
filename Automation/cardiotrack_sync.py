@@ -1289,6 +1289,18 @@ def rebuild_html(data: dict):
     html_path.write_text(html, encoding="utf-8")
     log.info(f"  ✓ HTML dashboard rebuilt → {html_path.name}")
 
+    # Copy the Account Managers dashboard sibling into Data/Output/ so the
+    # main dashboard's iframe (src="Account_Managers_Dashboard.html") can
+    # resolve. The AM dashboard is itself a hand-maintained static file;
+    # we just keep the deployed copy in sync with whatever is at the repo root.
+    am_source = BASE / "Account_Managers_Dashboard.html"
+    if am_source.exists():
+        am_dest = OUTPUT / "Account_Managers_Dashboard.html"
+        am_dest.write_bytes(am_source.read_bytes())
+        log.info(f"  ✓ Account Managers dashboard copied → {am_dest.name}")
+    else:
+        log.debug(f"  (no AM dashboard at {am_source} — skipping copy)")
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN
