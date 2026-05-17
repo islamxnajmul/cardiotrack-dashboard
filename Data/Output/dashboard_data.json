@@ -1,33 +1,17 @@
 {
   "meta": {
-<<<<<<< HEAD
-    "generated_at": "2026-05-17T03:40:32.778108+00:00",
-=======
-    "generated_at": "2026-05-16T17:20:44.907430+00:00",
->>>>>>> 839ccca (Save local progress)
+    "generated_at": "2026-05-17T09:05:17.017685+00:00",
     "q2_target": 20000000,
-    "as_of": "14 May 2026",
-    "gmail_status": {
-      "ok": true,
-      "error": null,
-      "downloaded": [
-        "Incoming Order Count Insurer Wise",
-        "Revenue Generated Insurer Wise",
-        "Closed Case Count Insurer Wise"
-      ],
-      "unchanged": [],
-      "missing": [],
-      "new_files": true
-    }
+    "as_of": "14 May 2026"
   },
   "kpis": {
     "q2_target": 20000000,
     "apr_revenue": 4952222.029999999,
-    "may_revenue": 2271592.0,
+    "may_revenue": 2219422.0,
     "jun_revenue": 0,
-    "q2_achieved": 7223814.029999999,
-    "gap": 12776185.97,
-    "achievement_pct": 36.1,
+    "q2_achieved": 7171644.029999999,
+    "gap": 12828355.97,
+    "achievement_pct": 35.9,
     "baseline_est": 15000000,
     "delta_required": 5000000,
     "delta_weighted": 5427330
@@ -65,7 +49,7 @@
       5880660.5,
       6494808.0,
       4952222.029999999,
-      2271592.0
+      2219422.0
     ]
   },
   "month_wise": [
@@ -78,8 +62,8 @@
     {
       "month": "May 2026",
       "target": 6789792,
-      "achieved": 2271592.0,
-      "pct": 33.5
+      "achieved": 2219422.0,
+      "pct": 32.7
     },
     {
       "month": "June 2026",
@@ -197,10 +181,10 @@
   "insurer_table": [
     {
       "insurer": "Aditya Birla Sun Life Insurance",
-      "incoming": 2692,
-      "closed": 1006,
-      "conversion": 0.3737,
-      "revenue": 2342133.0
+      "incoming": 2691,
+      "closed": 996,
+      "conversion": 0.3701,
+      "revenue": 2323593.0
     },
     {
       "insurer": "Ageas Federal Life Insurance",
@@ -211,10 +195,10 @@
     },
     {
       "insurer": "Bajaj Life Insurance Company",
-      "incoming": 1464,
-      "closed": 1037,
-      "conversion": 0.7083,
-      "revenue": 2462547.0
+      "incoming": 1458,
+      "closed": 1025,
+      "conversion": 0.703,
+      "revenue": 2437852.0
     },
     {
       "insurer": "Cardiotrack Home Services",
@@ -226,9 +210,9 @@
     {
       "insurer": "ICICI Lombard",
       "incoming": 1057,
-      "closed": 738,
-      "conversion": 0.6982,
-      "revenue": 1861830.0
+      "closed": 734,
+      "conversion": 0.6944,
+      "revenue": 1852895.0
     },
     {
       "insurer": "Pramerica Life Insurance",
@@ -539,9 +523,9 @@
   },
   "q2_orders": {
     "incoming_by_insurer": {
-      "Aditya Birla Sun Life Insurance": 2692,
+      "Aditya Birla Sun Life Insurance": 2691,
       "Ageas Federal Life Insurance": 176,
-      "Bajaj Life Insurance Company": 1464,
+      "Bajaj Life Insurance Company": 1458,
       "Cardiotrack Home Services": 1,
       "ICICI Lombard": 1057,
       "Pramerica Life Insurance": 179,
@@ -549,11 +533,11 @@
       "Test Cardiotrack": 27
     },
     "closed_by_insurer": {
-      "Aditya Birla Sun Life Insurance": 1006,
+      "Aditya Birla Sun Life Insurance": 996,
       "Ageas Federal Life Insurance": 89,
-      "Bajaj Life Insurance Company": 1037,
+      "Bajaj Life Insurance Company": 1025,
       "Cardiotrack Home Services": 1,
-      "ICICI Lombard": 738,
+      "ICICI Lombard": 734,
       "Pramerica Life Insurance": 22,
       "Star Union Daichi Life Insurance": 81
     }
@@ -1699,19 +1683,19 @@
     },
     "May 2026": {
       "incoming": {
-        "Aditya Birla Sun Life Insurance": 826,
+        "Aditya Birla Sun Life Insurance": 825,
         "Ageas Federal Life Insurance": 67,
-        "Bajaj Life Insurance Company": 555,
+        "Bajaj Life Insurance Company": 549,
         "ICICI Lombard": 315,
         "Pramerica Life Insurance": 110,
         "Star Union Daichi Life Insurance": 41,
         "Test Cardiotrack": 15
       },
       "closed": {
-        "Aditya Birla Sun Life Insurance": 292,
+        "Aditya Birla Sun Life Insurance": 282,
         "Ageas Federal Life Insurance": 27,
-        "Bajaj Life Insurance Company": 324,
-        "ICICI Lombard": 176,
+        "Bajaj Life Insurance Company": 312,
+        "ICICI Lombard": 172,
         "Star Union Daichi Life Insurance": 12
       }
     }
@@ -1789,8 +1773,8 @@
     },
     {
       "month": "May 2026",
-      "incoming": 1929,
-      "closed": 831
+      "incoming": 1922,
+      "closed": 805
     }
   ],
   "monthly_targets": {
