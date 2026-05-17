@@ -1,7 +1,22 @@
-# Cloudflare Pages — config-as-code
-# Tells Pages to serve files from Data/Output/ regardless of UI settings.
-# Docs: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+# Cloudflare static-asset deployment — Workers + Assets (modern unified syntax)
+#
+# This project is HTML/JSON only — no Worker code — so we deliberately omit
+# `main`. Cloudflare uses its built-in default Worker that serves files from
+# the [assets] directory.
+#
+# Docs: https://developers.cloudflare.com/workers/static-assets/
 
 name = "cardiotrack-dashboard"
-pages_build_output_dir = "Data/Output"
 compatibility_date = "2025-01-01"
+
+[assets]
+# Where the static files live, relative to the repo root.
+directory = "./Data/Output"
+
+# Auto-serve Data/Output/index.html when a directory is requested.
+# index.html in our repo redirects to Cardiotrack_Dashboard.html.
+html_handling = "auto-trailing-slash"
+
+# If a path doesn't match a file, fall back to index.html (so the
+# root URL "just works" even without a trailing slash).
+not_found_handling = "single-page-application"
