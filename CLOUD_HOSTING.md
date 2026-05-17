@@ -181,22 +181,60 @@ If it errors:
 - "insufficient permission" → you didn't approve Drive scope in Step 1.
   Delete `token.json`, re-run Step 1, update the `GOOGLE_TOKEN_JSON` secret.
 
-### Step 6 — Connect Cloudflare Pages (10 min)
+### Step 6 — Pick a hosting path
+
+Two options. **GitHub Pages is recommended** — it's already wired up via a
+workflow file in the repo, requires no external accounts, and avoids the
+Cloudflare UI/Wrangler version drama some setups hit.
+
+---
+
+#### Option A — GitHub Pages (recommended, 2 minutes)
+
+The `.github/workflows/pages.yml` workflow is already in the repo. You just
+need to enable Pages once in repo Settings:
+
+1. In your repo, click **Settings** (top tab).
+2. In the left sidebar, scroll to **Pages**.
+3. **Source:** select **GitHub Actions**.
+4. Save (the page auto-saves; you'll see a "Last deployed" hint appear once
+   the first deploy finishes).
+5. Trigger the first deploy: **Actions** tab → **Deploy to GitHub Pages**
+   workflow → **Run workflow** button.
+
+After the workflow turns green (~30 seconds), your dashboard is live at:
+
+```
+https://<your-username>.github.io/cardiotrack-dashboard/
+```
+
+The workflow re-runs automatically every time files in `Data/Output/`
+change — i.e. every time the daily sync produces fresh data.
+
+To use a custom domain: Settings → Pages → Custom domain.
+
+---
+
+#### Option B — Cloudflare Workers + Assets (alternative)
+
+If you'd rather use Cloudflare (unlimited bandwidth, faster CDN, edge
+network):
 
 1. Sign up at [cloudflare.com](https://dash.cloudflare.com/sign-up). Free.
-2. In the sidebar, **Workers & Pages** → **Create application** → **Pages** →
-   **Connect to Git**.
-3. Authorise Cloudflare to read your GitHub repos. Select the
-   `cardiotrack-dashboard` repo.
-4. **Set up builds and deployments**:
-   - **Project name:** `cardiotrack` (you'll get `cardiotrack.pages.dev`).
-   - **Production branch:** `main`.
-   - **Build command:** *leave empty*.
-   - **Build output directory:** `Data/Output`.
-   - **Root directory:** *leave blank*.
-5. **Save and Deploy**. First deploy takes ~30 seconds.
+2. **Workers & Pages** → **Create application** → **Connect to Git**.
+3. Authorise Cloudflare to read your GitHub repos. Select
+   `cardiotrack-dashboard`.
+4. Cloudflare reads `wrangler.toml` from the repo automatically — it points
+   at `./Data/Output` as the asset directory. No further UI configuration
+   needed for build settings.
+5. Click **Save and Deploy**.
 
-Once it's done, open `https://cardiotrack.pages.dev` — your dashboard loads.
+Your dashboard goes live at `https://cardiotrack-dashboard.<subdomain>.workers.dev`.
+
+If the Cloudflare build fails for any reason — UI version drift, Wrangler
+config issue, account-level setting — switch to Option A. They're not
+mutually exclusive; you can run both in parallel and use whichever URL the
+team prefers.
 
 ### Step 7 — (Optional) Custom domain (5 min)
 
