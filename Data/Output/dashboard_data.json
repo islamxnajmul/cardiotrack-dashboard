@@ -1,6 +1,11 @@
 {
   "meta": {
+<<<<<<< HEAD
     "generated_at": "2026-05-19T09:42:55.977428+00:00",
+=======
+<<<<<<< HEAD
+    "generated_at": "2026-05-19T07:53:17.667321+00:00",
+>>>>>>> e49165b (Fix apr_customers junk rows (stop at section breaks + sanity bounds))
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "gmail_status": {
@@ -22,6 +27,32 @@
         "name": "Quarter Target.xlsx",
         "mtime": "2026-05-19T09:42:54.903359+00:00",
         "size": 63771
+=======
+    "generated_at": "2026-05-18T04:06:44.532658+00:00",
+    "q2_target": 20000000,
+    "as_of": "14 May 2026",
+    "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
+    "files": {
+      "revenue_csv": {
+        "name": "Revenue_Generated_Insurer_Wise.csv",
+        "mtime": "2026-05-18T03:24:35.162853+00:00",
+        "size": 18244
+      },
+      "incoming_csv": {
+        "name": "Incoming_Order_Count_Insurer_Wise.csv",
+        "mtime": "2026-05-18T03:24:33.853640+00:00",
+        "size": 14111
+      },
+      "closed_csv": {
+        "name": "Closed_Case_Count_Insurer_Wise.csv",
+        "mtime": "2026-05-18T03:24:37.021935+00:00",
+        "size": 12651
+      },
+      "quarter_target_xlsx": {
+        "name": "Quarter Target.xlsx",
+        "mtime": "2026-05-15T07:08:34.498552+00:00",
+        "size": 51692
+>>>>>>> 8cd65a0 (Fix apr_customers junk rows (stop at section breaks + sanity bounds))
       }
     }
   },
@@ -35,7 +66,7 @@
     "achievement_pct": 31.0,
     "baseline_est": 15000000,
     "delta_required": 5000000,
-    "delta_weighted": 5627330
+    "delta_weighted": 5427330
   },
   "monthly_trend": {
     "labels": [
@@ -98,25 +129,25 @@
       "insurer": "Aditya Birla Sun Life Insurance",
       "closed_cases": 814,
       "revenue": 1617039.0,
-      "avg_order": 1986.534398,
+      "avg_order": 1986.5343980344,
       "incoming": 1866,
-      "conversion": 0.436227224
+      "conversion": 0.436227224008574
     },
     {
       "insurer": "Ageas Federal Life Insurance",
       "closed_cases": 61,
       "revenue": 148821.0,
-      "avg_order": 2439.688525,
+      "avg_order": 2439.68852459016,
       "incoming": 109,
-      "conversion": 0.5596330275
+      "conversion": 0.559633027522936
     },
     {
       "insurer": "Bajaj Life Insurance Company",
       "closed_cases": 781,
       "revenue": 1640934.0,
-      "avg_order": 2101.067862,
+      "avg_order": 2101.06786171575,
       "incoming": 909,
-      "conversion": 0.8591859186
+      "conversion": 0.859185918591859
     },
     {
       "insurer": "Cardiotrack Home Services",
@@ -130,73 +161,25 @@
       "insurer": "ICICI Lombard",
       "closed_cases": 577,
       "revenue": 1307400.0,
-      "avg_order": 2265.857886,
+      "avg_order": 2265.85788561525,
       "incoming": 742,
-      "conversion": 0.7776280323
+      "conversion": 0.777628032345013
     },
     {
       "insurer": "Pramerica Life Insurance",
       "closed_cases": 21,
       "revenue": 25843.0,
-      "avg_order": 1230.619048,
+      "avg_order": 1230.61904761905,
       "incoming": 69,
-      "conversion": 0.3043478261
+      "conversion": 0.304347826086957
     },
     {
       "insurer": "Star Union Daichi Life Insurance",
       "closed_cases": 87,
       "revenue": 210887.0,
-      "avg_order": 2423.988506,
+      "avg_order": 2423.98850574713,
       "incoming": 172,
-      "conversion": 0.5058139535
-    },
-    {
-      "insurer": "Aditya Birla Sun Life Insurance",
-      "closed_cases": 16,
-      "revenue": 18.0,
-      "avg_order": 5.01,
-      "incoming": 18,
-      "conversion": 27.0
-    },
-    {
-      "insurer": "Ageas Federal Life Insurance",
-      "closed_cases": 1,
-      "revenue": 2.2,
-      "avg_order": 0.74,
-      "incoming": 1,
-      "conversion": 2.0
-    },
-    {
-      "insurer": "Bajaj Life Insurance Company",
-      "closed_cases": 16,
-      "revenue": 24.6,
-      "avg_order": 6.13,
-      "incoming": 20,
-      "conversion": 31.5
-    },
-    {
-      "insurer": "ICICI Lombard",
-      "closed_cases": 13,
-      "revenue": 19.6,
-      "avg_order": 4.19,
-      "incoming": 14,
-      "conversion": 15.0
-    },
-    {
-      "insurer": "Pramerica Life Insurance",
-      "closed_cases": 0,
-      "revenue": 0.4,
-      "avg_order": 0.00475,
-      "incoming": 0,
-      "conversion": 1.0
-    },
-    {
-      "insurer": "Star Union Daichi Life Insurance",
-      "closed_cases": 2,
-      "revenue": 3.2,
-      "avg_order": 0.57,
-      "incoming": 3,
-      "conversion": 8.0
+      "conversion": 0.505813953488372
     }
   ],
   "insurer_table": [],
@@ -207,8 +190,8 @@
       "delta": 182961.0,
       "probability": 0.9,
       "weighted": 164664.9,
-      "add_closed": 92.10059498,
-      "add_incoming": 211.1298651,
+      "add_closed": 92.1005949763734,
+      "add_incoming": 211.129865142399,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -218,8 +201,8 @@
       "delta": 100000.0,
       "probability": 0.5,
       "weighted": 50000.0,
-      "add_closed": 40.98883894,
-      "add_incoming": 73.24235155,
+      "add_closed": 40.988838940741,
+      "add_incoming": 73.2423515498486,
       "type": "Exisitng Customer",
       "key_action": "Meet Anurag"
     },
@@ -229,8 +212,8 @@
       "delta": 400000.0,
       "probability": 0.9,
       "weighted": 360000.0,
-      "add_closed": 190.3793815,
-      "add_incoming": 221.5811239,
+      "add_closed": 190.379381498585,
+      "add_incoming": 221.581123920889,
       "type": "Exisitng Customer",
       "key_action": "Call with Aditya and Meet Anil"
     },
@@ -240,8 +223,8 @@
       "delta": 50000.0,
       "probability": 0.5,
       "weighted": 25000.0,
-      "add_closed": 28.3446712,
-      "add_incoming": 70.861678,
+      "add_closed": 28.3446712018141,
+      "add_incoming": 70.8616780045351,
       "type": "Exisitng Customer",
       "key_action": "Unblock the API. Sumit is the key"
     },
@@ -251,8 +234,8 @@
       "delta": 100000.0,
       "probability": 0.5,
       "weighted": 50000.0,
-      "add_closed": 44.13062665,
-      "add_incoming": 56.75030325,
+      "add_closed": 44.1306266548985,
+      "add_incoming": 56.7503032546529,
       "type": "Exisitng Customer",
       "key_action": "Meet Santosh and Rajani"
     },
@@ -262,8 +245,8 @@
       "delta": 50000.0,
       "probability": 0.5,
       "weighted": 25000.0,
-      "add_closed": 40.62995782,
-      "add_incoming": 133.4984328,
+      "add_closed": 40.6299578222342,
+      "add_incoming": 133.498432844484,
       "type": "Exisitng Customer",
       "key_action": "Call with Prem"
     },
@@ -295,8 +278,8 @@
       "delta": 1082961.0,
       "probability": 0.9,
       "weighted": 974664.9,
-      "add_closed": 545.1508925,
-      "add_incoming": 1249.694798,
+      "add_closed": 545.15089246456,
+      "add_incoming": 1249.6947977136,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -306,8 +289,8 @@
       "delta": 100000.0,
       "probability": 0.5,
       "weighted": 50000.0,
-      "add_closed": 40.98883894,
-      "add_incoming": 73.24235155,
+      "add_closed": 40.988838940741,
+      "add_incoming": 73.2423515498486,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -317,8 +300,8 @@
       "delta": 600000.0,
       "probability": 0.9,
       "weighted": 540000.0,
-      "add_closed": 285.5690722,
-      "add_incoming": 332.3716859,
+      "add_closed": 285.569072247878,
+      "add_incoming": 332.371685881333,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -328,8 +311,8 @@
       "delta": 500000.0,
       "probability": 0.8,
       "weighted": 400000.0,
-      "add_closed": 283.446712,
-      "add_incoming": 708.61678,
+      "add_closed": 283.446712018141,
+      "add_incoming": 708.616780045351,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -339,8 +322,8 @@
       "delta": 200000.0,
       "probability": 0.5,
       "weighted": 100000.0,
-      "add_closed": 88.26125331,
-      "add_incoming": 113.5006065,
+      "add_closed": 88.261253309797,
+      "add_incoming": 113.500606509306,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -350,8 +333,8 @@
       "delta": 100000.0,
       "probability": 0.8,
       "weighted": 80000.0,
-      "add_closed": 81.23476848,
-      "add_incoming": 266.9142393,
+      "add_closed": 81.2347684809098,
+      "add_incoming": 266.914239294418,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -361,8 +344,8 @@
       "delta": 400000.0,
       "probability": 0.8,
       "weighted": 320000.0,
-      "add_closed": 165.0165017,
-      "add_incoming": 326.2395205,
+      "add_closed": 165.016501650165,
+      "add_incoming": 326.239520503775,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -475,26 +458,15 @@
       "add_incoming": 0.0,
       "type": "Prospect",
       "key_action": ""
-    },
-    {
-      "name": "test - prospect 2",
-      "month": "June",
-      "delta": 1000000.0,
-      "probability": 0.2,
-      "weighted": 200000.0,
-      "add_closed": 0.0,
-      "add_incoming": 0.0,
-      "type": "Prospect",
-      "key_action": ""
     }
   ],
   "existing_pipeline_total": 3631330,
-  "prospect_pipeline_total": 1996000,
+  "prospect_pipeline_total": 1796000,
   "pipeline_by_type": {
     "existing_weighted": 3631330,
-    "prospect_weighted": 1996000,
+    "prospect_weighted": 1796000,
     "existing_delta": 4445922,
-    "prospect_delta": 4778000
+    "prospect_delta": 3778000
   },
   "q2_orders": {
     "incoming_by_insurer": {},
@@ -624,7 +596,7 @@
   ],
   "pipeline_by_month": {
     "may": 1414665,
-    "june": 4212665,
+    "june": 4012665,
     "q2": 0
   },
   "_plan_has_month_col": true

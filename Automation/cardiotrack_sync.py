@@ -742,25 +742,69 @@ def read_quarter_target() -> dict:
     data = {}
 
     # ── April 2026 actuals ────────────────────────────────────────────────────
+    # The "Apr 2026" sheet has MULTIPLE stacked tables — only the first one
+    # (rows 2..N) is customer-by-customer revenue. Below that there's a Q2
+    # target summary, then an "April Revenue (in Lakhs) vs Target" block
+    # that uses the SAME insurer names but values in lakhs/percent. If we
+    # don't stop at the first blank row, those rows leak into apr_customers
+    # as 'Aditya Birla rev=₹18 conv=2700%' style junk.
     if "Apr 2026" in wb.sheetnames:
         ws = wb["Apr 2026"]
         rows = list(ws.values)
         apr_customers = []
+        SECTION_BREAK_KEYWORDS = ("q2 fy", "q2 total", "month", "in lakhs",
+                                  "april revenue", "revenue target", "initiative",
+                                  "total incremental")
+
         for row in rows[1:]:
-            if row[0] and str(row[0]).strip() and str(row[0]).strip() != "nan":
-                name = str(row[0]).strip()
-                if name.startswith("Q2") or name.startswith("Month") or not row[2]:
-                    continue
-                rev = safe_float(row[2])
-                if rev > 0:
-                    apr_customers.append({
-                        "insurer": name,
-                        "closed_cases": safe_int(row[1]),
-                        "revenue": rev,
-                        "avg_order": safe_float(row[3]),
-                        "incoming": safe_int(row[4]),
-                        "conversion": safe_float(row[5]),
-                    })
+            # 1) Hard stop: a fully blank row is the section separator. We
+            #    use this even before checking row[0], because row[0] can be
+            #    None on a "totals" row that we want to skip but NOT stop on.
+            if not any(c is not None and str(c).strip() not in ('','nan') for c in row):
+                break
+
+            # 2) Skip totals/blank-name rows (row 9 = totals: name is None but
+            #    numbers are filled in)
+            if not row[0] or str(row[0]).strip() in ("", "nan"):
+                continue
+            name = str(row[0]).strip()
+
+            # 3) Section-header text → we've left the customer block, stop.
+            lname = name.lower()
+            if any(k in lname for k in SECTION_BREAK_KEYWORDS):
+                break
+
+            # 4) Missing or zero revenue → skip (not a section break, just an
+            #    empty row mid-block).
+            if not row[2]:
+                continue
+            rev = safe_float(row[2])
+            if rev <= 0:
+                continue
+
+            # 5) Sanity guard: the upper customer block always has revenue
+            #    in actual rupees (lakhs+). The lookalike block below uses
+            #    values in lakhs (single/double digits). Anything under ₹1000
+            #    is suspicious — either a different unit or a stray number —
+            #    so we drop it. (Cardiotrack Home Services with rev=₹1298 is
+            #    above the threshold, so it stays.)
+            if rev < 1000:
+                continue
+            # Same defence for conversion — the real conversion column is a
+            # 0..1 fraction. The lakhs-block has integers like 27 in the same
+            # position. Drop anything > 1.5 (allow tiny rounding error).
+            conv = safe_float(row[5])
+            if conv > 1.5:
+                continue
+
+            apr_customers.append({
+                "insurer":      name,
+                "closed_cases": safe_int(row[1]),
+                "revenue":      rev,
+                "avg_order":    safe_float(row[3]),
+                "incoming":     safe_int(row[4]),
+                "conversion":   conv,
+            })
         data["apr_customers"] = apr_customers
         data["apr_total_revenue"] = sum(c["revenue"] for c in apr_customers)
 
@@ -1341,6 +1385,19 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
     # Embed the Gmail status in the dashboard data so the UI can surface it.
     if gmail_status is not None:
         data.setdefault("meta", {})["gmail_status"] = gmail_status
+
+    # Embed the public Refresh-button Worker URL if configured locally.
+    # Without this, the public github.io site falls back to a deep-link to
+    # GitHub Actions (manual workflow trigger).
+    try:
+        cfg_path = AUTO / "local_config.json"
+        if cfg_path.exists():
+            cfg = json.loads(cfg_path.read_text())
+            url = (cfg.get("public_refresh_url") or "").strip()
+            if url and not url.startswith("PASTE_"):
+                data.setdefault("meta", {})["public_refresh_url"] = url
+    except Exception:
+        pass    # config issues should never break the build
 
     # Also stamp each input file's mtime so the UI can show "Revenue data is
     # from a CSV last refreshed at <time>" — answers the question
