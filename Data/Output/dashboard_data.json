@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-18T13:53:23.972429+00:00",
+    "generated_at": "2026-05-18T16:50:26.509680+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "gmail_status": {
@@ -20,7 +20,7 @@
     "files": {
       "quarter_target_xlsx": {
         "name": "Quarter Target.xlsx",
-        "mtime": "2026-05-18T13:53:23.068588+00:00",
+        "mtime": "2026-05-18T16:50:25.323907+00:00",
         "size": 63771
       }
     }
