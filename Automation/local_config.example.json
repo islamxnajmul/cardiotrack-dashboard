@@ -1,0 +1,7 @@
+{
+  "_comment": "Copy this file to local_config.json and fill in your Drive file ID.",
+  "_purpose": "Lets the local Sync button pull Quarter Target.xlsx from Drive, the same way the GitHub Action does. Without this, local sync only pulls Gmail; Quarter Target stays at whatever's on disk.",
+  "_how_to_find_file_id": "Open Quarter Target.xlsx in Google Drive in a browser. The URL is https://docs.google.com/spreadsheets/d/THIS_PART/edit — copy that string.",
+
+  "quarter_target_file_id": "PASTE_YOUR_DRIVE_FILE_ID_HERE"
+}

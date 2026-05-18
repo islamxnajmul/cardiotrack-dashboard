@@ -2,6 +2,9 @@
 Automation/credentials.json
 Automation/token.json
 
+# Local-only config (Drive file IDs etc.) — example is committed
+Automation/local_config.json
+
 # Logs
 Automation/*.log
 Automation/launchd.*.log

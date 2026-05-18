@@ -168,7 +168,7 @@
       <div id="server-state">Mode: <span id="mode-label">checking…</span></div>
     </div>
     <button class="btn btn-refresh" onclick="refreshFromExcel()" title="Re-read Excel files">⟳ Refresh</button>
-    <button class="btn btn-sync" onclick="syncFromGmail()" title="Pull latest report emails from Gmail">✉ Sync Gmail</button>
+    <button class="btn btn-sync" onclick="syncFromGmail()" title="Pull Quarter Target from Drive + latest CSVs from Gmail">↻ Sync All</button>
   </div>
 </div>
 
@@ -1179,29 +1179,51 @@ async function refreshFromExcel() {
   }
 }
 
+// Detect whether we're on GitHub Pages — if so, the "trigger sync" button
+// can deep-link to the Actions UI for one-click re-runs.
+function _ghActionsUrl() {
+  // GitHub Pages URLs look like https://<user>.github.io/<repo>/...
+  const h = location.hostname;
+  if (!h.endsWith('.github.io')) return null;
+  const user = h.split('.')[0];
+  const repo = location.pathname.split('/').filter(Boolean)[0];
+  if (!user || !repo) return null;
+  return `https://github.com/${user}/${repo}/actions/workflows/sync.yml`;
+}
+
 function showOfflineRefreshDialog() {
   const cmd = "python3 'Automation/cardiotrack_sync.py' --rebuild";
   const serverCmd = "python3 'Automation/server.py'";
+  const ghUrl = _ghActionsUrl();
+  const ghBlock = ghUrl ? `
+        <div style="background:#E8F5E9;border-radius:8px;padding:12px 14px;margin-bottom:12px;border:1px solid #66BB6A">
+          <div style="font-size:.75rem;font-weight:700;color:#1B5E20;text-transform:uppercase;margin-bottom:6px">Recommended — Trigger a fresh cloud build</div>
+          <p style="font-size:.78rem;color:#1B5E20;margin:0 0 8px">Pulls latest from Google Drive + Gmail, then redeploys this page automatically (≈45 seconds end-to-end).</p>
+          <a href="${ghUrl}" target="_blank" rel="noopener" style="display:inline-block;background:#2E7D32;color:#fff;padding:8px 14px;border-radius:6px;font-size:.82rem;font-weight:700;text-decoration:none">Open GitHub Actions ↗</a>
+          <div style="font-size:.7rem;color:#1B5E20;margin-top:8px">On that page: click <strong>Run workflow</strong> button → <strong>Run workflow</strong> → wait until the run is green → hard-refresh this page (⌘-Shift-R).</div>
+        </div>` : '';
+
   const html = `
     <div id="offlineModal" style="position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:9999;display:flex;align-items:center;justify-content:center">
-      <div style="background:#fff;border-radius:14px;max-width:560px;padding:26px 28px;box-shadow:0 10px 50px rgba(0,0,0,.4);font-family:inherit">
+      <div style="background:#fff;border-radius:14px;max-width:580px;padding:26px 28px;box-shadow:0 10px 50px rgba(0,0,0,.4);font-family:inherit;max-height:90vh;overflow-y:auto">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
           <div style="font-size:1.6rem">📁</div>
           <h2 style="font-size:1.1rem;color:#0D1B2A;margin:0">This dashboard is a static snapshot</h2>
         </div>
         <p style="color:#5D6D7E;font-size:.88rem;line-height:1.55;margin-bottom:14px">
-          You're viewing the HTML file directly (<code style="background:#F0F4F8;padding:1px 5px;border-radius:3px">file://</code>),
-          so the browser can't re-read your Excel files. To see the latest data, do one of:
+          The page can't pull from Drive or Gmail directly — those need a backend.
+          Pick the option that fits where you're working from:
         </p>
+        ${ghBlock}
         <div style="background:#F0F4F8;border-radius:8px;padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:.75rem;font-weight:700;color:#1B4F72;text-transform:uppercase;margin-bottom:6px">Option 1 — One-time rebuild</div>
-          <code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.78rem;user-select:all">${cmd}</code>
-          <div style="font-size:.72rem;color:#5D6D7E;margin-top:6px">Then refresh this browser tab (⌘R).</div>
+          <div style="font-size:.75rem;font-weight:700;color:#1B4F72;text-transform:uppercase;margin-bottom:6px">Option — Run the local server on your Mac</div>
+          <code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.78rem;user-select:all">${serverCmd}</code>
+          <div style="font-size:.72rem;color:#5D6D7E;margin-top:6px">Then open <strong>http://localhost:5173</strong>. The Sync button there pulls Drive + Gmail on demand.</div>
         </div>
         <div style="background:#F0F4F8;border-radius:8px;padding:12px 14px;margin-bottom:16px">
-          <div style="font-size:.75rem;font-weight:700;color:#1B4F72;text-transform:uppercase;margin-bottom:6px">Option 2 — Run the live server (recommended)</div>
-          <code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.78rem;user-select:all">${serverCmd}</code>
-          <div style="font-size:.72rem;color:#5D6D7E;margin-top:6px">Then open <strong>http://localhost:5173</strong> — the Refresh button there will re-read Excel on-demand.</div>
+          <div style="font-size:.75rem;font-weight:700;color:#1B4F72;text-transform:uppercase;margin-bottom:6px">Option — One-off rebuild from local CSVs</div>
+          <code style="display:block;background:#0D1B2A;color:#90CAF9;padding:8px 10px;border-radius:5px;font-size:.78rem;user-select:all">${cmd}</code>
+          <div style="font-size:.72rem;color:#5D6D7E;margin-top:6px">Skips Drive + Gmail; just re-reads whatever's on disk.</div>
         </div>
         <div style="font-size:.78rem;color:#5D6D7E;margin-bottom:14px">
           <strong>Snapshot built:</strong> <span id="snapshotBuiltAt">—</span>
@@ -1221,23 +1243,55 @@ function showOfflineRefreshDialog() {
 
 async function syncFromGmail() {
   if (!SERVER_AVAILABLE) { showOfflineRefreshDialog(); return; }
-  if (!confirm('Pull the latest 3 report emails from Gmail and rebuild?')) return;
-  setButtonsBusy(true, '✉ Syncing from Gmail…');
+  if (!confirm('Pull latest Quarter Target from Drive + latest 3 report CSVs from Gmail, then rebuild?')) return;
+  setButtonsBusy(true, '↻ Syncing Drive + Gmail…');
   try {
     const r = await fetch('/api/sync', {method:'POST'});
     const j = await r.json();
     if (!j.ok) {
-      showGmailErrorDialog(j.error || 'Gmail sync failed', null);
+      showGmailErrorDialog(j.error || 'Sync failed', null);
       return;
     }
     await loadData();
-    // Show a transient summary of what actually happened.
-    showGmailSyncResult(j.gmail || {});
+    // Show what each source produced
+    showSyncResult(j);
   } catch(e) {
     showGmailErrorDialog(e.message, null);
   } finally {
     setButtonsBusy(false);
   }
+}
+
+function showSyncResult(j) {
+  const lines = [];
+  // Drive
+  const d = j.drive || {};
+  if (d.skipped) {
+    lines.push(`⚠ Drive skipped: ${d.reason}`);
+  } else if (d.ok === false) {
+    lines.push(`✗ Drive failed: ${d.error}`);
+  } else if (d.ok) {
+    lines.push(`✓ Drive: Quarter Target refreshed`);
+  }
+  // Gmail (existing logic)
+  const g = j.gmail || {};
+  const dl = (g.downloaded || []).length;
+  const un = (g.unchanged  || []).length;
+  const mi = (g.missing    || []).length;
+  if (dl) lines.push(`✓ Gmail downloaded: ${(g.downloaded||[]).join(', ')}`);
+  if (un) lines.push(`= Gmail unchanged: ${(g.unchanged||[]).join(', ')}`);
+  if (mi) lines.push(`✗ Gmail missing: ${(g.missing||[]).join(', ')}`);
+  const dates = g.source_email_dates || {};
+  for (const [rpt, iso] of Object.entries(dates)) {
+    const dt = new Date(iso).toLocaleString('en-IN', {timeZone:'Asia/Kolkata',
+                                                       day:'2-digit', month:'short',
+                                                       hour:'2-digit', minute:'2-digit'});
+    lines.push(`  ${rpt.split(' ')[0]}: email dated ${dt}`);
+  }
+  const errCount = (d.ok === false ? 1 : 0) + mi;
+  showToast(`Sync complete\n${lines.join('\n')}`,
+            errCount > 0 ? 'warning' : 'success');
+  document.getElementById('csvFreshBanner')?.remove();
 }
 
 function showGmailSyncResult(g) {

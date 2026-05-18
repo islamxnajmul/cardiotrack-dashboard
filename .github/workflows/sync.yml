@@ -1,11 +1,13 @@
-name: Daily Cardiotrack Sync
+name: Cardiotrack Sync
 
-# Runs every day at 00:00 UTC (05:30 IST) AND can be triggered manually from
-# the GitHub Actions UI ("Run workflow" button). Manual triggers are the
-# fallback for "I just edited Quarter Target — pull it now."
+# Runs frequently during India business hours and once overnight:
+#   * Every 2 hours from 04:00–14:00 UTC  →  09:30–19:30 IST
+#     (covers the working day; 6 runs/day)
+#   * One overnight catch-up at 19:00 UTC →  00:30 IST
+# Plus on-demand: 'Run workflow' button in the Actions tab.
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 4,6,8,10,12,14,19 * * *'
   workflow_dispatch: {}
 
 permissions:

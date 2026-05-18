@@ -23,7 +23,7 @@ Run
 Requires:  pip3 install flask
 """
 
-import json, logging, sys
+import json, logging, sys, os
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -89,32 +89,116 @@ def api_refresh():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+def _load_local_config() -> dict:
+    """Read Automation/local_config.json — optional user-tuned settings.
+
+    Example shape:
+        { "quarter_target_file_id": "1ABC…XYZ" }
+    """
+    cfg_path = sync.AUTO / "local_config.json"
+    if not cfg_path.exists():
+        return {}
+    try:
+        return json.loads(cfg_path.read_text())
+    except Exception as e:
+        log.warning(f"local_config.json could not be parsed: {e}")
+        return {}
+
+
+def _pull_quarter_target_from_drive() -> dict:
+    """Best-effort Drive pull of Quarter Target.xlsx into Data/Input/.
+
+    Returns a status dict that gets folded into the sync result.
+    The file ID is read from (in priority order):
+       1. QUARTER_TARGET_FILE_ID env var (matches CI behaviour)
+       2. Automation/local_config.json → quarter_target_file_id
+    """
+    file_id = (os.environ.get("QUARTER_TARGET_FILE_ID") or
+               _load_local_config().get("quarter_target_file_id") or "").strip()
+    if not file_id:
+        return {"skipped": True, "reason": "no QUARTER_TARGET_FILE_ID configured "
+                "(set env var or add quarter_target_file_id to Automation/local_config.json)"}
+
+    # Invoke drive_pull.py as a subprocess so we get the same code path as CI.
+    import subprocess
+    env = {**os.environ, "QUARTER_TARGET_FILE_ID": file_id}
+    try:
+        r = subprocess.run([sys.executable, str(sync.AUTO / "drive_pull.py")],
+                           capture_output=True, text=True, timeout=60, env=env)
+        if r.returncode != 0:
+            return {"ok": False, "error": (r.stderr or r.stdout or "non-zero exit").strip()[:500]}
+        return {"ok": True, "log": (r.stdout or "").strip()[-400:]}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "error": "Drive pull timed out after 60s"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 @app.route("/api/sync", methods=["POST"])
 def api_sync():
-    """Full pipeline: Gmail → Excel → JSON → HTML.
+    """Full upstream pull + rebuild.
 
-    User-initiated 'Sync Gmail' clicks default to force=True — the user's
-    explicit intent is "give me the freshest data", so dedup is bypassed and
-    the newest matching email's attachment is downloaded regardless of
+    Order of operations:
+       1. Pull Quarter Target.xlsx from Google Drive (if configured)
+       2. Pull latest Gmail CSV attachments  (force=True by default)
+       3. Re-parse Excel + CSVs, rebuild JSON + HTML
+
+    User-initiated 'Sync' clicks default to force=True so dedup is bypassed
+    and the newest matching email's attachment is downloaded regardless of
     processed_message_ids.
 
-    Returns the full Gmail status dict so the UI can show "downloaded X /
-    unchanged Y / missing Z" — not just a green check.
+    Returns Drive + Gmail status dicts so the UI can show what came from
+    where — and surface partial failures (e.g. "Gmail OK, Drive failed").
+
+    Query params:
+      ?force=false    skip force-mode dedup bypass (matches scheduled cron)
+      ?skip_drive=1   skip the Drive pull step
     """
-    # `?force=false` opts out (matches the scheduled-cron behaviour). Defaults true.
+    import os as _os
     force = (request.args.get("force", "true").lower() != "false")
+    skip_drive = (request.args.get("skip_drive", "0") == "1")
+
+    # ── Step 1: pull Quarter Target from Drive ─────────────────────────
+    drive_status = None
+    if not skip_drive:
+        drive_status = _pull_quarter_target_from_drive()
+        if drive_status.get("ok") is False:
+            log.error(f"Drive pull failed: {drive_status.get('error')}")
+        elif drive_status.get("skipped"):
+            log.info(f"Drive pull skipped: {drive_status.get('reason')}")
+        else:
+            log.info("Drive pull OK ✓")
+
+    # ── Step 2 & 3: Gmail + rebuild (unchanged) ────────────────────────
     try:
         data = sync.run_sync(skip_gmail=False, require_gmail=True, force_gmail=force)
         gmail = data.get("meta", {}).get("gmail_status", {})
+        # Stash drive status into meta so the dashboard can show it too
+        if drive_status is not None:
+            data.setdefault("meta", {})["drive_status"] = drive_status
+            (sync.DATA_JSON).write_text(json.dumps(data, indent=2, ensure_ascii=False))
         return jsonify({
             "ok":            True,
             "generated_at":  data["meta"]["generated_at"],
             "force":         force,
+            "drive":         drive_status,
             "gmail":         gmail,
         })
     except Exception as e:
         log.exception("sync failed")
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"ok": False, "error": str(e),
+                         "drive": drive_status}), 500
+
+
+@app.route("/api/pull_drive", methods=["POST"])
+def api_pull_drive():
+    """Pull Quarter Target.xlsx from Drive only — does NOT rebuild.
+    Used by the Refresh button when the user just edited the sheet and
+    wants the local Excel mirror updated before clicking Refresh."""
+    s = _pull_quarter_target_from_drive()
+    if s.get("ok") is False:
+        return jsonify({"ok": False, "error": s.get("error")}), 500
+    return jsonify({"ok": True, "drive": s})
 
 
 @app.route("/api/csv_status")
