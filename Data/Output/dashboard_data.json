@@ -1,8 +1,9 @@
 {
   "meta": {
-    "generated_at": "2026-05-18T03:54:04.482107+00:00",
+    "generated_at": "2026-05-18T04:00:51.145207+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
+    "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
     "files": {
       "revenue_csv": {
         "name": "Revenue_Generated_Insurer_Wise.csv",
