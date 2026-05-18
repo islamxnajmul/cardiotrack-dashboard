@@ -1,17 +1,39 @@
 {
   "meta": {
-    "generated_at": "2026-05-17T15:46:29.462062+00:00",
+    "generated_at": "2026-05-18T03:54:04.482107+00:00",
     "q2_target": 20000000,
-    "as_of": "14 May 2026"
+    "as_of": "14 May 2026",
+    "files": {
+      "revenue_csv": {
+        "name": "Revenue_Generated_Insurer_Wise.csv",
+        "mtime": "2026-05-18T03:24:35.162853+00:00",
+        "size": 18244
+      },
+      "incoming_csv": {
+        "name": "Incoming_Order_Count_Insurer_Wise.csv",
+        "mtime": "2026-05-18T03:24:33.853640+00:00",
+        "size": 14111
+      },
+      "closed_csv": {
+        "name": "Closed_Case_Count_Insurer_Wise.csv",
+        "mtime": "2026-05-18T03:24:37.021935+00:00",
+        "size": 12651
+      },
+      "quarter_target_xlsx": {
+        "name": "Quarter Target.xlsx",
+        "mtime": "2026-05-15T07:08:34.498552+00:00",
+        "size": 51692
+      }
+    }
   },
   "kpis": {
     "q2_target": 20000000,
     "apr_revenue": 4952222.029999999,
-    "may_revenue": 2271592.0,
+    "may_revenue": 2369584.0,
     "jun_revenue": 0,
-    "q2_achieved": 7223814.029999999,
-    "gap": 12776185.97,
-    "achievement_pct": 36.1,
+    "q2_achieved": 7321806.029999999,
+    "gap": 12678193.97,
+    "achievement_pct": 36.6,
     "baseline_est": 15000000,
     "delta_required": 5000000,
     "delta_weighted": 5427330
@@ -49,7 +71,7 @@
       5880660.5,
       6494808.0,
       4952222.029999999,
-      2271592.0
+      2369584.0
     ]
   },
   "month_wise": [
@@ -62,8 +84,8 @@
     {
       "month": "May 2026",
       "target": 6789792,
-      "achieved": 2271592.0,
-      "pct": 33.5
+      "achieved": 2369584.0,
+      "pct": 34.9
     },
     {
       "month": "June 2026",
@@ -181,24 +203,24 @@
   "insurer_table": [
     {
       "insurer": "Aditya Birla Sun Life Insurance",
-      "incoming": 2692,
-      "closed": 1006,
-      "conversion": 0.3737,
-      "revenue": 2342133.0
+      "incoming": 2693,
+      "closed": 1025,
+      "conversion": 0.3806,
+      "revenue": 2374360.0
     },
     {
       "insurer": "Ageas Federal Life Insurance",
       "incoming": 176,
-      "closed": 89,
-      "conversion": 0.5057,
-      "revenue": 252734.0
+      "closed": 92,
+      "conversion": 0.5227,
+      "revenue": 260247.0
     },
     {
       "insurer": "Bajaj Life Insurance Company",
-      "incoming": 1464,
-      "closed": 1037,
-      "conversion": 0.7083,
-      "revenue": 2462547.0
+      "incoming": 1487,
+      "closed": 1053,
+      "conversion": 0.7081,
+      "revenue": 2496022.0
     },
     {
       "insurer": "Cardiotrack Home Services",
@@ -210,9 +232,9 @@
     {
       "insurer": "ICICI Lombard",
       "incoming": 1057,
-      "closed": 738,
-      "conversion": 0.6982,
-      "revenue": 1861830.0
+      "closed": 744,
+      "conversion": 0.7039,
+      "revenue": 1882430.0
     },
     {
       "insurer": "Pramerica Life Insurance",
@@ -224,9 +246,9 @@
     {
       "insurer": "Star Union Daichi Life Insurance",
       "incoming": 213,
-      "closed": 81,
-      "conversion": 0.3803,
-      "revenue": 276954.0
+      "closed": 82,
+      "conversion": 0.385,
+      "revenue": 281131.0
     },
     {
       "insurer": "Test Cardiotrack",
@@ -523,9 +545,9 @@
   },
   "q2_orders": {
     "incoming_by_insurer": {
-      "Aditya Birla Sun Life Insurance": 2692,
+      "Aditya Birla Sun Life Insurance": 2693,
       "Ageas Federal Life Insurance": 176,
-      "Bajaj Life Insurance Company": 1464,
+      "Bajaj Life Insurance Company": 1487,
       "Cardiotrack Home Services": 1,
       "ICICI Lombard": 1057,
       "Pramerica Life Insurance": 179,
@@ -533,13 +555,13 @@
       "Test Cardiotrack": 27
     },
     "closed_by_insurer": {
-      "Aditya Birla Sun Life Insurance": 1006,
-      "Ageas Federal Life Insurance": 89,
-      "Bajaj Life Insurance Company": 1037,
+      "Aditya Birla Sun Life Insurance": 1025,
+      "Ageas Federal Life Insurance": 92,
+      "Bajaj Life Insurance Company": 1053,
       "Cardiotrack Home Services": 1,
-      "ICICI Lombard": 738,
+      "ICICI Lombard": 744,
       "Pramerica Life Insurance": 22,
-      "Star Union Daichi Life Insurance": 81
+      "Star Union Daichi Life Insurance": 82
     }
   },
   "orders_monthly": {
@@ -1672,30 +1694,30 @@
         "Test Cardiotrack": 12
       },
       "closed": {
-        "Aditya Birla Sun Life Insurance": 714,
+        "Aditya Birla Sun Life Insurance": 715,
         "Ageas Federal Life Insurance": 62,
         "Bajaj Life Insurance Company": 713,
         "Cardiotrack Home Services": 1,
-        "ICICI Lombard": 562,
+        "ICICI Lombard": 563,
         "Pramerica Life Insurance": 22,
-        "Star Union Daichi Life Insurance": 69
+        "Star Union Daichi Life Insurance": 70
       }
     },
     "May 2026": {
       "incoming": {
-        "Aditya Birla Sun Life Insurance": 826,
+        "Aditya Birla Sun Life Insurance": 827,
         "Ageas Federal Life Insurance": 67,
-        "Bajaj Life Insurance Company": 555,
+        "Bajaj Life Insurance Company": 578,
         "ICICI Lombard": 315,
         "Pramerica Life Insurance": 110,
         "Star Union Daichi Life Insurance": 41,
         "Test Cardiotrack": 15
       },
       "closed": {
-        "Aditya Birla Sun Life Insurance": 292,
-        "Ageas Federal Life Insurance": 27,
-        "Bajaj Life Insurance Company": 324,
-        "ICICI Lombard": 176,
+        "Aditya Birla Sun Life Insurance": 310,
+        "Ageas Federal Life Insurance": 30,
+        "Bajaj Life Insurance Company": 340,
+        "ICICI Lombard": 181,
         "Star Union Daichi Life Insurance": 12
       }
     }
@@ -1769,12 +1791,12 @@
     {
       "month": "Apr 2026",
       "incoming": 3880,
-      "closed": 2143
+      "closed": 2146
     },
     {
       "month": "May 2026",
-      "incoming": 1929,
-      "closed": 831
+      "incoming": 1953,
+      "closed": 873
     }
   ],
   "monthly_targets": {
