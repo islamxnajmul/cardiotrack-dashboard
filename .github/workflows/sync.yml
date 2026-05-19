@@ -1,27 +1,32 @@
-name: Cardiotrack Sync
+name: Cardiotrack Sync + Deploy
 
-# Runs frequently during India business hours and once overnight:
-#   * Every 2 hours from 04:00–14:00 UTC  →  09:30–19:30 IST
-#     (covers the working day; 6 runs/day)
-#   * One overnight catch-up at 19:00 UTC →  00:30 IST
-# Plus on-demand: 'Run workflow' button in the Actions tab.
+# Runs frequently during India business hours, plus on-demand:
+#   UTC 04, 06, 08, 10, 12, 14, 19  →  IST 09:30, 11:30, 13:30, 15:30,
+#                                        17:30, 19:30, 00:30
+# Plus 'Run workflow' button in the Actions tab.
 on:
   schedule:
     - cron: '0 4,6,8,10,12,14,19 * * *'
   workflow_dispatch: {}
 
+# Required for actions/deploy-pages
 permissions:
-  contents: write    # we commit the regenerated HTML+JSON back to the repo
+  contents: read
+  pages:    write
+  id-token: write
 
-# Prevent two scheduled runs from racing into the same commit.
+# Serialize runs — newer scheduled triggers queue rather than racing
 concurrency:
   group: cardiotrack-sync
   cancel-in-progress: false
 
 jobs:
-  sync:
+  sync-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Check out repo
@@ -40,8 +45,7 @@ jobs:
             google-api-python-client \
             openpyxl
 
-      # The OAuth credentials and refresh token live in GitHub Secrets — never
-      # in the repo. We restore them to disk only for the duration of the run.
+      # ── 1. Restore OAuth credentials from secrets ────────────────────────
       - name: Restore OAuth credentials from secrets
         env:
           CREDS: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
@@ -50,10 +54,21 @@ jobs:
           mkdir -p Automation
           printf '%s' "$CREDS" > Automation/credentials.json
           printf '%s' "$TOKEN" > Automation/token.json
-          # Don't echo the contents — just confirm they landed.
           echo "credentials.json: $(wc -c < Automation/credentials.json) bytes"
           echo "token.json:       $(wc -c < Automation/token.json) bytes"
 
+      # ── 2. Restore sync_log.json from the prior run's artifact ───────────
+      # This is how dedup state persists across runs without us committing
+      # back to main. If no prior artifact exists (first run), we just start
+      # fresh — the script handles that gracefully.
+      - name: Restore previous sync_log.json (if any)
+        uses: actions/download-artifact@v4
+        with:
+          name: cardiotrack-sync-log
+          path: Automation/
+        continue-on-error: true   # first-ever run has no prior artifact
+
+      # ── 3. Pull Quarter Target.xlsx from Drive + sync from Gmail + rebuild
       - name: Pull Quarter Target.xlsx from Google Drive
         env:
           QUARTER_TARGET_FILE_ID: ${{ secrets.QUARTER_TARGET_FILE_ID }}
@@ -62,26 +77,37 @@ jobs:
       - name: Run sync (Gmail → CSVs → JSON → HTML)
         run: python3 Automation/cardiotrack_sync.py
 
-      # Wipe the secrets back off disk so they can never end up in a commit.
+      # ── 4. Scrub secrets before any further steps run ────────────────────
       - name: Scrub OAuth artefacts
         if: always()
         run: |
           rm -f Automation/credentials.json Automation/token.json
           rm -f "Data/Input/Quarter Target.xlsx"
 
-      # Cloudflare Pages auto-deploys on every push to the default branch.
-      - name: Commit results
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Data/Output/ Automation/sync_log.json 2>/dev/null || true
-          if git diff --staged --quiet; then
-            echo "No changes to commit (data unchanged since last run)."
-          else
-            git commit -m "Daily sync: $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
-          fi
+      # ── 5. Persist sync_log.json for the next run ────────────────────────
+      - name: Upload sync_log.json as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cardiotrack-sync-log
+          path: Automation/sync_log.json
+          retention-days: 90
+          overwrite: true
+        if: hashFiles('Automation/sync_log.json') != ''
 
+      # ── 6. Deploy directly to GitHub Pages — no git commit, no race ──────
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./Data/Output
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      # ── 7. Diagnostic summary (always shown in Actions UI) ───────────────
       - name: Workflow summary
         if: always()
         run: |

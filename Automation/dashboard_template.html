@@ -216,34 +216,49 @@
     </div>
   </div>
 
-  <!-- PROGRESS BARS -->
+  <!-- Q2 REVENUE PROGRESS TRACKER (redesigned) -->
   <div class="card" style="margin-bottom:20px">
     <div class="card-title">🎯 Q2 Revenue Progress Tracker</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
-      <div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>April Revenue (Realized)</span><span id="pb-apr-val">—</span></div>
-          <div class="progress-bar"><div class="progress-fill fill-green" id="pb-apr" style="width:0%"></div></div>
-        </div>
+    <p style="font-size:.72rem;color:var(--text2);margin-bottom:14px">
+      Realized so far + weighted pipeline as % of ₹2 Cr Q2 target. Coverage = how
+      much of the remaining gap is already in pipeline.
+    </p>
+
+    <!-- Four headline stat tiles -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+      <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF">
+        <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Q2 Target</div>
+        <div style="font-size:1.25rem;font-weight:800;color:#0D1B2A;margin-top:4px" id="qt-target">—</div>
+        <div style="font-size:.66rem;color:var(--text2);margin-top:2px">Apr 60L · May 65L · Jun 75L</div>
       </div>
-      <div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>May Revenue (Partial)</span><span id="pb-may-val">—</span></div>
-          <div class="progress-bar"><div class="progress-fill fill-blue" id="pb-may" style="width:0%"></div></div>
-        </div>
+      <div style="border:1px solid #D5F5E3;border-radius:8px;padding:11px 14px;background:#F4FCF8">
+        <div style="font-size:.65rem;font-weight:700;color:#1E8449;text-transform:uppercase;letter-spacing:.5px">Realized</div>
+        <div style="font-size:1.25rem;font-weight:800;color:#1E8449;margin-top:4px" id="qt-realized">—</div>
+        <div style="font-size:.66rem;color:#1E8449;margin-top:2px"><span id="qt-realized-pct">—</span> of target</div>
       </div>
-      <div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Existing Baseline (Q2 Est.)</span><span>₹1,50,00,000</span></div>
-          <div class="progress-bar"><div class="progress-fill fill-amber" style="width:75%"></div></div>
-        </div>
+      <div style="border:1px solid #FEF3C7;border-radius:8px;padding:11px 14px;background:#FFFBEB">
+        <div style="font-size:.65rem;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:.5px">Weighted Pipeline</div>
+        <div style="font-size:1.25rem;font-weight:800;color:#92400E;margin-top:4px" id="qt-pipeline">—</div>
+        <div style="font-size:.66rem;color:#92400E;margin-top:2px"><span id="qt-pipeline-pct">—</span> of target</div>
       </div>
-      <div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Delta Pipeline (Weighted)</span><span id="pb-delta-val">—</span></div>
-          <div class="progress-bar"><div class="progress-fill fill-red" id="pb-delta" style="width:0%"></div></div>
-        </div>
+      <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF" id="qt-coverage-card">
+        <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Pipeline Coverage</div>
+        <div style="font-size:1.25rem;font-weight:800;margin-top:4px" id="qt-coverage">—</div>
+        <div style="font-size:.66rem;color:var(--text2);margin-top:2px">of <span id="qt-gap">—</span> still to close</div>
       </div>
+    </div>
+
+    <!-- Single stacked bar showing realized + pipeline + uncovered against full Q2 target -->
+    <div style="position:relative;height:36px;background:#F0F4F8;border-radius:8px;overflow:hidden;display:flex">
+      <div id="qt-seg-realized" style="height:100%;background:linear-gradient(135deg,#27AE60,#1E8449);transition:width .5s ease;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.78rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.3)" title="Realized"></div>
+      <div id="qt-seg-pipeline" style="height:100%;background:linear-gradient(135deg,#F39C12,#D68910);transition:width .5s ease;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.78rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.3)" title="Weighted pipeline"></div>
+      <div id="qt-seg-gap" style="height:100%;background:repeating-linear-gradient(45deg,#D5D8DC,#D5D8DC 8px,#E5E7E9 8px,#E5E7E9 16px);transition:width .5s ease;display:flex;align-items:center;justify-content:center;color:#5D6D7E;font-size:.78rem;font-weight:700" title="Uncovered gap"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:var(--text2);margin-top:8px">
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#27AE60;margin-right:5px"></span>Realized</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#F39C12;margin-right:5px"></span>Weighted Pipeline</span>
+      <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,#D5D8DC,#D5D8DC 4px,#E5E7E9 4px,#E5E7E9 8px);margin-right:5px"></span>Uncovered Gap</span>
+      <span>Target: <span id="qt-target-inline">—</span></span>
     </div>
   </div>
 
@@ -527,14 +542,72 @@ function renderKPIs(d) {
   document.getElementById('kpi-q2-pct').textContent = k.achievement_pct + '% of target';
   document.getElementById('kpi-gap').textContent    = fmtL(k.gap);
 
-  // Progress bars
-  const q2t = k.q2_target;
-  document.getElementById('pb-apr').style.width     = pct(k.apr_revenue, q2t) + '%';
-  document.getElementById('pb-apr-val').textContent = fmtL(k.apr_revenue);
-  document.getElementById('pb-may').style.width     = pct(k.may_revenue, q2t) + '%';
-  document.getElementById('pb-may-val').textContent = fmtL(k.may_revenue);
-  document.getElementById('pb-delta').style.width   = pct(k.delta_weighted, q2t) + '%';
-  document.getElementById('pb-delta-val').textContent = fmtL(k.delta_weighted);
+  renderQ2Tracker(d);
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Q2 REVENUE PROGRESS TRACKER (redesign)
+// ─────────────────────────────────────────────────────────────────
+// Shows:  Realized + Weighted Pipeline vs ₹2 Cr Q2 target,
+//         and "Pipeline Coverage" of the remaining gap.
+//
+// Coverage = weighted pipeline / (target - realized). Tells you:
+//    ≥100% → pipeline more than covers the gap (likely to hit target)
+//    50-99% → at risk, need to build more pipeline
+//    < 50%  → unlikely to hit target without major intervention
+function renderQ2Tracker(d) {
+  const k        = d.kpis || {};
+  const target   = k.q2_target || 20000000;
+  const realized = k.q2_achieved || 0;
+  // Weighted pipeline = existing + prospect, May + June.
+  // Source already computed by the Python build.
+  const pipeline = (d.pipeline_by_type?.existing_weighted || 0) +
+                   (d.pipeline_by_type?.prospect_weighted || 0);
+  const gap      = Math.max(target - realized, 0);
+  // Cap the visualised pipeline at the size of the remaining gap so the bar
+  // never overflows past 100% of the target.
+  const pipelineCapped = Math.min(pipeline, gap);
+  const uncovered = Math.max(gap - pipelineCapped, 0);
+
+  const coveragePct = gap > 0 ? Math.round(pipeline / gap * 100) : 100;
+  const coverageColor = coveragePct >= 100 ? '#1E8449'
+                      : coveragePct >= 50  ? '#B45309'
+                      : '#C0392B';
+
+  // Stat tiles
+  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  set('qt-target',         fmtL(target));
+  set('qt-target-inline',  fmtL(target));
+  set('qt-realized',       fmtL(realized));
+  set('qt-realized-pct',   Math.round(realized/target*100) + '%');
+  set('qt-pipeline',       fmtL(pipeline));
+  set('qt-pipeline-pct',   Math.round(pipeline/target*100) + '%');
+  set('qt-coverage',       coveragePct + '%');
+  set('qt-gap',            fmtL(gap));
+
+  // Colour the coverage card by health
+  const card = document.getElementById('qt-coverage-card');
+  if (card) {
+    card.style.background = coveragePct >= 100 ? '#F4FCF8'
+                          : coveragePct >= 50  ? '#FFFBEB'
+                          : '#FDEDEC';
+    card.style.borderColor = coveragePct >= 100 ? '#D5F5E3'
+                           : coveragePct >= 50  ? '#FEF3C7'
+                           : '#FADBD8';
+  }
+  const covEl = document.getElementById('qt-coverage');
+  if (covEl) covEl.style.color = coverageColor;
+
+  // Stacked bar segments — widths as % of target
+  const segR = document.getElementById('qt-seg-realized');
+  const segP = document.getElementById('qt-seg-pipeline');
+  const segG = document.getElementById('qt-seg-gap');
+  const rPct = (realized       / target) * 100;
+  const pPct = (pipelineCapped / target) * 100;
+  const gPct = Math.max(100 - rPct - pPct, 0);
+  if (segR) { segR.style.width = rPct + '%'; segR.textContent = rPct >= 10 ? fmtL(realized)       : ''; }
+  if (segP) { segP.style.width = pPct + '%'; segP.textContent = pPct >= 10 ? fmtL(pipelineCapped) : ''; }
+  if (segG) { segG.style.width = gPct + '%'; segG.textContent = gPct >= 10 ? fmtL(uncovered)      : ''; }
 }
 
 function renderTrendChart(d) {
@@ -562,7 +635,7 @@ function renderTrendChart(d) {
         callbacks:{ label: ctx => '  ' + fmt(ctx.raw) }
       }},
       scales: {
-        y:{ ticks:{ callback: v => fmtL(v) }, grid:{ color:'#EEF2F5' }},
+        y:{ beginAtZero: true, ticks:{ callback: v => fmtL(v) }, grid:{ color:'#EEF2F5' }},
         x:{ ticks:{ font:{size:10}, maxRotation:45 }, grid:{ display:false }},
       }
     }
@@ -1069,51 +1142,198 @@ function renderActions(d) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// MAIN LOAD
+// GLOBAL ERROR HANDLERS — so silent failures become visible failures
+// ─────────────────────────────────────────────────────────────────
+// Any uncaught JS error or rejected Promise gets logged AND surfaces
+// as a banner on screen. Means we never end up with a spinner that
+// "just" hangs — there's always feedback.
+window.__loadDiagnostics = [];
+function logDiag(level, msg, extra) {
+  const entry = {ts: new Date().toISOString(), level, msg, extra: extra || null};
+  window.__loadDiagnostics.push(entry);
+  const prefix = '[dashboard ' + level + ']';
+  if (level === 'error') console.error(prefix, msg, extra || '');
+  else if (level === 'warn') console.warn(prefix, msg, extra || '');
+  else console.log(prefix, msg, extra || '');
+}
+window.addEventListener('error', e => {
+  logDiag('error', 'Uncaught: ' + (e.message || 'unknown'),
+          {filename: e.filename, lineno: e.lineno, colno: e.colno});
+});
+window.addEventListener('unhandledrejection', e => {
+  logDiag('error', 'Unhandled promise rejection: ' + (e.reason?.message || e.reason));
+});
+
+// ─────────────────────────────────────────────────────────────────
+// MAIN LOAD — defensive: each render isolated, explicit error UI
 // ─────────────────────────────────────────────────────────────────
 async function loadData() {
+  logDiag('info', 'loadData() started');
+  let data;
+  let dataSource = '?';
+
+  // ── 1. Acquire data — fetch first, fall back to embedded ───────────
   try {
-    // Try to fetch external JSON; fall back to embedded data
-    let data;
-    try {
-      const resp = await fetch('dashboard_data.json?t=' + Date.now());
-      data = await resp.json();
-    } catch(e) {
-      data = window.__EMBEDDED_DATA__;
+    const resp = await fetch('dashboard_data.json?t=' + Date.now(), {cache:'no-store'});
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    if (_hasConflictMarkers(text)) {
+      throw new Error('dashboard_data.json contains unresolved git merge markers — file is corrupt');
     }
-    if (!data) throw new Error('No data available');
-
-    renderKPIs(data);
-    renderTrendChart(data);
-    renderMonthChart(data);
-    renderAprTable(data);
-    renderPieChart(data);
-    renderOrderTargets(data);
-    renderOrdersChart(data);
-    renderOrdersTable(data);
-    renderOrdersTrendChart(data);
-    renderPipeline(data);
-    renderActions(data);
-
-    const ts = new Date(data.meta?.generated_at || Date.now());
-    document.getElementById('last-sync').textContent = ts.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
-    document.getElementById('footer-time').textContent = 'Generated: ' + ts.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
-    document.getElementById('subtitle').textContent =
-      `Apr – Jun 2026  ·  Target: ₹2,00,00,000  ·  As of: ${data.meta?.as_of||''}`;
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('main-content').style.display = 'block';
-
-  } catch(err) {
-    console.error(err);
-    document.getElementById('loading').innerHTML =
-      `<div style="color:#ff6b6b;text-align:center">
-        <div style="font-size:2rem">⚠️</div>
-        <div>Failed to load data</div>
-        <div style="font-size:.8rem;margin-top:8px">${err.message}</div>
-        <button class="btn btn-refresh" onclick="loadData()" style="margin-top:12px">Retry</button>
-      </div>`;
+    data = JSON.parse(text);
+    dataSource = 'fetched JSON';
+    logDiag('info', `Fetched dashboard_data.json (${text.length} bytes)`);
+  } catch(fetchErr) {
+    logDiag('warn', 'JSON fetch failed: ' + fetchErr.message + ' — falling back to embedded data');
+    try {
+      data = window.__EMBEDDED_DATA__;
+      dataSource = 'embedded';
+      // Embedded data is a real JS object, not a string — but conflict markers
+      // baked into the HTML would have caused a syntax error already, so if
+      // __EMBEDDED_DATA__ is even readable, it's structurally valid.
+      if (!data) throw new Error('window.__EMBEDDED_DATA__ is undefined');
+      logDiag('info', 'Using embedded data');
+    } catch(embedErr) {
+      return showFatalError(
+        'Could not load any dashboard data.',
+        [fetchErr.message, embedErr.message]
+      );
+    }
   }
+
+  // ── 2. Validate the data shape ─────────────────────────────────────
+  const required = ['meta', 'kpis', 'monthly_trend', 'pipeline'];
+  const missing  = required.filter(k => !data[k]);
+  if (missing.length) {
+    return showFatalError(
+      `Data is missing required fields: ${missing.join(', ')}`,
+      [`Data source: ${dataSource}`, `Keys present: ${Object.keys(data).join(', ')}`]
+    );
+  }
+
+  // ── 3. Render each section in isolation — one failure doesn't break the rest
+  const renderSteps = [
+    ['KPIs',            () => renderKPIs(data)],
+    ['Trend chart',     () => renderTrendChart(data)],
+    ['Month chart',     () => renderMonthChart(data)],
+    ['April customers', () => renderAprTable(data)],
+    ['Pie chart',       () => renderPieChart(data)],
+    ['Order targets',   () => renderOrderTargets(data)],
+    ['Orders chart',    () => renderOrdersChart(data)],
+    ['Orders table',    () => renderOrdersTable(data)],
+    ['Orders trend',    () => renderOrdersTrendChart(data)],
+    ['Pipeline',        () => renderPipeline(data)],
+    ['Actions',         () => renderActions(data)],
+  ];
+  const failures = [];
+  for (const [label, fn] of renderSteps) {
+    try {
+      fn();
+      logDiag('info', `Rendered: ${label}`);
+    } catch(e) {
+      logDiag('error', `Render failed: ${label} — ${e.message}`, {stack: e.stack});
+      failures.push({label, message: e.message});
+    }
+  }
+
+  // ── 4. Header timestamps ───────────────────────────────────────────
+  try {
+    const ts = new Date(data.meta?.generated_at || Date.now());
+    const tsLabel = ts.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+    const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    setText('last-sync', tsLabel);
+    setText('footer-time', 'Generated: ' + tsLabel);
+    setText('subtitle', `Apr – Jun 2026  ·  Target: ₹2,00,00,000  ·  As of: ${data.meta?.as_of||''}`);
+  } catch(e) {
+    logDiag('warn', 'Header-timestamp update failed: ' + e.message);
+  }
+
+  // ── 5. Reveal content ──────────────────────────────────────────────
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+
+  // ── 6. If some sections failed, show a non-blocking banner ─────────
+  if (failures.length) {
+    showSoftErrorBanner(failures);
+  }
+  logDiag('info', `loadData() done. Source=${dataSource}. ${failures.length} render(s) failed.`);
+}
+
+/* ─── helpers ──────────────────────────────────────────────────────── */
+function _hasConflictMarkers(text) {
+  return /^<<<<<<< |^======= *$|^>>>>>>> /m.test(text);
+}
+
+function showFatalError(headline, details) {
+  logDiag('error', 'FATAL: ' + headline, details);
+  document.getElementById('loading').innerHTML =
+    `<div style="color:#fff;max-width:560px;margin:0 auto;text-align:left;background:#0D1B2A;padding:24px 28px;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+      <div style="font-size:2rem;text-align:center;margin-bottom:10px">⚠️</div>
+      <h2 style="font-size:1.1rem;margin:0 0 12px;text-align:center">Dashboard couldn't load</h2>
+      <div style="background:#fff;color:#0D1B2A;padding:12px 14px;border-radius:6px;font-size:.85rem;line-height:1.45;margin-bottom:14px">
+        <strong>${_esc(headline)}</strong>
+      </div>
+      ${details && details.length ? `
+      <details style="font-size:.78rem;color:#90CAF9;margin-bottom:14px">
+        <summary style="cursor:pointer;font-weight:600">Diagnostics</summary>
+        <pre style="background:rgba(0,0,0,.3);padding:10px;border-radius:5px;margin-top:8px;overflow-x:auto;white-space:pre-wrap">${details.map(_esc).join('\n')}</pre>
+      </details>` : ''}
+      <div style="font-size:.78rem;color:#BBDEFB;margin-bottom:14px">
+        <strong>How to recover:</strong>
+        <ol style="margin:6px 0 0 18px;padding:0">
+          <li>If you see "unresolved git merge markers" above → run <code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:3px">python3 Automation/cardiotrack_sync.py --rebuild</code> on your Mac, then refresh this page.</li>
+          <li>Otherwise click Retry — it tries fetching the data again.</li>
+          <li>Open the browser console (Cmd-Option-J) for the full log of what happened.</li>
+        </ol>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button onclick="loadData()" style="padding:8px 18px;background:#1B7F79;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">⟳ Retry</button>
+        <button onclick="_copyDiagnosticsToClipboard()" style="padding:8px 18px;background:#1B4F72;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Copy diagnostics</button>
+      </div>
+    </div>`;
+}
+
+function showSoftErrorBanner(failures) {
+  if (document.getElementById('softErrBanner')) return;
+  const html = `
+    <div id="softErrBanner" style="background:linear-gradient(90deg,#E67E22,#D35400);color:#fff;padding:9px 18px;font-size:.82rem;font-weight:500;display:flex;align-items:center;gap:12px;justify-content:center">
+      <span style="font-size:1rem">⚠️</span>
+      <span>${failures.length} dashboard section${failures.length>1?'s':''} couldn't render. The rest of the page is showing correctly.</span>
+      <button onclick="_showFailureDetails()" style="margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:none;padding:5px 12px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">View details</button>
+      <button onclick="document.getElementById('softErrBanner').remove()" style="background:rgba(0,0,0,.2);color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">Dismiss</button>
+    </div>`;
+  document.body.insertAdjacentHTML('afterbegin', html);
+  window.__failedRenders = failures;
+}
+
+function _showFailureDetails() {
+  const failures = window.__failedRenders || [];
+  const html = `
+    <div id="failureDetailsModal" style="position:fixed;inset:0;background:rgba(13,27,42,.7);z-index:9999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;max-width:560px;padding:24px 28px;box-shadow:0 10px 50px rgba(0,0,0,.4);max-height:80vh;overflow-y:auto">
+        <h2 style="font-size:1.05rem;color:#0D1B2A;margin-bottom:10px">Failed dashboard sections</h2>
+        <pre style="font-size:.78rem;background:#F0F4F8;padding:10px;border-radius:6px;white-space:pre-wrap">${failures.map(f => `${_esc(f.label)}\n  ${_esc(f.message)}`).join('\n\n')}</pre>
+        <div style="font-size:.78rem;color:#5D6D7E;margin-top:12px">Full diagnostics are in <code>window.__loadDiagnostics</code> (open browser console). Click "Copy diagnostics" to grab them.</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+          <button onclick="_copyDiagnosticsToClipboard()" style="padding:8px 14px;background:#1B4F72;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Copy diagnostics</button>
+          <button onclick="document.getElementById('failureDetailsModal').remove()" style="padding:8px 14px;background:#1B7F79;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Close</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function _copyDiagnosticsToClipboard() {
+  const blob = JSON.stringify(window.__loadDiagnostics || [], null, 2);
+  navigator.clipboard?.writeText(blob).then(
+    () => showToast('Diagnostics copied to clipboard', 'success'),
+    () => showToast('Could not copy — check the browser console', 'warning')
+  );
+}
+
+function _esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 // Embed the data directly so the file works offline too (opened without server)
@@ -1129,12 +1349,17 @@ window.__EMBEDDED_DATA__ = __DASHBOARD_DATA__;
 let SERVER_AVAILABLE = false;
 
 async function detectServer() {
-  // Two ways to end up "offline": (a) the page was opened directly via file://
-  // or (b) opened via http but no Flask server answers /api/status. Either way
-  // pressing Refresh can't actually re-read Excel — and we MUST tell the user.
+  // Three modes:
+  //  (a) Local Flask server → real /api/* endpoints
+  //  (b) Public site (github.io) WITH a Cloudflare Worker configured →
+  //      Refresh button triggers a fresh cloud build via the Worker
+  //  (c) Public site WITHOUT a Worker (or opened via file://) →
+  //      Refresh button shows the deep-link modal (manual workflow trigger)
+  const modeLabel = document.getElementById('mode-label');
+
   if (location.protocol === 'file:') {
     SERVER_AVAILABLE = false;
-    document.getElementById('mode-label').innerHTML = '<span style="color:#E8A838">📁 static snapshot (file://)</span>';
+    modeLabel.innerHTML = '<span style="color:#E8A838">📁 static file (file://)</span>';
     markRefreshOffline();
     return;
   }
@@ -1142,12 +1367,22 @@ async function detectServer() {
     const r = await fetch('/api/status', {cache:'no-store'});
     if (r.ok) {
       SERVER_AVAILABLE = true;
-      document.getElementById('mode-label').innerHTML = '<span style="color:#27AE60">● live (server)</span>';
+      modeLabel.innerHTML = '<span style="color:#27AE60">● live (local server)</span>';
       return;
     }
   } catch(_){}
-  document.getElementById('mode-label').innerHTML = '<span style="color:#E8A838">📁 static snapshot (no server)</span>';
-  markRefreshOffline();
+
+  // Public site path — check whether a refresh-Worker URL was baked into the build
+  const workerUrl = window.__EMBEDDED_DATA__?.meta?.public_refresh_url;
+  if (workerUrl) {
+    modeLabel.innerHTML = '<span style="color:#27AE60">● live cloud data</span>';
+    // Refresh button is fully functional via the Worker — don't grey it out
+    const s = document.querySelector('.btn-sync');
+    if (s) { s.disabled = true; s.style.opacity = 0.4; s.title = 'Use Refresh — it pulls Drive + Gmail via the cloud Worker.'; }
+  } else {
+    modeLabel.innerHTML = '<span style="color:#E8A838">📁 static snapshot</span>';
+    markRefreshOffline();
+  }
 }
 
 function markRefreshOffline() {
@@ -1160,22 +1395,160 @@ function markRefreshOffline() {
 }
 
 async function refreshFromExcel() {
-  if (!SERVER_AVAILABLE) {
-    // We CANNOT re-read Excel from pure browser JS (no filesystem access).
-    // Be explicit about it rather than silently re-rendering embedded data.
-    showOfflineRefreshDialog();
+  if (SERVER_AVAILABLE) {
+    // Local Flask server — re-read CSVs/Excel from disk.
+    setButtonsBusy(true, '⟳ Re-reading Excel…');
+    try {
+      const r = await fetch('/api/refresh', {method:'POST'});
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'refresh failed');
+      await loadData();
+    } catch(e) {
+      alert('Refresh failed: ' + e.message);
+    } finally {
+      setButtonsBusy(false);
+    }
     return;
   }
-  setButtonsBusy(true, '⟳ Re-reading Excel…');
+
+  // Public site (github.io) — if a Cloudflare Worker URL is configured,
+  // trigger a real cloud sync. Otherwise fall back to the deep-link modal.
+  const workerUrl = (window.__EMBEDDED_DATA__?.meta?.public_refresh_url || '').replace(/\/+$/,'');
+  if (workerUrl) {
+    await triggerCloudRefresh(workerUrl);
+  } else {
+    showOfflineRefreshDialog();
+  }
+}
+
+/**
+ * Trigger a fresh cloud build via the Cloudflare Worker and watch it through
+ * to redeploy. Shows a live progress modal; auto-reloads when the new HTML
+ * is live on GitHub Pages.
+ */
+async function triggerCloudRefresh(workerUrl) {
+  showCloudRefreshModal();
+  setCloudRefreshStep(1, 'Asking the cloud to sync…');
+
+  // POST to the Worker. Worker → GitHub workflow_dispatch.
+  let triggered;
   try {
-    const r = await fetch('/api/refresh', {method:'POST'});
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error || 'refresh failed');
-    await loadData();
+    const r = await fetch(workerUrl + '/', {method:'POST'});
+    triggered = await r.json();
+    if (!triggered.ok) throw new Error(triggered.error || ('Worker returned ' + r.status));
   } catch(e) {
-    alert('Refresh failed: ' + e.message);
-  } finally {
-    setButtonsBusy(false);
+    return cloudRefreshError(`Couldn't reach the sync Worker.\n${e.message}`);
+  }
+
+  setCloudRefreshStep(2, 'Triggered. Waiting for the run to start…');
+
+  // The freshly-triggered workflow takes a few seconds to appear in the API.
+  // Note the previous run-id so we can detect the new one rather than
+  // mistaking a stale "completed" run for the just-triggered one.
+  const baselineRunId = await pollWorkerStatus(workerUrl, r => r?.id, 1000, 3);
+
+  // Poll for the new run to start, then for it to finish.
+  const newRunId = await pollWorkerStatus(workerUrl, r => {
+    return (r && r.id && r.id !== baselineRunId) ? r.id : null;
+  }, 2000, 30);    // up to 60s for the run to appear
+  if (!newRunId) {
+    return cloudRefreshError('Triggered, but the new run never appeared in GitHub. '
+      + 'Open the Actions tab manually to check: ' + (triggered.actions_url || ''));
+  }
+
+  setCloudRefreshStep(3, 'Running pipeline (pulling Drive + Gmail)…');
+
+  // Watch this specific run until it completes
+  const conclusion = await pollWorkerStatus(workerUrl, r => {
+    if (r && r.id === newRunId && r.status === 'completed') return r.conclusion || 'unknown';
+    return null;
+  }, 3000, 60);    // up to 3 min total
+
+  if (!conclusion) {
+    return cloudRefreshError('Run started but didn\'t finish within 3 minutes. '
+      + 'It may still complete — check the Actions tab.');
+  }
+  if (conclusion !== 'success') {
+    return cloudRefreshError(`Run finished with status: ${conclusion}. `
+      + `Check the Actions log for details.`);
+  }
+
+  setCloudRefreshStep(4, 'Deployment publishing on GitHub Pages…');
+  // GitHub Pages typically takes 20-40s to publish after the commit lands
+  await new Promise(r => setTimeout(r, 25000));
+
+  setCloudRefreshStep(5, 'Reloading with fresh data…');
+  // Cache-bust so the new HTML is fetched fresh
+  setTimeout(() => location.reload(), 1000);
+}
+
+/**
+ * Generic poll-with-extractor:
+ *   - Calls GET <workerUrl>/status
+ *   - Passes the .run object to extractor()
+ *   - If extractor returns truthy, polling stops and that value is returned
+ *   - Otherwise sleeps `intervalMs` and retries up to `maxAttempts` times
+ */
+async function pollWorkerStatus(workerUrl, extractor, intervalMs, maxAttempts) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const r = await fetch(workerUrl + '/status', {cache:'no-store'});
+      const j = await r.json();
+      const v = extractor(j?.run);
+      if (v) return v;
+    } catch(_){}
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+  return null;
+}
+
+/* ─── Cloud-refresh progress modal ────────────────────────────────────── */
+function showCloudRefreshModal() {
+  if (document.getElementById('cloudRefreshModal')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="cloudRefreshModal" style="position:fixed;inset:0;background:rgba(13,27,42,.75);z-index:9999;display:flex;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;max-width:480px;padding:26px 28px;box-shadow:0 10px 50px rgba(0,0,0,.4);font-family:inherit">
+        <h2 style="font-size:1.05rem;color:#0D1B2A;margin:0 0 6px;display:flex;align-items:center;gap:8px">
+          <span class="spinner" style="display:inline-block;width:18px;height:18px;border:3px solid #E0E0E0;border-top-color:#1B7F79;border-radius:50%;animation:spin .8s linear infinite"></span>
+          Refreshing live data
+        </h2>
+        <div style="font-size:.78rem;color:#5D6D7E;margin-bottom:18px">Pulling latest from Google Drive + Gmail, then redeploying.</div>
+        <ol id="cloudRefreshSteps" style="font-size:.85rem;color:#5D6D7E;line-height:1.85;padding-left:22px;margin:0 0 18px">
+          <li id="crs-1" style="opacity:.4">Trigger sync</li>
+          <li id="crs-2" style="opacity:.4">Wait for run to start</li>
+          <li id="crs-3" style="opacity:.4">Run pipeline (Drive + Gmail + parse)</li>
+          <li id="crs-4" style="opacity:.4">Deploy to GitHub Pages</li>
+          <li id="crs-5" style="opacity:.4">Reload</li>
+        </ol>
+        <div id="cloudRefreshStatus" style="font-size:.8rem;color:#0D1B2A;background:#F0F4F8;border-radius:6px;padding:9px 12px">Starting…</div>
+        <div style="font-size:.7rem;color:#94A3B8;margin-top:10px">Usually 60–90 seconds. You can close this — sync continues in the background.</div>
+      </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  `);
+}
+function setCloudRefreshStep(n, statusText) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('crs-' + i);
+    if (!el) continue;
+    if (i < n)  { el.style.opacity = 1;   el.style.color = '#27AE60'; el.innerHTML = el.textContent.replace(/^✓ /,'') + ' ✓'; }
+    if (i === n){ el.style.opacity = 1;   el.style.color = '#1B7F79'; el.style.fontWeight = 600; }
+    if (i > n)  { el.style.opacity = 0.4; }
+  }
+  const s = document.getElementById('cloudRefreshStatus');
+  if (s) s.textContent = statusText;
+}
+function cloudRefreshError(msg) {
+  const m = document.getElementById('cloudRefreshModal');
+  if (m) {
+    m.querySelector('h2').textContent = '⚠️ Refresh failed';
+    m.querySelector('h2').style.color = '#C0392B';
+    document.getElementById('cloudRefreshStatus').textContent = msg;
+    document.getElementById('cloudRefreshStatus').style.background = '#FDEDEC';
+    document.getElementById('cloudRefreshStatus').style.color = '#641E16';
+    m.querySelector('.spinner')?.remove();
+    m.querySelector('div').insertAdjacentHTML('beforeend',
+      `<div style="text-align:right;margin-top:14px"><button onclick="document.getElementById('cloudRefreshModal').remove()" style="padding:8px 16px;background:#1B4F72;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer">Close</button></div>`);
   }
 }
 

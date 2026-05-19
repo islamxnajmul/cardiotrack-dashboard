@@ -31,3 +31,7 @@ venv/
 # Editor folders
 .vscode/
 .idea/
+
+# Cloudflare wrangler local cache (auth tokens, build artefacts)
+cloudflare-worker/.wrangler/
+**/.wrangler/

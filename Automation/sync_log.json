@@ -1,44 +1,5 @@
 {
-  "processed_message_ids": [
-    "19e3c55a57a19ac5",
-    "19e3208ef012a184",
-    "19e3208f1bb770b5",
-    "19e2ce28f75dd7a9",
-    "19e372f5407fe3f0",
-    "19e372f45d12054b",
-    "19e310ab3d6c5583",
-    "19e2a4adbbe9c0bc",
-    "19e3c55acaf7968a",
-    "19e372f51438a77a",
-    "19e3208f529d13d4",
-    "19e3c55ac6f20793",
-    "19e310a74c869938",
-    "19e2ce292c9fcfc3",
-    "19e2a4aceee13836",
-    "19e2ce2915be2414",
-    "19e310a32ab03164",
-    "19e310aee94dc4a3",
-    "19e2a4ace444a069"
-  ],
-  "attachment_hashes": {
-    "626727b7177e1414c91176be000d419864472c8d11b656dbe332007e15aba5aa": "Incoming Order Count Insurer Wise",
-    "887318f01a7968a3649925caff9b1d535bae9b1a27cfc24331db63cceed82bc1": "Revenue Generated Insurer Wise",
-    "7e9e71295abba89bb7d972b4c14816f499ade7f3c1d2099adf98a3fc7bfb131a": "Closed Case Count Insurer Wise",
-    "d83465b76e62e83324e0435b4df890c79e92cb6e3b1826a3e9d6322a830c8549": "Incoming Order Count Insurer Wise",
-    "b93d716f9315ceb3071d3cf94b7c38408a81fafa6801c1d2817e4b65b92cd548": "Revenue Generated Insurer Wise",
-    "0ac7719a37b35c0ed34b5d8715b4f83da6e2daecf4a920aace179a73a860bf88": "Closed Case Count Insurer Wise",
-    "acf047610aa3836d6fd3dc560e4a1780054b9b5959d679db12da47ccea63df11": "Incoming Order Count Insurer Wise",
-    "74e134e1f626504c6966285f6ca49f8b5019ff1102d8e3f53c1f89db45734882": "Revenue Generated Insurer Wise",
-    "0c9fc136b2d95890fa8fd6e0e69eebf57dc355bc15372713286b84019c730454": "Closed Case Count Insurer Wise",
-    "8f1bb5b1dbfb165f4bcf0d10fdd29f06f23b51673010d9fbc617b25905a9d23e": "Incoming Order Count Insurer Wise",
-    "8c31038808e3a72a0c41dd1c26b08a6d1d7c5592038e65410abcf05013253361": "Revenue Generated Insurer Wise",
-    "ef2293f8cdcd81087642984fa812a547c366fb768e4b54996e9a7a23bdc5c524": "Closed Case Count Insurer Wise",
-    "63c88dd4dd0f627abd5216de0780a01b0752ac4e410cbcc97af97ece8055b194": "Incoming Order Count Insurer Wise",
-    "36e96022054775b2e792feda8fa827f3875bef07547445880c43712807f752fe": "Revenue Generated Insurer Wise",
-    "dfa691e912bf552cc1f4c1419e131b695e939d988d365e5b2ef2613f5f40ee66": "Closed Case Count Insurer Wise",
-    "82defdac21f77d710c4b03d61319af2ee432713ab58d8b8dca3a62da545f455e": "Incoming Order Count Insurer Wise",
-    "4cda768941ee70ecae2086897adcded0eaf829dae7c1b30b724c83185a32a33e": "Revenue Generated Insurer Wise",
-    "a1527feeae92af9a52954481edd06218c251d2078ccf476ad5bbc9a8b66f9a3b": "Closed Case Count Insurer Wise"
-  },
-  "last_sync": "2026-05-19T09:42:55.863503+00:00"
+  "processed_message_ids": [],
+  "attachment_hashes": {},
+  "last_sync": null
 }

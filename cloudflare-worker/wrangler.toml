@@ -1,0 +1,11 @@
+name = "cardiotrack-sync-trigger"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# These two are configured per-deployment (see SETUP.md → step 4).
+# They are not secrets themselves — the actual PAT is set via:
+#     wrangler secret put GH_TOKEN
+[vars]
+GH_REPO  = "islamxnajmul/cardiotrack-dashboard"
+WORKFLOW = "sync.yml"
+GH_BRANCH = "main"

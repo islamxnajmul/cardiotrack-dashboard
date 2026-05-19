@@ -1256,10 +1256,11 @@ def build_dashboard_data() -> dict:
             "labels": trend_labels,
             "values": trend_values,
         },
+        # Q2 monthly targets — Apr ₹60L + May ₹65L + Jun ₹75L = ₹2 Cr
         "month_wise": [
-            {"month":"April 2026",  "target":7682604,  "achieved":apr_rev, "pct": round(apr_rev/7682604*100,1)},
-            {"month":"May 2026",    "target":6789792,  "achieved":may_rev, "pct": round(may_rev/6789792*100,1)},
-            {"month":"June 2026",   "target":6729140,  "achieved":jun_rev, "pct": 0},
+            {"month":"April 2026",  "target":6000000,  "achieved":apr_rev, "pct": round(apr_rev/6000000*100,1)},
+            {"month":"May 2026",    "target":6500000,  "achieved":may_rev, "pct": round(may_rev/6500000*100,1)},
+            {"month":"June 2026",   "target":7500000,  "achieved":jun_rev, "pct": round(jun_rev/7500000*100,1) if jun_rev else 0},
         ],
         "apr_customers": apr_customers,
         "insurer_table": insurer_table,
