@@ -35,3 +35,6 @@ venv/
 # Cloudflare wrangler local cache (auth tokens, build artefacts)
 cloudflare-worker/.wrangler/
 **/.wrangler/
+
+# Don't accidentally commit a nested clone
+cardiotrack-dashboard/
