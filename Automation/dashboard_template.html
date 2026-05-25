@@ -151,6 +151,40 @@
   /* AM view iframe takes the rest of the viewport */
   #view-am{padding:0;margin:0;background:#f8fafc}
   #am-iframe{display:block;width:100%;height:calc(100vh - 110px);border:0}
+
+  /* ── ORDER PIPELINE MONTH KPI SUMMARY ── */
+  .oph-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .oph-kpi-card{border-radius:8px;padding:12px 14px;text-align:center;border:1px solid transparent}
+  .oph-kpi-card .oph-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+  .oph-kpi-card .oph-value{font-size:1.6rem;font-weight:800;line-height:1;margin:4px 0 3px}
+  .oph-kpi-card .oph-sub{font-size:.68rem}
+  .oph-kpi-card.oph-inc{background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border-color:#AED6F1}
+  .oph-kpi-card.oph-inc .oph-label,.oph-kpi-card.oph-inc .oph-sub{color:#1A5276}
+  .oph-kpi-card.oph-inc .oph-value{color:#1B4F72}
+  .oph-kpi-card.oph-cl{background:linear-gradient(135deg,#EAFAF1,#D5F5E3);border-color:#A9DFBF}
+  .oph-kpi-card.oph-cl .oph-label,.oph-kpi-card.oph-cl .oph-sub{color:#1E8449}
+  .oph-kpi-card.oph-cl .oph-value{color:#1E8449}
+  .oph-kpi-card.oph-conv{background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border-color:#F9E79F}
+  .oph-kpi-card.oph-conv .oph-label,.oph-kpi-card.oph-conv .oph-sub{color:#B7770D}
+  .oph-kpi-card.oph-conv .oph-value{color:#B7770D}
+
+  /* ── INSURER DETAILS VIEW ── */
+  #view-insurer .main{padding:20px 24px;max-width:1600px;margin:0 auto}
+  .id-section-hdr{background:linear-gradient(90deg,var(--subblue),var(--teal));color:#fff;
+    padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;
+    margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .id-alert-urgent{background:#FDEDEC;border-left:4px solid var(--red);
+    padding:11px 14px;border-radius:6px;margin-bottom:12px;font-size:.82rem;color:#641E16}
+  .id-alert-warn{background:#FEF9E7;border-left:4px solid var(--amber);
+    padding:11px 14px;border-radius:6px;margin-bottom:12px;font-size:.82rem;color:#7D6608}
+  .id-sync-note{background:#F0F4F8;border-radius:8px;padding:10px 14px;
+    font-size:.75rem;color:var(--text2);margin-bottom:16px}
+  .id-badge-active{background:#D5F5E3;color:#1E8449;display:inline-block;
+    padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700}
+  .id-badge-expired{background:#FADBD8;color:#922B21;display:inline-block;
+    padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700}
+  .id-badge-disc{background:#EEE;color:#555;display:inline-block;
+    padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700}
 </style>
 </head>
 <body>
@@ -179,6 +213,9 @@
   </button>
   <button class="view-tab" data-view="am" onclick="switchView('am')">
     <span class="vt-emoji">👥</span> Account Managers
+  </button>
+  <button class="view-tab" data-view="insurer" onclick="switchView('insurer')">
+    <span class="vt-emoji">🤝</span> Insurer Details
   </button>
 </div>
 
@@ -319,6 +356,9 @@
       <div class="tab"        data-month="Jun 2026"  onclick="filterOrders('Jun 2026')">June 2026</div>
     </div>
 
+    <!-- Aggregate KPI row — shown when a specific month tab is selected -->
+    <div id="orders-kpi-row" style="display:none"></div>
+
     <div class="grid-2">
       <div>
         <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">
@@ -435,6 +475,15 @@
           loading="lazy"></iframe>
 </div>
 
+<!-- ───────────── INSURER DETAILS VIEW ───────────── -->
+<div id="view-insurer" class="dash-view">
+  <div class="main">
+    <div id="insurer-details-content">
+      <!-- Rendered by renderInsurerDetailsView() on loadData() -->
+    </div>
+  </div>
+</div>
+
 <script>
 // ─────────────────────────────────────────────────────────────────
 // TOP-LEVEL VIEW SWITCHER (Sales ↔ Account Managers)
@@ -463,6 +512,7 @@ function switchView(name) {
 (function restoreViewFromUrl() {
   const fromHash = (location.hash || '').replace(/^#/,'');
   if (fromHash === 'am') switchView('am');
+  if (fromHash === 'insurer') switchView('insurer');
 })();
 
 // ─────────────────────────────────────────────────────────────────
@@ -813,8 +863,9 @@ function filterOrders(month) {
   // Update the period label next to the chart
   const labelEl = document.getElementById('orders-period');
   if (labelEl) labelEl.textContent = (month === 'Q2') ? 'All Q2' : month;
-  // Re-render chart + table with the new window
+  // Re-render chart + table + KPI row with the new window
   if (ordersData) {
+    renderOrdersKPIRow(ordersData);
     renderOrdersChart(ordersData);
     renderOrdersTable(ordersData);
   }
@@ -1142,6 +1193,453 @@ function renderActions(d) {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// ORDER PIPELINE — PER-MONTH AGGREGATE KPI ROW
+// ─────────────────────────────────────────────────────────────────
+// Shows Total Incoming + Total Closed + Conversion for the selected
+// month at the top of the Order Pipeline Health card.
+// Hidden when "All Q2" is selected (the chart/table already covers it).
+function renderOrdersKPIRow(d) {
+  const container = document.getElementById('orders-kpi-row');
+  if (!container) return;
+  const show = (ordersFilter !== 'Q2');
+  container.style.display = show ? '' : 'none';
+  if (!show) { container.innerHTML = ''; return; }
+
+  const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
+  const totalInc = sumValues(inc);
+  const totalCl  = sumValues(cl);
+  const conv = totalInc ? Math.round(totalCl / totalInc * 100) : 0;
+
+  container.innerHTML = `
+    <div class="oph-kpi-row">
+      <div class="oph-kpi-card oph-inc">
+        <div class="oph-label">📥 Total Incoming Orders</div>
+        <div class="oph-value">${totalInc.toLocaleString()}</div>
+        <div class="oph-sub">${ordersFilter}</div>
+      </div>
+      <div class="oph-kpi-card oph-cl">
+        <div class="oph-label">✅ Total Closed Orders</div>
+        <div class="oph-value">${totalCl.toLocaleString()}</div>
+        <div class="oph-sub">${ordersFilter}</div>
+      </div>
+      <div class="oph-kpi-card oph-conv">
+        <div class="oph-label">📊 Conversion Rate</div>
+        <div class="oph-value">${conv}%</div>
+        <div class="oph-sub">closed / incoming</div>
+      </div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// INSURER DETAILS VIEW — data + render
+// ─────────────────────────────────────────────────────────────────
+const INSURER_DETAILS = [
+  { name:'ICICI Lombard',                    term:3, validFrom:'2023-11-23', expiry:'2026-11-22', status:'Active',       originalDate:'2020-10-01', liability:'₹50,000',   renewals:2 },
+  { name:'Bajaj Life',                        term:3, validFrom:'2024-10-01', expiry:'2027-09-30', status:'Active',       originalDate:'2022-10-01', liability:'1 year',    renewals:3 },
+  { name:'Acko Health Insurance',             term:2, validFrom:'2024-04-01', expiry:'2026-05-31', status:'Active',       originalDate:'2024-04-01', liability:'₹5,00,000', renewals:0 },
+  { name:'Acko Life Insurance',              term:2, validFrom:'2024-04-01', expiry:'2026-05-31', status:'Active',       originalDate:'2024-04-01', liability:'₹5,00,000', renewals:0 },
+  { name:'Pramerica Life Insurance',         term:3, validFrom:'2025-12-01', expiry:'2028-11-30', status:'Active',       originalDate:'2022-12-01', liability:'—',         renewals:1 },
+  { name:'Star Union Daichi Life Insurance', term:3, validFrom:'2025-09-01', expiry:'2028-08-31', status:'Active',       originalDate:'2023-11-20', liability:'6 months',  renewals:1 },
+  { name:'HDFC Life',                        term:1, validFrom:'2025-03-10', expiry:'2026-03-09', status:'Expired',      originalDate:'2022-03-10', liability:'—',         renewals:1 },
+  { name:'Aditya Birla Sun Life Insurance',  term:3, validFrom:'2025-10-01', expiry:'2028-09-30', status:'Active',       originalDate:'2022-10-01', liability:'6 months',  renewals:1 },
+  { name:'Canara HSBC Life Insurance',       term:2, validFrom:'2025-01-25', expiry:'2027-01-24', status:'Active',       originalDate:'2023-01-25', liability:'1 year',    renewals:1 },
+  { name:'Ageas Federal Life Insurance',     term:3, validFrom:'2024-08-02', expiry:'2027-08-01', status:'Active',       originalDate:'2024-08-02', liability:'₹50,000',   renewals:0 },
+  { name:'TATA AIG General Insurance',       term:3, validFrom:'2025-02-25', expiry:'2028-02-24', status:'Active',       originalDate:'2025-02-25', liability:'2 years',   renewals:0 },
+  { name:'Care Insurance',                   term:3, validFrom:'2024-11-01', expiry:'2027-10-31', status:'Active',       originalDate:'2024-11-01', liability:'—',         renewals:0 },
+];
+
+const INSURER_HISTORY = [
+  { name:'ICICI Lombard',               term:3, validFrom:'2020-10-01', expiry:'2023-09-30', status:'Expired' },
+  { name:'Bajaj Life',                  term:1, validFrom:'2022-10-01', expiry:'2023-09-30', status:'Expired' },
+  { name:'Bajaj Life',                  term:1, validFrom:'2023-10-01', expiry:'2024-09-30', status:'Expired' },
+  { name:'TATA AIA Life Insurance Company', term:1, validFrom:'2022-11-15', expiry:'2023-11-14', status:'Expired' },
+  { name:'TATA AIA Life Insurance Company', term:3, validFrom:'2023-11-15', expiry:'2026-11-14', status:'Discontinued' },
+  { name:'SBI LIfe Insurance Company',  term:2, validFrom:'2023-04-11', expiry:'2024-09-14', status:'Expired' },
+  { name:'Aditya Birla Health',         term:3, validFrom:'2021-10-16', expiry:'2024-10-15', status:'Expired' },
+  { name:'Canara HSBC Life Insurance',  term:2, validFrom:'2023-01-25', expiry:'2025-01-24', status:'Expired' },
+  { name:'HDFC Life',                   term:3, validFrom:'2022-03-10', expiry:'2025-03-09', status:'Expired' },
+  { name:'HDFC Life',                   term:1, validFrom:'2025-03-10', expiry:'2026-03-09', status:'Expired' },
+];
+
+function _calcRelationship(dateStr) {
+  if (!dateStr) return '—';
+  const start = new Date(dateStr);
+  const today = new Date('2026-05-25');
+  const years = (today - start) / (365.25 * 24 * 60 * 60 * 1000);
+  return years >= 1 ? Math.floor(years) + ' yr' + (Math.floor(years) > 1 ? 's' : '')
+                    : Math.round(years * 12) + ' mo';
+}
+
+function _daysUntilExpiry(dateStr) {
+  if (!dateStr) return null;
+  const expiry = new Date(dateStr);
+  const today  = new Date('2026-05-25');
+  return Math.round((expiry - today) / (24 * 60 * 60 * 1000));
+}
+
+function renderInsurerDetailsView(d) {
+  const container = document.getElementById('insurer-details-content');
+  if (!container) return;
+
+  // Q2 total revenue per insurer (Apr + May 2026) from Gmail CSVs
+  const q2RevMap = {};
+  (d.insurer_table || []).forEach(r => {
+    q2RevMap[r.insurer] = r.revenue || 0;
+  });
+
+  // April-only revenue per insurer (from apr_customers)
+  const aprRevMap = {};
+  (d.apr_customers || []).forEach(r => {
+    aprRevMap[r.insurer] = r.revenue || 0;
+  });
+
+  // ── LIFETIME REVENUE ESTIMATE ────────────────────────────────────
+  // Step 1: per-insurer avg revenue per closed case from apr_customers
+  const avgOrderMap = {};
+  (d.apr_customers || []).forEach(r => {
+    if ((r.closed_cases || 0) > 0)
+      avgOrderMap[r.insurer] = r.revenue / r.closed_cases;
+  });
+
+  // Step 2: global weighted-average fallback for insurers not in apr_customers
+  //   (used for expired accounts like HDFC Life, Acko, Bajaj Allianz, TATA AIA…)
+  const _totalRev = (d.apr_customers||[]).reduce((s,r)=>s+(r.revenue||0),0);
+  const _totalCl  = (d.apr_customers||[]).reduce((s,r)=>s+(r.closed_cases||0),0);
+  const FALLBACK_AVG = _totalCl > 0 ? _totalRev / _totalCl : 2115;
+
+  // Step 3: sum every closed order across ALL months (Mar 2022 → present)
+  const lifetimeClosedMap = {};
+  Object.values(d.orders_monthly || {}).forEach(mo => {
+    Object.entries(mo.closed || {}).forEach(([ins, cnt]) => {
+      lifetimeClosedMap[ins] = (lifetimeClosedMap[ins] || 0) + (cnt || 0);
+    });
+  });
+
+  // Step 4: estimate = (per-insurer rate OR global fallback) × lifetime closed
+  //   Applied to ALL accounts — active, expired, and other historical accounts
+  const lifetimeRevMap = {};
+  Object.entries(lifetimeClosedMap).forEach(([ins, closed]) => {
+    const avg = avgOrderMap[ins] || FALLBACK_AVG;
+    lifetimeRevMap[ins] = Math.round(closed * avg);
+  });
+
+  // Names that belong to the main INSURER_DETAILS table (for deduplication below)
+  const _mainNames = new Set(INSURER_DETAILS.map(i => i.name));
+
+  // Noise patterns to skip in the "other historical" section
+  const _isNoise = n => /^(Test|HDFC Life Purge|MD India|Cardiotrack (Home|Corporate)|TATA AIA Life.*Purge|[A-Z0-9]{8}\s|nA5N|M7P4|5MyH|A8228|Acko Health\s{2})/.test(n);
+
+  // Canonical name map — normalise all known insurer name variants to a single key.
+  // This runs before ANY revenue/order aggregation so merged accounts are counted once.
+  const _canonicalName = n => {
+    // Acko Life variants → "Acko Life Insurance"
+    if (n === 'Acko Life')                                    return 'Acko Life Insurance';
+    // Acko Health variants (incl. double-space from Oct 2024 data) → "Acko Health Insurance"
+    if (n === 'Acko Health - Insurance Limited' ||
+        n === 'Acko Health -  Insurance Limited' ||
+        n === 'Acko General')                                 return 'Acko Health Insurance';
+    // Bajaj Allianz (pre-Oct 2025) + Bajaj Life Insurance Company (Oct 2025 →) → "Bajaj Life"
+    if (n === 'Bajaj Life Insurance Company' ||
+        n === 'Bajaj Allianz Life Insurance Company')         return 'Bajaj Life';
+    // TATA AIA variants → "TATA AIA Life Insurance Company"
+    if (n === 'Tata AIA Life')                                return 'TATA AIA Life Insurance Company';
+    // SBI Life variants → "SBI LIfe Insurance Company"
+    if (n === 'SBI Life')                                     return 'SBI LIfe Insurance Company';
+    return n;
+  };
+
+  // ── Canonical merged maps ────────────────────────────────────────────
+  // Fold aliased raw names into a single canonical key per account.
+  // Bajaj Allianz Life Insurance Company + Bajaj Life Insurance Company
+  // → both become "Bajaj Life" so their orders/revenue are summed.
+  const canonLifetimeRevMap    = {};
+  const canonLifetimeClosedMap = {};
+  Object.entries(lifetimeRevMap).forEach(([raw, rev]) => {
+    const c = _canonicalName(raw);
+    canonLifetimeRevMap[c] = (canonLifetimeRevMap[c] || 0) + rev;
+  });
+  Object.entries(lifetimeClosedMap).forEach(([raw, cnt]) => {
+    const c = _canonicalName(raw);
+    canonLifetimeClosedMap[c] = (canonLifetimeClosedMap[c] || 0) + cnt;
+  });
+
+  // Canonical avg order map — first non-null rate wins (for usedFallback check)
+  const canonAvgOrderMap = {};
+  Object.entries(avgOrderMap).forEach(([raw, avg]) => {
+    const c = _canonicalName(raw);
+    if (!canonAvgOrderMap[c]) canonAvgOrderMap[c] = avg;
+  });
+
+  // Canonical Q2 / Apr revenue maps (merge any aliased insurer names)
+  const canonQ2RevMap = {};
+  Object.entries(q2RevMap).forEach(([raw, rev]) => {
+    const c = _canonicalName(raw);
+    canonQ2RevMap[c] = (canonQ2RevMap[c] || 0) + rev;
+  });
+  const canonAprRevMap = {};
+  Object.entries(aprRevMap).forEach(([raw, rev]) => {
+    const c = _canonicalName(raw);
+    canonAprRevMap[c] = (canonAprRevMap[c] || 0) + rev;
+  });
+
+  // Helpers
+  const rl  = v => v ? `₹${(v/100000).toFixed(2)}L` : '—';
+  const rls = v => v ? `₹${(v/100000).toFixed(1)}L`  : '—';  // short label
+  const rlCr = v => {
+    if (!v) return '—';
+    if (v >= 10000000) return `₹${(v/10000000).toFixed(2)} Cr`;
+    return `₹${(v/100000).toFixed(1)}L`;
+  };
+
+  // Identify urgent renewals
+  const urgentAlerts = INSURER_DETAILS
+    .filter(ins => ins.status !== 'Expired')
+    .map(ins => ({ ...ins, daysLeft: _daysUntilExpiry(ins.expiry) }))
+    .filter(ins => ins.daysLeft !== null && ins.daysLeft <= 180)
+    .sort((a,b) => a.daysLeft - b.daysLeft);
+
+  let alertsHtml = '';
+  urgentAlerts.forEach(ins => {
+    const isUrgent = ins.daysLeft <= 30;
+    const cls = isUrgent ? 'id-alert-urgent' : 'id-alert-warn';
+    const icon = isUrgent ? '🔴' : '🟡';
+    const msg = ins.daysLeft <= 0
+      ? `Agreement expired ${Math.abs(ins.daysLeft)} day(s) ago!`
+      : `Agreement expires in <strong>${ins.daysLeft} days</strong> (${ins.expiry})`;
+    alertsHtml += `<div class="${cls}">${icon} <strong>${ins.name}</strong> — ${msg}</div>`;
+  });
+
+  // Grand totals for the summary KPI strip (use canonical maps to avoid double-counting)
+  const grandQ2       = Object.values(canonQ2RevMap).reduce((s,v)=>s+v,0);
+  const grandApr      = Object.values(canonAprRevMap).reduce((s,v)=>s+v,0);
+  const grandMay      = Math.max(grandQ2 - grandApr, 0);
+  const grandLifetime = Object.values(canonLifetimeRevMap).reduce((s,v)=>s+v,0);
+
+  // Active agreements table rows
+  const activeRows = INSURER_DETAILS
+    .slice()
+    .sort((a,b) => _daysUntilExpiry(a.expiry) - _daysUntilExpiry(b.expiry))
+    .map(ins => {
+      const days = _daysUntilExpiry(ins.expiry);
+      const expiryLabel = ins.expiry + (days !== null
+        ? (days <= 0
+            ? ` <span style="color:var(--red);font-weight:700;font-size:.7rem">(expired)</span>`
+            : ` <span style="color:${days<=30?'var(--red)':days<=180?'var(--amber)':'#27AE60'};font-size:.7rem">(${days}d)</span>`)
+        : '');
+
+      const rel    = _calcRelationship(ins.originalDate);
+      const q2Rev  = canonQ2RevMap[ins.name]       || 0;
+      const aprRev = canonAprRevMap[ins.name]      || 0;
+      const mayRev = Math.max(q2Rev - aprRev, 0);
+      const ltRev  = canonLifetimeRevMap[ins.name] || 0;
+
+      const badgeHtml = ins.status === 'Active'
+        ? '<span class="id-badge-active">Active</span>'
+        : '<span class="id-badge-expired">Expired</span>';
+
+      // Lifetime revenue cell — always populated (fallback for expired/inactive)
+      const ltClosedCount = canonLifetimeClosedMap[ins.name] || 0;
+      const usedFallback  = !canonAvgOrderMap[ins.name] && ltClosedCount > 0;
+      const ltCellHtml = ltClosedCount > 0
+        ? `<div style="font-size:1rem;font-weight:800;color:#6C3483">${rlCr(ltRev)}</div>
+           <div style="font-size:.65rem;color:#8E44AD;margin-top:2px">
+             ${ltClosedCount.toLocaleString()} cases${usedFallback ? ' · est.†' : ' · est.'}
+           </div>`
+        : `<span style="color:var(--text2);font-size:.8rem">No order history</span>`;
+
+      // Revenue to date (Q2) cell
+      const revTodayHtml = q2Rev
+        ? `<span style="font-size:1rem;font-weight:800;color:#1B4F72">${rl(q2Rev)}</span>`
+        : '<span style="color:var(--text2)">—</span>';
+
+      // Q2 breakdown: Apr + May chips
+      const aprHtml = aprRev
+        ? `<span style="font-size:.68rem;color:#27AE60;font-weight:600">Apr: ${rls(aprRev)}</span>`
+        : `<span style="font-size:.68rem;color:var(--text2)">Apr: —</span>`;
+      const mayHtml = mayRev
+        ? `<span style="font-size:.68rem;color:#1B7F79;font-weight:600">May: ${rls(mayRev)}</span>`
+        : `<span style="font-size:.68rem;color:var(--text2)">May: —</span>`;
+
+      return `<tr>
+        <td style="font-weight:600">${ins.name}</td>
+        <td style="white-space:nowrap">${ins.term}-yr &nbsp;·&nbsp; since ${ins.validFrom}</td>
+        <td style="white-space:nowrap">${expiryLabel}</td>
+        <td style="white-space:nowrap">${rel}</td>
+        <td style="text-align:center">${ins.renewals}</td>
+        <td>${ins.liability}</td>
+        <td style="text-align:right;white-space:nowrap">${ltCellHtml}</td>
+        <td style="text-align:right;white-space:nowrap">${revTodayHtml}
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:3px">${aprHtml}${mayHtml}</div>
+        </td>
+        <td>${badgeHtml}</td>
+      </tr>`;
+    }).join('');
+
+  // Total row
+  const grandLtClosed = Object.values(canonLifetimeClosedMap).reduce((s,v)=>s+v,0);
+  const totalRowHtml = `<tr class="total-row">
+    <td>TOTAL</td>
+    <td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>
+    <td style="text-align:right;white-space:nowrap">
+      <div style="font-size:1rem">${rlCr(grandLifetime)}</div>
+      <div style="font-size:.65rem;opacity:.8;margin-top:2px">${grandLtClosed.toLocaleString()} cases · est.</div>
+    </td>
+    <td style="text-align:right;white-space:nowrap">
+      <div style="font-size:1rem">${rl(grandQ2)}</div>
+      <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:2px;font-size:.68rem;opacity:.85">
+        <span>Apr: ${rls(grandApr)}</span><span>May: ${rls(grandMay)}</span>
+      </div>
+    </td>
+    <td>—</td>
+  </tr>`;
+
+  // Historical agreements table rows (agreement-level records)
+  const histRows = INSURER_HISTORY.map(h => {
+    const badgeHtml = h.status === 'Discontinued'
+      ? '<span class="id-badge-disc">Discontinued</span>'
+      : '<span class="id-badge-expired">Expired</span>';
+    return `<tr>
+      <td>${h.name}</td>
+      <td>${h.term}-year</td>
+      <td>${h.validFrom}</td>
+      <td>${h.expiry}</td>
+      <td>${badgeHtml}</td>
+    </tr>`;
+  }).join('');
+
+  // ── OTHER HISTORICAL ACCOUNTS ─────────────────────────────────────
+  // Accounts that appear in order history but are NOT in INSURER_DETAILS
+  // (e.g. Bajaj Allianz, TATA AIA, Acko, SBI Life — expired/pre-agreement)
+  // Aggregated by canonical name, sorted by estimated lifetime revenue desc.
+  const otherAccMap = {};  // canonicalName → {closed, rev, usedFallback}
+  Object.entries(lifetimeClosedMap).forEach(([raw, closed]) => {
+    if (_mainNames.has(raw)) return;                    // already in main table (raw match)
+    if (_mainNames.has(_canonicalName(raw))) return;    // already in main table (canonical match — e.g. Bajaj Allianz → Bajaj Life)
+    if (_isNoise(raw))        return;                   // skip test/internal/encoded
+    if (closed < 20)          return;                   // skip negligible
+    const canon = _canonicalName(raw);
+    if (!otherAccMap[canon]) otherAccMap[canon] = {closed:0, rev:0, fallback: !avgOrderMap[raw]};
+    otherAccMap[canon].closed += closed;
+    otherAccMap[canon].rev    += lifetimeRevMap[raw] || 0;
+  });
+
+  const otherAccRows = Object.entries(otherAccMap)
+    .sort((a,b) => b[1].rev - a[1].rev)
+    .map(([name, info]) => `<tr>
+      <td style="font-weight:600">${name}</td>
+      <td style="text-align:right">
+        <div style="font-size:1rem;font-weight:800;color:#6C3483">${rlCr(info.rev)}</div>
+        <div style="font-size:.65rem;color:#8E44AD;margin-top:2px">${info.closed.toLocaleString()} cases${info.fallback?' · est.†':' · est.'}</div>
+      </td>
+      <td><span class="id-badge-expired">Expired / Inactive</span></td>
+    </tr>`).join('');
+
+  // Grand totals — use canonical maps to avoid double-counting merged accounts
+  const grandAllLt = Object.entries(canonLifetimeRevMap)
+    .filter(([k]) => !_isNoise(k) && !k.startsWith('Test') && !k.includes('Cardiotrack'))
+    .reduce((s,[,v]) => s+v, 0);
+  const grandAllClosed = Object.entries(canonLifetimeClosedMap)
+    .filter(([k]) => !_isNoise(k) && !k.startsWith('Test') && !k.includes('Cardiotrack'))
+    .reduce((s,[,v]) => s+v, 0);
+
+  container.innerHTML = `
+    <!-- Sync source note -->
+    <div class="id-sync-note">
+      <strong>📁 Data sources:</strong>
+      Google Drive: <em>Insurer Agreement Expiry Details.xlsx</em>
+      (ID: <code>1Ro_pqzgw0PLQe8GwQSjKN0nuG8RFeEkx</code>) ·
+      Revenue auto-populated from Gmail <em>Revenue_Generated_Insurer_Wise.csv</em>.
+      Last build: <span id="id-build-ts">—</span>
+    </div>
+
+    <!-- Revenue summary strip -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+      <div style="background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border:1px solid #AED6F1;border-radius:8px;padding:12px 14px;text-align:center">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#1A5276;margin-bottom:4px">📥 April 2026</div>
+        <div style="font-size:1.35rem;font-weight:800;color:#1B4F72">${rl(grandApr)}</div>
+        <div style="font-size:.68rem;color:#1A5276;margin-top:2px">Realized · from Gmail</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#E8F8F5,#D1F2EB);border:1px solid #A2D9CE;border-radius:8px;padding:12px 14px;text-align:center">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#1A7A5E;margin-bottom:4px">📥 May 2026</div>
+        <div style="font-size:1.35rem;font-weight:800;color:#1B7F79">${rl(grandMay)}</div>
+        <div style="font-size:.68rem;color:#1A7A5E;margin-top:2px">To date · from Gmail</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#F4ECF7,#E8DAEF);border:1px solid #C39BD3;border-radius:8px;padding:12px 14px;text-align:center">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6C3483;margin-bottom:4px">💰 Q2 FY26 Total</div>
+        <div style="font-size:1.35rem;font-weight:800;color:#6C3483">${rl(grandQ2)}</div>
+        <div style="font-size:.68rem;color:#6C3483;margin-top:2px">Apr + May combined</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border:1px solid #F9E79F;border-radius:8px;padding:12px 14px;text-align:center">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#B7770D;margin-bottom:4px">🏦 Est. Revenue — All Accounts</div>
+        <div style="font-size:1.35rem;font-weight:800;color:#B7770D">${rlCr(grandAllLt)}</div>
+        <div style="font-size:.68rem;color:#B7770D;margin-top:2px">${grandAllClosed.toLocaleString()} cases · all-time</div>
+      </div>
+    </div>
+
+    ${alertsHtml ? `<div style="margin-bottom:18px">${alertsHtml}</div>` : ''}
+
+    <!-- Active agreements -->
+    <div class="id-section-hdr">📋 Current Agreements (Active &amp; Recent)</div>
+    <div style="overflow-x:auto;margin-bottom:24px">
+      <table>
+        <thead><tr>
+          <th>Insurer Name</th>
+          <th>Agreement Details</th>
+          <th>Expiry (days left)</th>
+          <th>Relationship Since</th>
+          <th>Renewals</th>
+          <th>Liability</th>
+          <th style="text-align:right">Overall Revenue<br><span style="font-weight:400;font-size:.65rem;opacity:.8">Since Inception (est.)</span></th>
+          <th style="text-align:right">Revenue to Date (Q2 FY26)<br><span style="font-weight:400;font-size:.65rem;opacity:.8">Apr &amp; May breakdown below</span></th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>${activeRows}${totalRowHtml}</tbody>
+      </table>
+    </div>
+
+    <!-- Other historical accounts (not in main agreements table) -->
+    <div class="id-section-hdr">🏛️ Other Historical Accounts (Expired / Inactive)</div>
+    <p style="font-size:.75rem;color:var(--text2);margin-bottom:10px">
+      Accounts with recorded order history not covered under current agreements —
+      Bajaj Allianz, TATA AIA, Acko, SBI Life, etc. Revenue estimated from order volumes.
+    </p>
+    <div style="overflow-x:auto;margin-bottom:24px">
+      <table>
+        <thead><tr>
+          <th>Account Name</th>
+          <th style="text-align:right">Overall Revenue Since Inception (est.)</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>${otherAccRows}</tbody>
+      </table>
+    </div>
+
+    <!-- Historical agreement-level records -->
+    <div class="id-section-hdr">📂 Agreement History (Expired Contracts)</div>
+    <div style="overflow-x:auto;margin-bottom:24px">
+      <table>
+        <thead><tr>
+          <th>Insurer Name</th><th>Term</th><th>Valid From</th><th>Expired On</th><th>Status</th>
+        </tr></thead>
+        <tbody>${histRows}</tbody>
+      </table>
+    </div>
+
+    <div style="font-size:.72rem;color:var(--text2);padding:10px 0;border-top:1px solid var(--border);line-height:1.7">
+      <strong>Revenue to Date (Q2 FY26)</strong> = Apr + May 2026 actuals from Gmail reports — refreshes with <strong>↻ Sync All</strong>.<br>
+      <strong>Overall Revenue Since Inception (est.)</strong> = per-insurer avg revenue/case (Apr 2026) × total lifetime closed orders (Mar 2022 → present).<br>
+      <strong>† Fallback rate</strong> = global avg ₹${Math.round(FALLBACK_AVG).toLocaleString()}/case used for accounts with no current-quarter revenue data (expired/inactive insurers).
+    </div>`;
+
+  // Stamp the build timestamp
+  const ts = d.meta?.generated_at;
+  if (ts) {
+    const el = document.getElementById('id-build-ts');
+    if (el) el.textContent = new Date(ts).toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // GLOBAL ERROR HANDLERS — so silent failures become visible failures
 // ─────────────────────────────────────────────────────────────────
 // Any uncaught JS error or rejected Promise gets logged AND surfaces
@@ -1221,9 +1719,11 @@ async function loadData() {
     ['Order targets',   () => renderOrderTargets(data)],
     ['Orders chart',    () => renderOrdersChart(data)],
     ['Orders table',    () => renderOrdersTable(data)],
+    ['Orders KPI row',  () => renderOrdersKPIRow(data)],
     ['Orders trend',    () => renderOrdersTrendChart(data)],
     ['Pipeline',        () => renderPipeline(data)],
     ['Actions',         () => renderActions(data)],
+    ['Insurer details', () => renderInsurerDetailsView(data)],
   ];
   const failures = [];
   for (const [label, fn] of renderSteps) {
