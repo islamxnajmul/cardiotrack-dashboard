@@ -5,6 +5,8 @@ name: Cardiotrack Sync + Deploy
 #                                        17:30, 19:30, 00:30
 # Plus 'Run workflow' button in the Actions tab.
 on:
+  push:
+    branches: [main]
   schedule:
     - cron: '0 4,6,8,10,12,14,19 * * *'
   workflow_dispatch: {}
