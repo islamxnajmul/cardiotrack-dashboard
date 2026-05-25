@@ -59,14 +59,26 @@ jobs:
 
       # ── 2. Restore sync_log.json from the prior run's artifact ───────────
       # This is how dedup state persists across runs without us committing
-      # back to main. If no prior artifact exists (first run), we just start
-      # fresh — the script handles that gracefully.
+      # back to main. We use `gh run download` instead of the
+      # actions/download-artifact action because the latter exits non-zero
+      # (and visually red-flags the step) when no artifact exists yet — true
+      # on the first ever run AND any time all prior artifacts have expired.
+      # A shell script with explicit fallback exits 0 either way.
       - name: Restore previous sync_log.json (if any)
-        uses: actions/download-artifact@v4
-        with:
-          name: cardiotrack-sync-log
-          path: Automation/
-        continue-on-error: true   # first-ever run has no prior artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p Automation
+          # Find the most recent successful run of this workflow and try to
+          # grab its sync_log artifact. Failure is non-fatal.
+          if gh run download --name cardiotrack-sync-log --dir Automation/ \
+               --repo "$GITHUB_REPOSITORY" 2>/dev/null; then
+            echo "✓ Restored sync_log.json from previous run"
+            ls -la Automation/sync_log.json 2>/dev/null
+          else
+            echo "ℹ No prior sync_log artifact (first run or all expired) — starting fresh."
+            echo '{"processed_message_ids": [], "attachment_hashes": {}, "last_sync": null}' > Automation/sync_log.json
+          fi
 
       # ── 3. Pull Quarter Target.xlsx from Drive + sync from Gmail + rebuild
       - name: Pull Quarter Target.xlsx from Google Drive
