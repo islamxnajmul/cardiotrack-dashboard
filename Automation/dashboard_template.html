@@ -1327,7 +1327,7 @@ function renderInsurerDetailsView(d) {
   const _mainNames = new Set(INSURER_DETAILS.map(i => i.name));
 
   // Noise patterns to skip in the "other historical" section
-  const _isNoise = n => /^(Test|HDFC Life Purge|MD India|Cardiotrack (Home|Corporate)|TATA AIA Life.*Purge|[A-Z0-9]{8}\s|nA5N|M7P4|5MyH|A8228|Acko Health\s{2})/.test(n);
+  const _isNoise = n => /^(Test|HDFC Life Purge|MD India|Cardiotrack (Home|Corporate)|TATA AIA Life.*Purge|[A-Z0-9]{8}\s|Acko Health\s{2})/.test(n);
 
   // Canonical name map — normalise all known insurer name variants to a single key.
   // This runs before ANY revenue/order aggregation so merged accounts are counted once.
@@ -1345,6 +1345,11 @@ function renderInsurerDetailsView(d) {
     if (n === 'Tata AIA Life')                                return 'TATA AIA Life Insurance Company';
     // SBI Life variants → "SBI LIfe Insurance Company"
     if (n === 'SBI Life')                                     return 'SBI LIfe Insurance Company';
+    // Encoded (obfuscated) insurer names from order data → real account names
+    if (n === 'A8228Mph f7Rq7v0X')                           return 'HDFC Life';
+    if (n === 'M7P4hW7Z Z9xz93cY')                           return 'Star Union Daichi Life Insurance';
+    if (n === 'nA5N724T IpSA357U')                           return 'TATA AIA Life Insurance Company';
+    if (n === '5MyHaB07 3VrA426d')                           return 'SBI LIfe Insurance Company';
     return n;
   };
 
