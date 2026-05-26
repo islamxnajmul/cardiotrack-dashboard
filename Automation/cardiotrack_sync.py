@@ -46,6 +46,7 @@ QUARTER_TARGET_FILE = INPUT  / "Quarter Target.xlsx"
 INCOMING_FILE       = INPUT  / "Incoming_Order_Count_Insurer_Wise.csv"
 REVENUE_FILE        = INPUT  / "Revenue_Generated_Insurer_Wise.csv"
 CLOSED_FILE         = INPUT  / "Closed_Case_Count_Insurer_Wise.csv"
+BILLING_FILE        = INPUT  / "Daily_Insurer_Billing_Data.csv"
 
 DASHBOARD_HTML = OUTPUT / "Cardiotrack_Dashboard.html"
 DATA_JSON      = OUTPUT / "dashboard_data.json"
@@ -71,6 +72,7 @@ EMAIL_MAP = {
     'Incoming Order Count Insurer Wise': INCOMING_FILE,
     'Revenue Generated Insurer Wise':    REVENUE_FILE,
     'Closed Case Count Insurer Wise':    CLOSED_FILE,
+    'Daily Insurer Billing Data':        BILLING_FILE,
 }
 
 # Full subject prefix/suffix on incoming Gmail messages.
@@ -1088,13 +1090,189 @@ def read_revenue_file(path: Path) -> list:
     return records
 
 
+# ── Canonical insurer name (mirrors JS _canonicalName in dashboard) ──────────
+_MONTH_ABBR = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",
+               7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
+_MONTH_NUM  = {v.lower():k for k,v in _MONTH_ABBR.items()}
+
+def _canonical_insurer_name(n: str) -> str:
+    if n == 'Acko Life':                                          return 'Acko Life Insurance'
+    if n in ('Acko Health - Insurance Limited',
+             'Acko Health -  Insurance Limited', 'Acko General'): return 'Acko Health Insurance'
+    if n in ('Bajaj Life Insurance Company',
+             'Bajaj Allianz Life Insurance Company'):             return 'Bajaj Life'
+    if n == 'Tata AIA Life':                                      return 'TATA AIA Life Insurance Company'
+    if n == 'SBI Life':                                           return 'SBI LIfe Insurance Company'
+    if n == 'A8228Mph f7Rq7v0X':                                  return 'HDFC Life'
+    if n == 'M7P4hW7Z Z9xz93cY':                                  return 'Star Union Daichi Life Insurance'
+    if n == 'nA5N724T IpSA357U':                                   return 'TATA AIA Life Insurance Company'
+    if n == '5MyHaB07 3VrA426d':                                   return 'SBI LIfe Insurance Company'
+    return n
+
+
+def _parse_date_to_month_label(s: str) -> str:
+    """Convert various date formats to 'Mmm YYYY', e.g. '2026-04-15' → 'Apr 2026'."""
+    s = (s or "").strip()
+    # ISO: 2026-04-15
+    m = re.match(r"(\d{4})-(\d{1,2})-\d{1,2}", s)
+    if m:
+        return f"{_MONTH_ABBR[int(m.group(2))]} {m.group(1)}"
+    # DD/MM/YYYY or DD-MM-YYYY
+    m = re.match(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", s)
+    if m:
+        mn = int(m.group(2))
+        if 1 <= mn <= 12:
+            return f"{_MONTH_ABBR[mn]} {m.group(3)}"
+    # Already "Apr 2026" / "April 2026"
+    m = re.match(r"([A-Za-z]{3,9})\s+(\d{4})", s)
+    if m:
+        key = m.group(1)[:3].lower()
+        if key in _MONTH_NUM:
+            return f"{_MONTH_ABBR[_MONTH_NUM[key]]} {m.group(2)}"
+    return s  # pass through unchanged
+
+
+def read_billing_file(path: Path) -> list:
+    """Read Daily_Insurer_Billing_Data.csv → list of {month_label, insurer, amount}.
+
+    Converts daily date values (any common format) to 'Mmm YYYY' month labels
+    and aggregates accordingly.  Column detection is keyword-based so column
+    order / label variations in the real file are handled gracefully.
+    """
+    if not path.exists():
+        log.warning(f"Billing file not found: {path.name}")
+        return []
+
+    rows = list(_read_csv_rows(path))
+    if not rows:
+        log.warning(f"Billing CSV is empty: {path.name}")
+        return []
+
+    header = [h.lower() for h in rows[0]]
+    def find(*keywords, default=None):
+        for i, h in enumerate(header):
+            if any(k in h for k in keywords):
+                return i
+        return default
+
+    DATE_COL    = find("date", "day", default=0)
+    INSURER_COL = find("insurer", "company", "client", "partner", default=1)
+    AMT_COL     = find("amount", "billing", "revenue", "billed", "total", default=2)
+
+    records = []
+    for row in rows[1:]:
+        if not any(c for c in row):
+            continue
+        max_col = max(DATE_COL, INSURER_COL, AMT_COL)
+        if len(row) <= max_col:
+            continue
+        insurer = _canonical_insurer_name(row[INSURER_COL].strip())
+        if not insurer:
+            continue
+        month_label = _parse_date_to_month_label(row[DATE_COL])
+        amount = safe_float(row[AMT_COL])
+        records.append({"month_label": month_label, "insurer": insurer, "amount": amount})
+
+    log.info(f"  Billing: {len(records)} daily rows → "
+             f"{len(set(r['month_label'] for r in records))} months")
+    return records
+
+
+def _compute_yoy(billing_records: list) -> dict:
+    """Compute Q2 YTD current-year vs prior-year comparison from billing records.
+
+    Q2 = April + May + June.  Only compares months present in the current year
+    (so Apr+May 2026 is matched against Apr+May 2025 — not all of Q2 2025).
+    """
+    from collections import defaultdict
+
+    # Aggregate by (year, month_num, canonical_insurer)
+    data: dict = defaultdict(float)
+    for r in billing_records:
+        lbl = r.get("month_label", "")
+        parts = lbl.split()
+        if len(parts) != 2:
+            continue
+        mon_key = parts[0][:3].lower()
+        mon_num = _MONTH_NUM.get(mon_key, 0)
+        if mon_num not in (4, 5, 6):          # Q2 only
+            continue
+        try:
+            year = int(parts[1])
+        except ValueError:
+            continue
+        data[(year, mon_num, r["insurer"])] += r["amount"]
+
+    if not data:
+        return {}
+
+    current_year = max(k[0] for k in data)
+    prior_year   = current_year - 1
+
+    # Months that exist for the current year
+    cy_months = sorted({k[1] for k in data if k[0] == current_year})
+
+    cy_by_ins: dict = defaultdict(float)
+    py_by_ins: dict = defaultdict(float)
+    for (yr, mn, ins), amt in data.items():
+        if mn not in cy_months:
+            continue
+        if yr == current_year:
+            cy_by_ins[ins] += amt
+        elif yr == prior_year:
+            py_by_ins[ins] += amt
+
+    all_ins = sorted(set(list(cy_by_ins) + list(py_by_ins)))
+    cy_total = sum(cy_by_ins.values())
+    py_total = sum(py_by_ins.values())
+    abs_total = cy_total - py_total
+    pct_total = round(abs_total / py_total * 100, 1) if py_total else None
+
+    rows = []
+    for ins in all_ins:
+        cy  = cy_by_ins.get(ins, 0)
+        py  = py_by_ins.get(ins, 0)
+        abg = cy - py
+        gp  = round(abg / py * 100, 1) if py else None
+        rows.append({
+            "insurer":          ins,
+            "cy_revenue":       round(cy,  2),
+            "py_revenue":       round(py,  2),
+            "abs_growth":       round(abg, 2),
+            "growth_pct":       gp,
+            "contribution_pct": round(cy / cy_total * 100, 1) if cy_total else 0,
+        })
+    rows.sort(key=lambda r: r["cy_revenue"], reverse=True)
+
+    gainers   = sorted([r for r in rows if r["abs_growth"] > 0],
+                        key=lambda r: r["abs_growth"], reverse=True)[:3]
+    decliners = sorted([r for r in rows if r["abs_growth"] < 0],
+                        key=lambda r: r["abs_growth"])[:3]
+
+    cy_months_str = [f"{_MONTH_ABBR[m]} {current_year}" for m in cy_months]
+
+    return {
+        "current_year":      current_year,
+        "prior_year":        prior_year,
+        "cy_months":         cy_months_str,
+        "cy_total":          round(cy_total,  2),
+        "py_total":          round(py_total,  2),
+        "overall_growth":    round(abs_total, 2),
+        "overall_growth_pct": pct_total,
+        "by_insurer":        rows,
+        "top_gainers":       gainers,
+        "top_decliners":     decliners,
+    }
+
+
 def build_dashboard_data() -> dict:
     """Combine all sources into one JSON-serialisable dict."""
     log.info("Building dashboard data…")
-    qt   = read_quarter_target()
-    inc  = read_orders_file(INCOMING_FILE, "Incoming Orders")
-    cl   = read_orders_file(CLOSED_FILE,   "Closed Orders")
-    rev  = read_revenue_file(REVENUE_FILE)
+    qt      = read_quarter_target()
+    inc     = read_orders_file(INCOMING_FILE, "Incoming Orders")
+    cl      = read_orders_file(CLOSED_FILE,   "Closed Orders")
+    rev     = read_revenue_file(REVENUE_FILE)
+    billing = read_billing_file(BILLING_FILE)
 
     # ── Q2 2026 month filter ──────────────────────────────────────────────────
     Q2_MONTHS = {"Apr 2026", "May 2026", "Jun 2026"}
@@ -1291,6 +1469,8 @@ def build_dashboard_data() -> dict:
             "q2":    round(sum(p["weighted"] for p in pipeline if p.get("month") == "Q2")),
         },
         "_plan_has_month_col": qt.get("plan_has_month_col", False),
+        # ── YoY comparison (from Daily_Insurer_Billing_Data.csv) ─────────────
+        "yoy_comparison": _compute_yoy(billing),
     }
 
 
@@ -1404,10 +1584,11 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
     # from a CSV last refreshed at <time>" — answers the question
     # "is the displayed number actually fresh?"
     meta_files = {}
-    for label, path in (("revenue_csv", REVENUE_FILE),
-                        ("incoming_csv", INCOMING_FILE),
-                        ("closed_csv",   CLOSED_FILE),
-                        ("quarter_target_xlsx", QUARTER_TARGET_FILE)):
+    for label, path in (("revenue_csv",          REVENUE_FILE),
+                        ("incoming_csv",         INCOMING_FILE),
+                        ("closed_csv",           CLOSED_FILE),
+                        ("billing_csv",          BILLING_FILE),
+                        ("quarter_target_xlsx",  QUARTER_TARGET_FILE)):
         if path.exists():
             mt = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
             meta_files[label] = {

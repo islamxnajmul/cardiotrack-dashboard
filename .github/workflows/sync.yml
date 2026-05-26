@@ -3,12 +3,15 @@ name: Cardiotrack Sync + Deploy
 # Runs frequently during India business hours, plus on-demand:
 #   UTC 04, 06, 08, 10, 12, 14, 19  →  IST 09:30, 11:30, 13:30, 15:30,
 #                                        17:30, 19:30, 00:30
+# Extra run at 18:05 UTC = 23:35 IST to pick up the nightly
+#   Daily_Insurer_Billing_Data.csv attachment.
 # Plus 'Run workflow' button in the Actions tab.
 on:
   push:
     branches: [main]
   schedule:
     - cron: '0 4,6,8,10,12,14,19 * * *'
+    - cron: '5 18 * * *'
   workflow_dispatch: {}
 
 # Required for actions/deploy-pages

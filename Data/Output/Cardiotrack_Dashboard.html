@@ -185,6 +185,60 @@
     padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700}
   .id-badge-disc{background:#EEE;color:#555;display:inline-block;
     padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700}
+
+  /* ── YoY COMPARISON ── */
+  .yoy-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .yoy-kpi{border-radius:10px;padding:13px 16px;text-align:center;border:1px solid transparent}
+  .yoy-kpi .yoy-lbl{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+  .yoy-kpi .yoy-val{font-size:1.55rem;font-weight:800;line-height:1;margin:4px 0 3px}
+  .yoy-kpi .yoy-sub{font-size:.65rem}
+  .yoy-kpi.yoy-cy{background:linear-gradient(135deg,#E8F8F5,#D1F2EB);border-color:#A9DFBF}
+  .yoy-kpi.yoy-cy .yoy-lbl,.yoy-kpi.yoy-cy .yoy-sub{color:#1A5276}
+  .yoy-kpi.yoy-cy .yoy-val{color:#117A65}
+  .yoy-kpi.yoy-py{background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border-color:#AED6F1}
+  .yoy-kpi.yoy-py .yoy-lbl,.yoy-kpi.yoy-py .yoy-sub{color:#1A5276}
+  .yoy-kpi.yoy-py .yoy-val{color:#1B4F72}
+  .yoy-kpi.yoy-up{background:linear-gradient(135deg,#EAFAF1,#D5F5E3);border-color:#A9DFBF}
+  .yoy-kpi.yoy-up .yoy-lbl,.yoy-kpi.yoy-up .yoy-sub{color:#1E8449}
+  .yoy-kpi.yoy-up .yoy-val{color:#1E8449}
+  .yoy-kpi.yoy-dn{background:linear-gradient(135deg,#FDEDEC,#FADBD8);border-color:#F1948A}
+  .yoy-kpi.yoy-dn .yoy-lbl,.yoy-kpi.yoy-dn .yoy-sub{color:#922B21}
+  .yoy-kpi.yoy-dn .yoy-val{color:#C0392B}
+  .yoy-table-wrap{overflow-x:auto;margin-bottom:18px}
+  .yoy-table{width:100%;border-collapse:collapse;font-size:.78rem}
+  .yoy-table th{background:#1B7F79;color:#fff;padding:8px 10px;text-align:right;
+    font-size:.68rem;font-weight:700;letter-spacing:.4px;white-space:nowrap}
+  .yoy-table th:first-child{text-align:left}
+  .yoy-table td{padding:7px 10px;border-bottom:1px solid #E8EDF2;text-align:right;color:#2C3E50}
+  .yoy-table td:first-child{text-align:left;font-weight:600}
+  .yoy-table tr:hover td{background:#F7FAFC}
+  .yoy-table tr:last-child td{border-bottom:none}
+  .yoy-up-txt{color:#1E8449;font-weight:700}
+  .yoy-dn-txt{color:#C0392B;font-weight:700}
+  .yoy-neutral{color:#7F8C8D}
+  .yoy-bar{display:inline-block;height:8px;border-radius:4px;background:#1B7F79;
+    vertical-align:middle;margin-left:6px;opacity:.7}
+  .yoy-gd-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  .yoy-gd-card{border-radius:10px;padding:12px 14px}
+  .yoy-gd-card.yoy-gainer{background:#EAFAF1;border:1px solid #A9DFBF}
+  .yoy-gd-card.yoy-decliner{background:#FDEDEC;border:1px solid #F1948A}
+  .yoy-gd-hdr{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+    margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .yoy-gd-hdr.g-hdr{color:#1E8449}
+  .yoy-gd-hdr.d-hdr{color:#C0392B}
+  .yoy-gd-row{display:flex;justify-content:space-between;align-items:center;
+    padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:.78rem}
+  .yoy-gd-row:last-child{border-bottom:none}
+  .yoy-gd-name{font-weight:600;color:#2C3E50;flex:1;margin-right:8px}
+  .yoy-insight-box{background:linear-gradient(135deg,#F0F9FF,#E8F4FD);border:1px solid #AED6F1;
+    border-radius:10px;padding:14px 16px;margin-bottom:16px}
+  .yoy-insight-box h4{margin:0 0 8px;font-size:.78rem;color:#1A5276;font-weight:700;
+    text-transform:uppercase;letter-spacing:.5px}
+  .yoy-insight-item{font-size:.8rem;color:#2C3E50;padding:4px 0;line-height:1.5;
+    display:flex;gap:8px}
+  .yoy-insight-item::before{content:"•";color:#1B7F79;font-weight:800;flex-shrink:0}
+  .yoy-no-data{background:#F0F4F8;border-radius:8px;padding:18px;text-align:center;
+    color:#7F8C8D;font-size:.82rem}
 </style>
 </head>
 <body>
@@ -1641,6 +1695,145 @@ function renderInsurerDetailsView(d) {
     const el = document.getElementById('id-build-ts');
     if (el) el.textContent = new Date(ts).toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
   }
+
+  // ── YoY Comparison section ───────────────────────────────────────────────
+  const yoy = d.yoy_comparison || {};
+  const yoySection = document.createElement('div');
+  yoySection.style.cssText = 'margin-top:28px';
+
+  if (!yoy.by_insurer || yoy.by_insurer.length === 0) {
+    yoySection.innerHTML = `
+      <div class="id-section-hdr">📊 Year-on-Year Revenue Comparison (Q2 YTD)</div>
+      <div class="yoy-no-data">
+        No billing data yet — attach <strong>Daily_Insurer_Billing_Data.csv</strong> to an email
+        with subject <em>"Check out the &ldquo;Daily Insurer Billing Data&rdquo; report"</em>
+        and hit <strong>↻ Sync All</strong> to populate this section.
+      </div>`;
+    container.appendChild(yoySection);
+    return;
+  }
+
+  const cy   = yoy.current_year;
+  const py   = yoy.prior_year;
+  const pct  = yoy.overall_growth_pct;
+  const isUp = (yoy.overall_growth || 0) >= 0;
+  // rl() already defined earlier in this function — reuse it for positive values.
+  // rlSign handles signed growth amounts (positive or negative).
+  const rlSign = v => v == null ? '—'
+    : `${v >= 0 ? '+' : '−'}₹${(Math.abs(v)/100000).toFixed(2)}L`;
+  const pctFmt = v => v == null ? 'N/A' : `${v >= 0 ? '+' : ''}${v}%`;
+  const cyMonths = (yoy.cy_months || []).join(', ');
+
+  // ── KPI tiles ──────────────────────────────────────────────────────
+  let kpiHtml = `
+    <div class="id-section-hdr">📊 Q2 YTD: ${cy} vs ${py} Revenue Comparison</div>
+    <div style="font-size:.72rem;color:var(--text2);margin-bottom:12px">
+      Comparing <strong>${cyMonths}</strong> (${cy}) against the same months in ${py}.
+      Source: Daily_Insurer_Billing_Data.csv refreshed from Gmail.
+    </div>
+    <div class="yoy-kpi-row">
+      <div class="yoy-kpi yoy-cy">
+        <div class="yoy-lbl">Q2 YTD ${cy}</div>
+        <div class="yoy-val">${rl(yoy.cy_total)}</div>
+        <div class="yoy-sub">${cyMonths}</div>
+      </div>
+      <div class="yoy-kpi yoy-py">
+        <div class="yoy-lbl">Q2 YTD ${py}</div>
+        <div class="yoy-val">${rl(yoy.py_total)}</div>
+        <div class="yoy-sub">Same months, prior year</div>
+      </div>
+      <div class="yoy-kpi ${isUp ? 'yoy-up' : 'yoy-dn'}">
+        <div class="yoy-lbl">Absolute Growth</div>
+        <div class="yoy-val">${rlSign(yoy.overall_growth)}</div>
+        <div class="yoy-sub">${cy} vs ${py}</div>
+      </div>
+      <div class="yoy-kpi ${isUp ? 'yoy-up' : 'yoy-dn'}">
+        <div class="yoy-lbl">Overall Growth %</div>
+        <div class="yoy-val">${pctFmt(pct)}</div>
+        <div class="yoy-sub">${isUp ? '▲ Growing' : '▼ Declining'}</div>
+      </div>
+    </div>`;
+
+  // ── Insurer-wise table ─────────────────────────────────────────────
+  const maxCY = Math.max(...yoy.by_insurer.map(r => r.cy_revenue || 0), 1);
+  let tableRows = '';
+  for (const r of yoy.by_insurer) {
+    const barW = Math.round((r.cy_revenue / maxCY) * 80);
+    const gCls = r.abs_growth > 0 ? 'yoy-up-txt' : r.abs_growth < 0 ? 'yoy-dn-txt' : 'yoy-neutral';
+    const arrow = r.abs_growth > 0 ? '▲' : r.abs_growth < 0 ? '▼' : '—';
+    tableRows += `<tr>
+      <td>${r.insurer}<span class="yoy-bar" style="width:${barW}px"></span></td>
+      <td>${rl(r.cy_revenue)}</td>
+      <td>${rl(r.py_revenue)}</td>
+      <td class="${gCls}">${rlSign(r.abs_growth)}</td>
+      <td class="${gCls}">${arrow} ${pctFmt(r.growth_pct)}</td>
+      <td>${r.contribution_pct != null ? r.contribution_pct + '%' : '—'}</td>
+    </tr>`;
+  }
+  kpiHtml += `
+    <div class="yoy-table-wrap">
+      <table class="yoy-table">
+        <thead><tr>
+          <th style="text-align:left">Insurer</th>
+          <th>${cy} Revenue</th>
+          <th>${py} Revenue</th>
+          <th>Growth (₹)</th>
+          <th>Growth %</th>
+          <th>${cy} Share</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>`;
+
+  // ── Top Gainers / Decliners ────────────────────────────────────────
+  const gainers   = yoy.top_gainers   || [];
+  const decliners = yoy.top_decliners || [];
+  if (gainers.length || decliners.length) {
+    const mkRows = (list, isGainer) => list.map(r => `
+      <div class="yoy-gd-row">
+        <span class="yoy-gd-name">${r.insurer}</span>
+        <span class="${isGainer ? 'yoy-up-txt' : 'yoy-dn-txt'}" style="font-size:.78rem;font-weight:700">
+          ${rlSign(r.abs_growth)} (${pctFmt(r.growth_pct)})
+        </span>
+      </div>`).join('');
+
+    kpiHtml += `<div class="yoy-gd-grid">
+      <div class="yoy-gd-card yoy-gainer">
+        <div class="yoy-gd-hdr g-hdr">🚀 Top Gainers</div>
+        ${gainers.length ? mkRows(gainers, true) : '<div style="font-size:.78rem;color:#7F8C8D">No gainers this period</div>'}
+      </div>
+      <div class="yoy-gd-card yoy-decliner">
+        <div class="yoy-gd-hdr d-hdr">⚠️ Decliners</div>
+        ${decliners.length ? mkRows(decliners, false) : '<div style="font-size:.78rem;color:#7F8C8D">No decliners — all accounts growing!</div>'}
+      </div>
+    </div>`;
+  }
+
+  // ── Trend Insights ────────────────────────────────────────────────
+  const insights = [];
+  if (pct != null) {
+    if (pct >= 20)       insights.push(`Strong YoY growth of <strong>${pctFmt(pct)}</strong> — Q2 ${cy} is significantly ahead of ${py}.`);
+    else if (pct >= 5)   insights.push(`Healthy YoY growth of <strong>${pctFmt(pct)}</strong> versus Q2 ${py}.`);
+    else if (pct >= 0)   insights.push(`Marginal growth of <strong>${pctFmt(pct)}</strong> YoY — opportunity to accelerate in remaining months.`);
+    else if (pct >= -10) insights.push(`Slight revenue decline of <strong>${pctFmt(pct)}</strong> vs Q2 ${py} — monitor closely.`);
+    else                 insights.push(`Significant revenue decline of <strong>${pctFmt(pct)}</strong> vs Q2 ${py} — requires attention.`);
+  }
+  if (gainers[0]) insights.push(`Biggest growth driver: <strong>${gainers[0].insurer}</strong> contributed ${rlSign(gainers[0].abs_growth)} (${pctFmt(gainers[0].growth_pct)}) incremental revenue.`);
+  if (decliners[0]) insights.push(`Largest decline: <strong>${decliners[0].insurer}</strong> dropped ${rlSign(decliners[0].abs_growth)} (${pctFmt(decliners[0].growth_pct)}) versus ${py}.`);
+  const topCY = (yoy.by_insurer[0] || {});
+  if (topCY.insurer) insights.push(`<strong>${topCY.insurer}</strong> leads ${cy} Q2 YTD revenue at ${rl(topCY.cy_revenue)} (${topCY.contribution_pct}% share).`);
+  const newEntrants = yoy.by_insurer.filter(r => r.py_revenue === 0 && r.cy_revenue > 0);
+  if (newEntrants.length) insights.push(`New revenue sources in ${cy}: ${newEntrants.map(r => `<strong>${r.insurer}</strong>`).join(', ')}.`);
+
+  if (insights.length) {
+    kpiHtml += `<div class="yoy-insight-box">
+      <h4>💡 Trend Insights</h4>
+      ${insights.map(i => `<div class="yoy-insight-item">${i}</div>`).join('')}
+    </div>`;
+  }
+
+  yoySection.innerHTML = kpiHtml;
+  container.appendChild(yoySection);
 }
 
 // ─────────────────────────────────────────────────────────────────
