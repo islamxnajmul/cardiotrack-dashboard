@@ -46,7 +46,7 @@ QUARTER_TARGET_FILE = INPUT  / "Quarter Target.xlsx"
 INCOMING_FILE       = INPUT  / "Incoming_Order_Count_Insurer_Wise.csv"
 REVENUE_FILE        = INPUT  / "Revenue_Generated_Insurer_Wise.csv"
 CLOSED_FILE         = INPUT  / "Closed_Case_Count_Insurer_Wise.csv"
-BILLING_FILE        = INPUT  / "Daily_Insurer_Billing_Data.csv"
+BILLING_FILE        = INPUT  / "Daily_Insurer_Billing_Data.xls"
 
 DASHBOARD_HTML = OUTPUT / "Cardiotrack_Dashboard.html"
 DATA_JSON      = OUTPUT / "dashboard_data.json"
@@ -1133,44 +1133,79 @@ def _parse_date_to_month_label(s: str) -> str:
 
 
 def read_billing_file(path: Path) -> list:
-    """Read Daily_Insurer_Billing_Data.csv → list of {month_label, insurer, amount}.
+    """Read Daily_Insurer_Billing_Data.xls/.xlsx → list of {month_label, insurer, amount}.
 
-    Converts daily date values (any common format) to 'Mmm YYYY' month labels
-    and aggregates accordingly.  Column detection is keyword-based so column
-    order / label variations in the real file are handled gracefully.
+    The file is distributed with a .xls extension but is actually an Office Open
+    XML workbook (xlsx/ZIP format).  openpyxl handles it fine when loaded via
+    BytesIO — bypassing the extension check that would otherwise reject it.
+
+    Columns: Insurer Name | Policy Number | Order Closure Date | Total Amount to be Billed
+    Date values are already datetime objects from openpyxl; we convert to 'Mmm YYYY'.
     """
+    import io as _io
+
     if not path.exists():
         log.warning(f"Billing file not found: {path.name}")
         return []
 
-    rows = list(_read_csv_rows(path))
-    if not rows:
-        log.warning(f"Billing CSV is empty: {path.name}")
+    if not EXCEL_AVAILABLE:
+        log.warning("openpyxl not available — cannot read billing file")
         return []
 
-    header = [h.lower() for h in rows[0]]
+    try:
+        with open(path, "rb") as fh:
+            raw = _io.BytesIO(fh.read())
+        wb = openpyxl.load_workbook(raw, read_only=True, data_only=True)
+        ws = wb.active
+        all_rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+    except Exception as e:
+        log.warning(f"Could not open billing workbook {path.name}: {e}")
+        return []
+
+    if not all_rows:
+        log.warning(f"Billing file is empty: {path.name}")
+        return []
+
+    # ── Column detection (keyword-based, case-insensitive) ────────────────────
+    header = [str(h).lower() if h is not None else "" for h in all_rows[0]]
+
     def find(*keywords, default=None):
         for i, h in enumerate(header):
             if any(k in h for k in keywords):
                 return i
         return default
 
-    DATE_COL    = find("date", "day", default=0)
-    INSURER_COL = find("insurer", "company", "client", "partner", default=1)
-    AMT_COL     = find("amount", "billing", "revenue", "billed", "total", default=2)
+    DATE_COL    = find("date", "day", default=2)
+    INSURER_COL = find("insurer", "company", "client", "partner", default=0)
+    AMT_COL     = find("amount", "billing", "revenue", "billed", "total", default=3)
 
+    max_col = max(DATE_COL, INSURER_COL, AMT_COL)
     records = []
-    for row in rows[1:]:
-        if not any(c for c in row):
+    for row in all_rows[1:]:
+        if not row or len(row) <= max_col:
             continue
-        max_col = max(DATE_COL, INSURER_COL, AMT_COL)
-        if len(row) <= max_col:
+        if not any(row):
             continue
-        insurer = _canonical_insurer_name(row[INSURER_COL].strip())
+
+        insurer_raw = row[INSURER_COL]
+        date_val    = row[DATE_COL]
+        amt_val     = row[AMT_COL]
+
+        if insurer_raw is None or amt_val is None:
+            continue
+
+        insurer = _canonical_insurer_name(str(insurer_raw).strip())
         if not insurer:
             continue
-        month_label = _parse_date_to_month_label(row[DATE_COL])
-        amount = safe_float(row[AMT_COL])
+
+        # openpyxl returns datetime objects for date cells
+        if isinstance(date_val, datetime):
+            month_label = date_val.strftime("%b %Y")
+        else:
+            month_label = _parse_date_to_month_label(str(date_val))
+
+        amount = safe_float(str(amt_val)) if not isinstance(amt_val, (int, float)) else float(amt_val)
         records.append({"month_label": month_label, "insurer": insurer, "amount": amount})
 
     log.info(f"  Billing: {len(records)} daily rows → "

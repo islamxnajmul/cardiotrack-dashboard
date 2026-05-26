@@ -57,6 +57,23 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .funnel-leak { width:90px; text-align:right; font-size:11px; color:#b91c1c; font-variant-numeric: tabular-nums; }
 .tab-pane { display:none; }
 .tab-pane.active { display:block; }
+/* Pipeline Health */
+.pill.accent { background:#dbeafe; color:#1e40af; }
+.ph-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+@media(max-width:700px){ .ph-grid { grid-template-columns:1fr; } }
+.ph-card { background:white; border:1px solid #e2e8f0; border-radius:10px; padding:16px; }
+.ph-card.highlight { border-color:#1d4ed8; box-shadow:0 0 0 2px #dbeafe; }
+.ph-month { font-size:14px; font-weight:700; color:#0f172a; padding-bottom:8px; margin-bottom:12px; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; gap:8px; }
+.ph-metric { margin-bottom:12px; }
+.ph-label { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; font-weight:600; margin-bottom:3px; }
+.ph-value { font-size:24px; font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; }
+.ph-value.in { color:#1d4ed8; }
+.ph-value.out { color:#15803d; }
+.ph-sub { font-size:11px; color:#94a3b8; margin-top:2px; }
+.ph-empty { color:#94a3b8; font-style:italic; text-align:center; padding:28px 0; font-size:13px; }
+/* Insurer Details */
+.id-expiry-urgent { color:#b91c1c; font-weight:600; }
+.id-expiry-warn { color:#b45309; }
 </style>
 </head>
 <body>
@@ -84,11 +101,238 @@ const STAGE_KEYS = SNAPSHOT.stageKeys;
 const STAGE_LABELS = SNAPSHOT.stageLabels;
 let charts = {};
 
+/* ── Insurer Agreement Data (source: Insurer Agreement Expiry Details.xlsx) ── */
+const INSURER_DETAILS = [
+  { name:'ICICI Lombard',                  term:3, validFrom:'2023-11-23', expiry:'2026-11-22', status:'Active',   originalDate:'2020-10-01', liability:'₹50,000',    renewals:2, businessDone:null },
+  { name:'Bajaj Life Insurance Company',   term:3, validFrom:'2024-10-01', expiry:'2027-09-30', status:'Active',   originalDate:'2022-10-01', liability:'1 year',      renewals:3, businessDone:null },
+  { name:'Acko General',                   term:2, validFrom:'2024-04-01', expiry:'2026-05-31', status:'Active',   originalDate:'2024-04-01', liability:'₹5,00,000',   renewals:0, businessDone:null },
+  { name:'Acko Life',                      term:2, validFrom:'2024-04-01', expiry:'2026-05-31', status:'Active',   originalDate:'2024-04-01', liability:'₹5,00,000',   renewals:0, businessDone:null },
+  { name:'Pramerica Life Insurance',       term:3, validFrom:'2025-12-01', expiry:'2028-11-30', status:'Active',   originalDate:'2022-12-01', liability:'—',           renewals:1, businessDone:null },
+  { name:'Star Union Daichi Life Insurance', term:3, validFrom:'2025-09-01', expiry:'2028-08-31', status:'Active', originalDate:'2023-11-20', liability:'6 months',    renewals:1, businessDone:null },
+  { name:'HDFC Life',                      term:1, validFrom:'2025-03-10', expiry:'2026-03-09', status:'Expired',  originalDate:'2022-03-10', liability:'—',           renewals:1, businessDone:null },
+  { name:'Aditya Birla Sun Life Insurance', term:3, validFrom:'2025-10-01', expiry:'2028-09-30', status:'Active',  originalDate:'2022-10-01', liability:'6 months',   renewals:1, businessDone:null },
+  { name:'Canara HSBC Life Insurance',     term:2, validFrom:'2025-01-25', expiry:'2027-01-24', status:'Active',   originalDate:'2023-01-25', liability:'1 year',      renewals:1, businessDone:null },
+  { name:'Ageas Federal Life Insurance',   term:3, validFrom:'2024-08-02', expiry:'2027-08-01', status:'Active',   originalDate:'2024-08-02', liability:'₹50,000',     renewals:0, businessDone:null },
+  { name:'TATA AIG General Insurance',     term:3, validFrom:'2025-02-25', expiry:'2028-02-24', status:'Active',   originalDate:'2025-02-25', liability:'2 years',     renewals:0, businessDone:null },
+  { name:'Care Insurance',                 term:3, validFrom:'2024-11-01', expiry:'2027-10-31', status:'Active',   originalDate:'2024-11-01', liability:'—',           renewals:0, businessDone:null },
+];
+const INSURER_HISTORY = [
+  { name:'ICICI Lombard',               term:3, validFrom:'2020-10-01', expiry:'2023-09-30', status:'Expired'      },
+  { name:'Bajaj Allianz',               term:1, validFrom:'2022-10-01', expiry:'2023-09-30', status:'Expired'      },
+  { name:'Bajaj Allianz',               term:1, validFrom:'2023-10-01', expiry:'2024-09-30', status:'Expired'      },
+  { name:'Tata AIA Life',               term:1, validFrom:'2022-11-15', expiry:'2023-11-14', status:'Expired'      },
+  { name:'Tata AIA Life',               term:3, validFrom:'2023-11-15', expiry:'2026-11-14', status:'Discontinued' },
+  { name:'SBI Life',                    term:2, validFrom:'2023-04-11', expiry:'2024-09-14', status:'Expired'      },
+  { name:'Aditya Birla Health',         term:3, validFrom:'2021-10-16', expiry:'2024-10-15', status:'Expired'      },
+  { name:'Canara HSBC Life Insurance',  term:2, validFrom:'2023-01-25', expiry:'2025-01-24', status:'Expired'      },
+  { name:'HDFC Life',                   term:3, validFrom:'2022-03-10', expiry:'2025-03-09', status:'Expired'      },
+  { name:'HDFC Life',                   term:1, validFrom:'2025-03-10', expiry:'2026-03-09', status:'Expired'      },
+];
+
 function fmtNum(n) { return n==null||isNaN(n) ? '—' : Number(n).toLocaleString('en-IN'); }
 function fmtPct(n, d) { d = d==null ? 1 : d; return n==null||isNaN(n) ? '—' : Number(n).toFixed(d) + '%'; }
 function fmtDays(n) { return n==null||isNaN(n) ? '—' : n.toFixed(1) + 'd'; }
 function escapeHtml(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function destroyCharts() { for (const k in charts) { try { charts[k].destroy(); } catch(e){} } charts = {}; }
+
+/* ── Helpers for Insurer Details ── */
+function calcRelationship(dateStr) {
+  const d = new Date(dateStr), t = new Date('2026-05-25');
+  let y = t.getFullYear() - d.getFullYear(), m = t.getMonth() - d.getMonth();
+  if (t.getDate() < d.getDate()) m--;
+  if (m < 0) { y--; m += 12; }
+  if (y === 0) return m + ' month' + (m !== 1 ? 's' : '');
+  return y + ' yr' + (y !== 1 ? 's' : '') + (m > 0 ? ' ' + m + ' mo' : '');
+}
+function daysUntilExpiry(dateStr) {
+  return Math.ceil((new Date(dateStr) - new Date('2026-05-25')) / 86400000);
+}
+
+/* ── Pipeline Health Pane ── */
+function renderPipelineHealthPane() {
+  const allIns = SNAPSHOT.insurers.find(i => i.isAggregate);
+  const pane = document.createElement('div');
+  pane.className = 'tab-pane';
+  pane.id = 'pane-pipeline';
+  if (!allIns) { pane.innerHTML = '<p style="color:#94a3b8">No aggregate data available.</p>'; return pane; }
+
+  const recentMonths = ['2026-04','2026-05','2026-06'];
+  const recentLabels  = { '2026-04':'April 2026', '2026-05':'May 2026', '2026-06':'June 2026' };
+
+  const phCards = recentMonths.map(mk => {
+    const m = allIns.months.find(x => x.monthKey === mk);
+    const isLatest = mk === '2026-04';
+    if (!m) {
+      return `<div class="ph-card">
+        <div class="ph-month">${recentLabels[mk]}</div>
+        <div class="ph-empty">${mk > '2026-05' ? '⏳ Upcoming' : '🔄 Data pending'}</div>
+      </div>`;
+    }
+    return `<div class="ph-card${isLatest ? ' highlight' : ''}">
+      <div class="ph-month">${recentLabels[mk]}${isLatest ? ' <span class="pill gold" style="font-size:9px">Latest</span>' : ''}</div>
+      <div class="ph-metric">
+        <div class="ph-label">Total Incoming Orders</div>
+        <div class="ph-value in">${fmtNum(m.cohort)}</div>
+        <div class="ph-sub">New registrations</div>
+      </div>
+      <div class="ph-metric">
+        <div class="ph-label">Total Closed Orders</div>
+        <div class="ph-value out">${fmtNum(m.reach.report_submitted)}</div>
+        <div class="ph-sub">${fmtPct(m.conv.report_submitted)} close rate</div>
+      </div>
+      <div class="ph-metric">
+        <div class="ph-label">Still In Pipeline</div>
+        <div class="ph-value" style="font-size:18px;color:#0f172a">${fmtNum(m.in_pipeline)}</div>
+        <div class="ph-sub">Active / pending</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const months = allIns.months;
+  pane.innerHTML = `
+    <div class="section-title">Order Pipeline Health — Apr · May · Jun 2026</div>
+    <div class="ph-grid">${phCards}</div>
+    <div class="card">
+      <h2>Monthly Order Flow — All Insurers Combined</h2>
+      <div class="desc">Total Incoming Orders (registrations) vs Total Closed Orders (report submitted) across all insurers per month.</div>
+      <div class="chart-wrap tall"><canvas id="pipeline-chart"></canvas></div>
+    </div>
+    <div class="section-title">All Months — Detail Table</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Month</th>
+        <th class="num">Total Incoming Orders</th>
+        <th class="num">Total Closed Orders</th>
+        <th class="num">Close Rate</th>
+        <th class="num">In Pipeline</th>
+        <th class="num">Not Attended / Dropped</th>
+      </tr></thead>
+      <tbody>
+        ${months.map(m => `<tr${recentMonths.includes(m.monthKey) ? ' style="background:#f0f9ff"' : ''}>
+          <td><b>${escapeHtml(m.label)}</b>${recentMonths.includes(m.monthKey) ? ' <span class="pill accent" style="font-size:9px">Recent</span>' : ''}</td>
+          <td class="num">${fmtNum(m.cohort)}</td>
+          <td class="num">${fmtNum(m.reach.report_submitted)}</td>
+          <td class="num">${fmtPct(m.conv.report_submitted)}</td>
+          <td class="num">${fmtNum(m.in_pipeline)}</td>
+          <td class="num">${fmtNum(m.not_attended)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+  return pane;
+}
+
+function paintPipelineChart() {
+  const allIns = SNAPSHOT.insurers.find(i => i.isAggregate);
+  if (!allIns || !document.getElementById('pipeline-chart')) return;
+  const months = allIns.months;
+  charts['pipeline'] = new Chart(document.getElementById('pipeline-chart'), {
+    type: 'bar',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [
+        { label:'Total Incoming Orders', data: months.map(m => m.cohort),                      backgroundColor:'#1d4ed8', borderRadius:4 },
+        { label:'Total Closed Orders',   data: months.map(m => m.reach.report_submitted),       backgroundColor:'#15803d', borderRadius:4 },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom' } },
+      scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }
+    }
+  });
+}
+
+/* ── Insurer Details Pane ── */
+function renderInsurerDetailsPane() {
+  const pane = document.createElement('div');
+  pane.className = 'tab-pane';
+  pane.id = 'pane-insurer-details';
+
+  const urgentList = INSURER_DETAILS.filter(i => i.status==='Active' && daysUntilExpiry(i.expiry) <= 30);
+  const warnList   = INSURER_DETAILS.filter(i => i.status==='Active' && daysUntilExpiry(i.expiry) > 30 && daysUntilExpiry(i.expiry) <= 180);
+
+  let alertHtml = '';
+  if (urgentList.length) {
+    alertHtml += `<div class="callout" style="background:#fef2f2;border-color:#fca5a5;color:#991b1b;margin-bottom:10px">
+      🚨 <b>Expiring within 30 days:</b> ${urgentList.map(i => `<b>${escapeHtml(i.name)}</b> — expires <b>${i.expiry}</b> (${daysUntilExpiry(i.expiry)} days left)`).join(' &nbsp;·&nbsp; ')}. Immediate renewal action required.
+    </div>`;
+  }
+  if (warnList.length) {
+    alertHtml += `<div class="callout" style="background:#fffbeb;border-color:#fde68a;color:#92400e;margin-bottom:14px">
+      ⚠ <b>Expiring within 6 months:</b> ${warnList.map(i => `<b>${escapeHtml(i.name)}</b> (${daysUntilExpiry(i.expiry)} days)`).join(' &nbsp;·&nbsp; ')}.
+    </div>`;
+  }
+
+  const rows = INSURER_DETAILS.map(ins => {
+    const days = daysUntilExpiry(ins.expiry);
+    const rel  = calcRelationship(ins.originalDate);
+    const scl  = ins.status==='Active' ? 'good' : 'bad';
+    let expiryDisplay = ins.expiry;
+    if (ins.status==='Active') {
+      if (days <= 30)  expiryDisplay = `<span class="id-expiry-urgent">${ins.expiry} &nbsp;⚠ ${days}d</span>`;
+      else if (days <= 180) expiryDisplay = `<span class="id-expiry-warn">${ins.expiry} &nbsp;(${days}d)</span>`;
+    } else {
+      expiryDisplay = `<span style="color:#94a3b8">${ins.expiry}</span>`;
+    }
+    const bizDone = ins.businessDone != null
+      ? `<b>${fmtNum(ins.businessDone)}</b>`
+      : `<span style="color:#94a3b8;font-style:italic">Pending Gmail sync</span>`;
+
+    return `<tr>
+      <td><b>${escapeHtml(ins.name)}</b></td>
+      <td class="num">${ins.term} yr${ins.term>1?'s':''}</td>
+      <td>${ins.validFrom}</td>
+      <td>${expiryDisplay}</td>
+      <td><span class="pill ${scl}">${ins.status}</span></td>
+      <td>${escapeHtml(rel)}</td>
+      <td class="num">${ins.renewals}</td>
+      <td>${escapeHtml(String(ins.liability))}</td>
+      <td class="num">${bizDone}</td>
+    </tr>`;
+  }).join('');
+
+  const histRows = INSURER_HISTORY.map(ins => {
+    const sc = ins.status==='Discontinued' ? 'gold' : 'bad';
+    return `<tr>
+      <td>${escapeHtml(ins.name)}</td>
+      <td>${ins.term} yr${ins.term>1?'s':''}</td>
+      <td>${ins.validFrom}</td>
+      <td style="color:#94a3b8">${ins.expiry}</td>
+      <td><span class="pill ${sc}">${ins.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  pane.innerHTML = `
+    ${alertHtml}
+    <div class="section-title">Current Insurer Agreements</div>
+    <div style="font-size:11px;color:#64748b;margin-bottom:8px">Source: Insurer Agreement Expiry Details.xlsx &nbsp;·&nbsp; Business Done will auto-update when Gmail sync runs &nbsp;·&nbsp; Relationship years calculated from original agreement date</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Insurer Name</th>
+        <th class="num">Renewal Cycle</th>
+        <th>Agreement From</th>
+        <th>Expiry Date</th>
+        <th>Status</th>
+        <th>Relationship Since</th>
+        <th class="num">Renewals Done</th>
+        <th>Liability / Notice</th>
+        <th class="num">Total Business Generated</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+
+    <div class="section-title" style="margin-top:24px">Historical / Discontinued Agreements</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Insurer Name</th><th>Term</th><th>Valid From</th><th>Expired On</th><th>Status</th>
+      </tr></thead>
+      <tbody>${histRows}</tbody>
+    </table></div>
+    <div style="margin-top:12px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:11px;color:#166534">
+      ✅ <b>Google Drive:</b> Synced from <a href="https://drive.google.com/file/d/1Ro_pqzgw0PLQe8GwQSjKN0nuG8RFeEkx/view" target="_blank" style="color:#15803d">Insurer Agreement Expiry Details.xlsx</a> &nbsp;·&nbsp;
+      ✅ <b>Gmail:</b> Daily revenue report found — <i>Revenue_Generated_Insurer_Wise.csv</i> sent daily from najmul.islam@cardiotrack.io. Last email: 24 May 2026. Enable attachment download to auto-populate Business Done column.
+    </div>`;
+  return pane;
+}
 
 function setKpis(rowEl, items) {
   rowEl.innerHTML = items.map(k => '<div class="kpi ' + (k.tone||'') + '"><div class="lbl">' + escapeHtml(k.label) + '</div><div class="val">' + k.value + '</div>' + (k.subVal ? '<div class="sub-val">' + escapeHtml(k.subVal) + '</div>' : '') + '</div>').join('');
@@ -270,6 +514,29 @@ function ensurePainted(idx) {
 function init() {
   const tabsEl = document.getElementById('tabs');
   const panesEl = document.getElementById('panes');
+
+  // ── Special tabs: Pipeline Health & Insurer Details ──
+  const SPECIAL_TABS = [
+    { id:'pipeline',        label:'📊 Pipeline Health', renderFn: renderPipelineHealthPane, paintFn: paintPipelineChart },
+    { id:'insurer-details', label:'🤝 Insurer Details',  renderFn: renderInsurerDetailsPane, paintFn: null              },
+  ];
+  SPECIAL_TABS.forEach(spec => {
+    const btn = document.createElement('button');
+    btn.className = 'tab';
+    btn.textContent = spec.label;
+    btn.onclick = () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b===btn));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id==='pane-'+spec.id));
+      if (!painted['sp-'+spec.id]) {
+        if (spec.paintFn) spec.paintFn();
+        painted['sp-'+spec.id] = true;
+      }
+    };
+    tabsEl.appendChild(btn);
+    panesEl.appendChild(spec.renderFn());
+  });
+
+  // ── Insurer tabs ──
   SNAPSHOT.insurers.forEach((ins, idx) => {
     const btn = document.createElement('button');
     btn.className = 'tab' + (idx===0 ? ' active' : '');
@@ -283,7 +550,7 @@ function init() {
     tabsEl.appendChild(btn);
     panesEl.appendChild(renderInsurerPane(ins, idx));
   });
-  // Only paint the first tab eagerly; rest paint when their tab is opened.
+  // Only paint the first insurer tab eagerly; rest paint when opened.
   ensurePainted(0);
   document.getElementById('lastUpdated').textContent = 'Last refreshed ' + new Date(SNAPSHOT.refreshedAt).toLocaleString();
 }
