@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-19T10:59:08.777107+00:00",
+    "generated_at": "2026-05-26T18:28:15.244639+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
@@ -1877,5 +1877,159 @@
     "june": 4012665,
     "q2": 0
   },
-  "_plan_has_month_col": true
+  "_plan_has_month_col": true,
+  "yoy_comparison": {
+    "current_year": 2026,
+    "prior_year": 2025,
+    "cy_months": [
+      "Apr 2026",
+      "May 2026"
+    ],
+    "cy_total": 7321806.03,
+    "py_total": 7236198.0,
+    "overall_growth": 85608.03,
+    "overall_growth_pct": 1.2,
+    "by_insurer": [
+      {
+        "insurer": "Bajaj Life",
+        "cy_revenue": 2496022.0,
+        "py_revenue": 3441351.0,
+        "abs_growth": -945329.0,
+        "growth_pct": -27.5,
+        "contribution_pct": 34.1
+      },
+      {
+        "insurer": "Aditya Birla Sun Life Insurance",
+        "cy_revenue": 2374360.0,
+        "py_revenue": 1299171.0,
+        "abs_growth": 1075189.0,
+        "growth_pct": 82.8,
+        "contribution_pct": 32.4
+      },
+      {
+        "insurer": "ICICI Lombard",
+        "cy_revenue": 1882430.0,
+        "py_revenue": 1403541.0,
+        "abs_growth": 478889.0,
+        "growth_pct": 34.1,
+        "contribution_pct": 25.7
+      },
+      {
+        "insurer": "Star Union Daichi Life Insurance",
+        "cy_revenue": 281131.0,
+        "py_revenue": 2059.0,
+        "abs_growth": 279072.0,
+        "growth_pct": 13553.8,
+        "contribution_pct": 3.8
+      },
+      {
+        "insurer": "Ageas Federal Life Insurance",
+        "cy_revenue": 260247.0,
+        "py_revenue": 70730.0,
+        "abs_growth": 189517.0,
+        "growth_pct": 267.9,
+        "contribution_pct": 3.6
+      },
+      {
+        "insurer": "Pramerica Life Insurance",
+        "cy_revenue": 26318.0,
+        "py_revenue": 0,
+        "abs_growth": 26318.0,
+        "growth_pct": null,
+        "contribution_pct": 0.4
+      },
+      {
+        "insurer": "Cardiotrack Home Services",
+        "cy_revenue": 1298.03,
+        "py_revenue": 0.0,
+        "abs_growth": 1298.03,
+        "growth_pct": null,
+        "contribution_pct": 0.0
+      },
+      {
+        "insurer": "Canara HSBC Life Insurance",
+        "cy_revenue": 0,
+        "py_revenue": 36993.0,
+        "abs_growth": -36993.0,
+        "growth_pct": -100.0,
+        "contribution_pct": 0.0
+      },
+      {
+        "insurer": "Cardiotrack Corporate Services",
+        "cy_revenue": 0,
+        "py_revenue": 6900.0,
+        "abs_growth": -6900.0,
+        "growth_pct": -100.0,
+        "contribution_pct": 0.0
+      },
+      {
+        "insurer": "HDFC Life",
+        "cy_revenue": 0,
+        "py_revenue": 968875.0,
+        "abs_growth": -968875.0,
+        "growth_pct": -100.0,
+        "contribution_pct": 0.0
+      },
+      {
+        "insurer": "TAIG Health Insurance Company Ltd.",
+        "cy_revenue": 0,
+        "py_revenue": 6578.0,
+        "abs_growth": -6578.0,
+        "growth_pct": -100.0,
+        "contribution_pct": 0.0
+      }
+    ],
+    "top_gainers": [
+      {
+        "insurer": "Aditya Birla Sun Life Insurance",
+        "cy_revenue": 2374360.0,
+        "py_revenue": 1299171.0,
+        "abs_growth": 1075189.0,
+        "growth_pct": 82.8,
+        "contribution_pct": 32.4
+      },
+      {
+        "insurer": "ICICI Lombard",
+        "cy_revenue": 1882430.0,
+        "py_revenue": 1403541.0,
+        "abs_growth": 478889.0,
+        "growth_pct": 34.1,
+        "contribution_pct": 25.7
+      },
+      {
+        "insurer": "Star Union Daichi Life Insurance",
+        "cy_revenue": 281131.0,
+        "py_revenue": 2059.0,
+        "abs_growth": 279072.0,
+        "growth_pct": 13553.8,
+        "contribution_pct": 3.8
+      }
+    ],
+    "top_decliners": [
+      {
+        "insurer": "HDFC Life",
+        "cy_revenue": 0,
+        "py_revenue": 968875.0,
+        "abs_growth": -968875.0,
+        "growth_pct": -100.0,
+        "contribution_pct": 0.0
+      },
+      {
+        "insurer": "Bajaj Life",
+        "cy_revenue": 2496022.0,
+        "py_revenue": 3441351.0,
+        "abs_growth": -945329.0,
+        "growth_pct": -27.5,
+        "contribution_pct": 34.1
+      },
+      {
+        "insurer": "Canara HSBC Life Insurance",
+        "cy_revenue": 0,
+        "py_revenue": 36993.0,
+        "abs_growth": -36993.0,
+        "growth_pct": -100.0,
+        "contribution_pct": 0.0
+      }
+    ]
+  }
 }

@@ -1469,8 +1469,15 @@ def build_dashboard_data() -> dict:
             "q2":    round(sum(p["weighted"] for p in pipeline if p.get("month") == "Q2")),
         },
         "_plan_has_month_col": qt.get("plan_has_month_col", False),
-        # ── YoY comparison (from Daily_Insurer_Billing_Data.csv) ─────────────
-        "yoy_comparison": _compute_yoy(billing),
+        # ── YoY comparison ───────────────────────────────────────────────────
+        # Primary source: Daily_Insurer_Billing_Data.csv (most granular).
+        # Fallback: Revenue_Generated_Insurer_Wise.csv (always present, covers
+        # full history) — so the section is never blank even before the billing
+        # CSV is set up.
+        "yoy_comparison": _compute_yoy(billing) if billing else _compute_yoy(
+            [{"month_label": r["month"], "insurer": _canonical_insurer_name(r["insurer"]),
+              "amount": r["amount"]} for r in rev]
+        ),
     }
 
 
