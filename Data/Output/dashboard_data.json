@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-26T18:36:50.340287+00:00",
+    "generated_at": "2026-05-27T02:45:53.798311+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
@@ -1976,7 +1976,7 @@
         "contribution_pct": 0.0
       },
       {
-        "insurer": "TAIG Health Insurance Company Ltd.",
+        "insurer": "TATA AIG Health Insurance",
         "cy_revenue": 0,
         "py_revenue": 6578.0,
         "abs_growth": -6578.0,

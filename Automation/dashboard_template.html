@@ -1399,6 +1399,10 @@ function renderInsurerDetailsView(d) {
     if (n === 'Tata AIA Life')                                return 'TATA AIA Life Insurance Company';
     // SBI Life variants → "SBI LIfe Insurance Company"
     if (n === 'SBI Life')                                     return 'SBI LIfe Insurance Company';
+    // TATA AIG variants → "TATA AIG Health Insurance"
+    if (n === 'TAIG Health Insurance Company Ltd.' ||
+        n === 'TATA AIG Health Insurance Company Ltd.' ||
+        n === 'TATA AIG General Insurance')                  return 'TATA AIG Health Insurance';
     // Encoded (obfuscated) insurer names from order data → real account names
     if (n === 'A8228Mph f7Rq7v0X')                           return 'HDFC Life';
     if (n === 'M7P4hW7Z Z9xz93cY')                           return 'Star Union Daichi Life Insurance';
