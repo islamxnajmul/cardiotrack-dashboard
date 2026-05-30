@@ -1313,58 +1313,135 @@ def _compute_yoy(billing_records: list) -> dict:
     }
 
 
+def _revenue_kpis_from_detailed(records: list) -> dict:
+    """Derive all revenue aggregations from the detailed billing records.
+
+    Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls are the single
+    source of truth for every revenue metric in the dashboard.
+
+    Returns a dict with:
+        apr_rev, may_rev, jun_rev, q2_total   — scalar grand totals
+        monthly_billing                         — {month_str: grand_total}
+        q2_by_insurer                           — {insurer: Q2_total}
+        apr_by_insurer                          — {insurer: Apr_2026_total}
+        may_by_insurer                          — {insurer: May_2026_total}
+        jun_by_insurer                          — {insurer: Jun_2026_total}
+        all_time_by_insurer                     — {insurer: all_time_total}
+    """
+    from collections import defaultdict as _dd
+
+    monthly:  dict = _dd(float)
+    apr_ins:  dict = _dd(float)
+    may_ins:  dict = _dd(float)
+    jun_ins:  dict = _dd(float)
+    q2_ins:   dict = _dd(float)
+    all_ins:  dict = _dd(float)
+
+    for r in records:
+        m   = r["month"]    # "Apr 2026", "Mar 2025", …
+        ins = r["insurer"]
+        tot = r["total"]
+        monthly[m]  += tot
+        all_ins[ins] += tot
+        if m == "Apr 2026":
+            apr_ins[ins] += tot
+            q2_ins[ins]  += tot
+        elif m == "May 2026":
+            may_ins[ins] += tot
+            q2_ins[ins]  += tot
+        elif m == "Jun 2026":
+            jun_ins[ins] += tot
+            q2_ins[ins]  += tot
+
+    apr_rev  = sum(apr_ins.values())
+    may_rev  = sum(may_ins.values())
+    jun_rev  = sum(jun_ins.values())
+    q2_total = apr_rev + may_rev + jun_rev
+
+    return {
+        "apr_rev":              round(apr_rev,  2),
+        "may_rev":              round(may_rev,  2),
+        "jun_rev":              round(jun_rev,  2),
+        "q2_total":             round(q2_total, 2),
+        "monthly_billing":      {m: round(v, 2) for m, v in monthly.items()},
+        "q2_by_insurer":        {k: round(v, 2) for k, v in q2_ins.items()},
+        "apr_by_insurer":       {k: round(v, 2) for k, v in apr_ins.items()},
+        "may_by_insurer":       {k: round(v, 2) for k, v in may_ins.items()},
+        "jun_by_insurer":       {k: round(v, 2) for k, v in jun_ins.items()},
+        "all_time_by_insurer":  {k: round(v, 2) for k, v in all_ins.items()},
+    }
+
+
 def build_dashboard_data() -> dict:
     """Combine all sources into one JSON-serialisable dict."""
     log.info("Building dashboard data…")
-    qt      = read_quarter_target()
-    inc     = read_orders_file(INCOMING_FILE, "Incoming Orders")
-    cl      = read_orders_file(CLOSED_FILE,   "Closed Orders")
-    rev     = read_revenue_file(REVENUE_FILE)
-    billing = read_billing_file(BILLING_FILE)
+    qt  = read_quarter_target()
+    inc = read_orders_file(INCOMING_FILE, "Incoming Orders")
+    cl  = read_orders_file(CLOSED_FILE,   "Closed Orders")
 
-    # ── Q2 2026 month filter ──────────────────────────────────────────────────
+    # ── Single revenue source: Daily_Insurer_Billing*.xls ────────────────────
+    # Detailed billing files are loaded first.  The summary billing file
+    # (Daily_Insurer_Billing_Data.xls) is only read when the detailed files are
+    # absent — avoids a redundant 12-second file read in the normal path.
+    detailed_records = read_detailed_billing_files()
+    if detailed_records:
+        bk = _revenue_kpis_from_detailed(detailed_records)
+        apr_rev         = bk["apr_rev"]
+        may_rev         = bk["may_rev"]
+        jun_rev         = bk["jun_rev"]
+        q2_total        = bk["q2_total"]
+        monthly_billing = bk["monthly_billing"]
+        rev_by_insurer  = bk["q2_by_insurer"]      # Q2 per-insurer (replaces CSV)
+        apr_rev_by_ins  = bk["apr_by_insurer"]      # Apr per-insurer
+        lt_by_ins       = bk["all_time_by_insurer"] # all-time per-insurer
+        billing_analysis_data = build_billing_analysis(detailed_records)
+        # YoY source: convert to the format _compute_yoy expects
+        yoy_src = [
+            {"month_label": r["month"], "insurer": r["insurer"], "amount": r["total"]}
+            for r in detailed_records
+        ]
+    else:
+        # ── Fallback: summary billing file + Revenue CSV ──────────────────────
+        log.warning("Detailed billing files absent — falling back to summary billing / Revenue CSV")
+        billing = read_billing_file(BILLING_FILE)   # read only when needed
+        rev     = read_revenue_file(REVENUE_FILE)
+        bk      = None
+        rev_q2  = [r for r in rev if r.get("month") in {"Apr 2026","May 2026","Jun 2026"}]
+        csv_mb  = {}
+        for r in rev:
+            m = (r.get("month") or "").strip()
+            if m: csv_mb[m] = csv_mb.get(m, 0) + r["amount"]
+        qt_mb = qt.get("monthly_billing", {})
+        def month_rev(month, fallback=0.0):
+            if month in csv_mb and csv_mb[month] > 0: return csv_mb[month]
+            if month in qt_mb  and qt_mb[month]  > 0: return qt_mb[month]
+            return fallback
+        apr_rev  = month_rev("Apr 2026", 4952222)
+        may_rev  = month_rev("May 2026", 0)
+        jun_rev  = month_rev("Jun 2026", 0)
+        q2_total = apr_rev + may_rev + jun_rev
+        monthly_billing = dict(qt_mb)
+        for m, v in csv_mb.items():
+            if v > 0: monthly_billing[m] = v
+        def _grp(recs, key):
+            out = {}
+            for r in recs:
+                ins = _canonical_insurer_name(r["insurer"])
+                out[ins] = out.get(ins, 0) + r[key]
+            return out
+        rev_by_insurer  = _grp(rev_q2, "amount")
+        apr_rev_by_ins  = _grp([r for r in rev if r.get("month") == "Apr 2026"], "amount")
+        lt_by_ins       = _billing_lifetime(billing) if billing else {}
+        billing_analysis_data = {}
+        yoy_src = billing or [
+            {"month_label": r["month"], "insurer": _canonical_insurer_name(r["insurer"]),
+             "amount": r["amount"]} for r in rev
+        ]
+
+    # ── Q2 2026 month filter (order files only — no revenue needed here) ──────
     Q2_MONTHS = {"Apr 2026", "May 2026", "Jun 2026"}
-
-    def filter_q2(records):
-        return [r for r in records if r.get("month") in Q2_MONTHS]
-
-    inc_q2 = filter_q2(inc)
-    cl_q2  = filter_q2(cl)
-    rev_q2 = filter_q2(rev)
-
-    # ── Monthly revenue (PREFER the live Revenue CSV over Quarter Target) ────
-    # The Revenue_Generated_Insurer_Wise.csv is refreshed daily by the Gmail
-    # sync, so it's the freshest authoritative source for actual billed revenue.
-    # Quarter Target.xlsx → 'Overall Billing Data' sheet is a manual summary
-    # that lags behind. Use CSV first, fall back to Quarter Target, then to
-    # hardcoded defaults only when both are absent.
-    csv_monthly_billing = {}
-    for r in rev:
-        m = (r.get("month") or "").strip()
-        if not m:
-            continue
-        csv_monthly_billing[m] = csv_monthly_billing.get(m, 0) + r["amount"]
-
-    qt_monthly_billing = qt.get("monthly_billing", {})
-
-    def month_rev(month: str, fallback: float = 0.0) -> float:
-        """Source priority: live CSV → Quarter Target sheet → hardcoded fallback."""
-        if month in csv_monthly_billing and csv_monthly_billing[month] > 0:
-            return csv_monthly_billing[month]
-        if month in qt_monthly_billing and qt_monthly_billing[month] > 0:
-            return qt_monthly_billing[month]
-        return fallback
-
-    apr_rev  = month_rev("Apr 2026", 4952222)
-    may_rev  = month_rev("May 2026", 0)
-    jun_rev  = month_rev("Jun 2026", 0)
-    q2_total = apr_rev + may_rev + jun_rev
-
-    # Merged monthly-billing dict for the trend chart — CSV wins, QT fills gaps.
-    monthly_billing = dict(qt_monthly_billing)
-    for m, v in csv_monthly_billing.items():
-        if v > 0:
-            monthly_billing[m] = v
+    inc_q2 = [r for r in inc if r.get("month") in Q2_MONTHS]
+    cl_q2  = [r for r in cl  if r.get("month") in Q2_MONTHS]
 
     Q2_TARGET = 20000000   # ₹2 Cr
 
@@ -1388,7 +1465,7 @@ def build_dashboard_data() -> dict:
 
     inc_by_insurer = group_by_insurer(inc_q2, "count")
     cl_by_insurer  = group_by_insurer(cl_q2,  "count")
-    rev_by_insurer = group_by_insurer(rev_q2, "amount")
+    # rev_by_insurer is already set from billing files above (or fallback path)
 
     # ── Orders broken down BY MONTH (for the new month-filter tabs + trend) ──
     # Structure: { "Apr 2026": {"incoming": {insurer: n, …}, "closed": {…}}, … }
@@ -1426,8 +1503,8 @@ def build_dashboard_data() -> dict:
             "closed":   sum(cl_monthly.get(m, {}).values()),
         })
 
-    # All known insurers (combined)
-    all_insurers = sorted(set(list(inc_by_insurer) + list(cl_by_insurer)))
+    # All known insurers — union of order files + billing data so no insurer is missed
+    all_insurers = sorted(set(list(inc_by_insurer) + list(cl_by_insurer) + list(rev_by_insurer)))
     insurer_table = []
     for ins in all_insurers:
         i = inc_by_insurer.get(ins, 0)
@@ -1450,22 +1527,40 @@ def build_dashboard_data() -> dict:
     trend_labels  = billing_order
     trend_values  = [monthly_billing.get(m, 0) for m in billing_order]
 
-    # ── Apr customer breakdown ────────────────────────────────────────────────
-    apr_customers = qt.get("apr_customers", [])
-    if not apr_customers:
-        # Fall back to insurer_table
-        apr_customers = [
-            {"insurer": r["insurer"], "revenue": r["revenue"],
-             "closed_cases": r["closed"], "incoming": r["incoming"],
-             "conversion": r["conversion"], "avg_order": 0}
-            for r in insurer_table if r["revenue"] > 0
-        ]
+    # ── Apr customer breakdown (from billing Apr data) ───────────────────────
+    # Build from Apr billing per-insurer; cross-reference order counts for
+    # conversion rate.  Falls back to insurer_table when no Apr billing data.
+    apr_customers_billing = [
+        {
+            "insurer":      ins,
+            "revenue":      apr_rev_by_ins.get(ins, 0),
+            "closed_cases": cl_by_insurer.get(ins, 0),
+            "incoming":     inc_by_insurer.get(ins, 0),
+            "conversion":   round(cl_by_insurer.get(ins, 0) /
+                                  inc_by_insurer.get(ins, 1), 4)
+                            if inc_by_insurer.get(ins, 0) > 0 else 0,
+            "avg_order":    0,
+        }
+        for ins in sorted(
+            set(list(apr_rev_by_ins)) | set(list(cl_by_insurer))
+        )
+        if apr_rev_by_ins.get(ins, 0) > 0
+    ]
+    # Sort descending by Apr revenue
+    apr_customers_billing.sort(key=lambda r: r["revenue"], reverse=True)
+    apr_customers = apr_customers_billing or [
+        {"insurer": r["insurer"], "revenue": r["revenue"],
+         "closed_cases": r["closed"], "incoming": r["incoming"],
+         "conversion": r["conversion"], "avg_order": 0}
+        for r in insurer_table if r["revenue"] > 0
+    ]
 
     return {
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "q2_target": Q2_TARGET,
             "as_of": "14 May 2026",
+            "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
         },
         "kpis": {
             "q2_target":   Q2_TARGET,
@@ -1518,29 +1613,17 @@ def build_dashboard_data() -> dict:
             "q2":    round(sum(p["weighted"] for p in pipeline if p.get("month") == "Q2")),
         },
         "_plan_has_month_col": qt.get("plan_has_month_col", False),
-        # ── YoY comparison ───────────────────────────────────────────────────
-        # Primary source: Daily_Insurer_Billing_Data.xls (most granular).
-        # Fallback: Revenue_Generated_Insurer_Wise.csv (always present, covers
-        # full history) — so the section is never blank even before the billing
-        # file is set up.
-        "yoy_comparison": _compute_yoy(billing) if billing else _compute_yoy(
-            [{"month_label": r["month"], "insurer": _canonical_insurer_name(r["insurer"]),
-              "amount": r["amount"]} for r in rev]
-        ),
+        # ── YoY comparison — sourced from detailed billing files ─────────────
+        "yoy_comparison": _compute_yoy(yoy_src),
 
-        # ── Actual lifetime billing revenue per canonical insurer ─────────────
-        # Aggregated from Daily_Insurer_Billing_Data.xls across all history.
-        # Used by the Insurer Details tab to show REAL billed amounts instead of
-        # closed-case × avg-order estimates.
-        "billing_lifetime_by_insurer": _billing_lifetime(billing) if billing else {},
+        # ── All-time billing revenue per canonical insurer ───────────────────
+        # Sourced from Daily_Insurer_Billing*.xls (single source of truth).
+        # Used by the Insurer Details tab "Overall Revenue Since Inception" column.
+        "billing_lifetime_by_insurer": lt_by_ins,
 
-        # ── Detailed category-level billing analysis ───────────────────────────
-        # Sourced from Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls.
-        # Breaks revenue into: package / ancillary / videography / service charges
-        # / home visit / interpretation — all-time, FY 25-26, Q2 2026.
-        "billing_analysis": build_billing_analysis(
-            read_detailed_billing_files()
-        ),
+        # ── Detailed category-level billing analysis ──────────────────────────
+        # Already computed above from the same detailed_records — no double-read.
+        "billing_analysis": billing_analysis_data,
     }
 
 

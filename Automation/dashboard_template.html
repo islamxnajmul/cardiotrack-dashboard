@@ -1669,21 +1669,27 @@ function renderInsurerDetailsView(d) {
       <td><span class="id-badge-expired">Expired / Inactive</span></td>
     </tr>`).join('');
 
-  // Grand totals — use canonical maps to avoid double-counting merged accounts
-  const grandAllLt = Object.entries(canonLifetimeRevMap)
-    .filter(([k]) => !_isNoise(k) && !k.startsWith('Test') && !k.includes('Cardiotrack'))
-    .reduce((s,[,v]) => s+v, 0);
-  const grandAllClosed = Object.entries(canonLifetimeClosedMap)
-    .filter(([k]) => !_isNoise(k) && !k.startsWith('Test') && !k.includes('Cardiotrack'))
-    .reduce((s,[,v]) => s+v, 0);
+  // Grand totals — prefer billing_analysis.grand_totals (single source of truth)
+  // when available; fall back to order-based estimate for backward compat.
+  const _baGT = (d.billing_analysis || {}).grand_totals || {};
+  const grandAllLt = _baGT.all_time
+    || Object.entries(canonLifetimeRevMap)
+         .filter(([k]) => !_isNoise(k) && !k.startsWith('Test') && !k.includes('Cardiotrack'))
+         .reduce((s,[,v])=>s+v, 0);
+  const grandAllClosed = _baGT.cases
+    || Object.entries(canonLifetimeClosedMap)
+         .filter(([k]) => !_isNoise(k) && !k.startsWith('Test') && !k.includes('Cardiotrack'))
+         .reduce((s,[,v])=>s+v, 0);
+  const grandAllIsActual = !!_baGT.all_time;
 
   container.innerHTML = `
     <!-- Sync source note -->
     <div class="id-sync-note">
-      <strong>📁 Data sources:</strong>
-      Google Drive: <em>Insurer Agreement Expiry Details.xlsx</em>
-      (ID: <code>1Ro_pqzgw0PLQe8GwQSjKN0nuG8RFeEkx</code>) ·
-      Revenue auto-populated from Gmail <em>Revenue_Generated_Insurer_Wise.csv</em>.
+      <strong>📁 Revenue source:</strong>
+      <em>Daily_Insurer_Billing.xls</em> + <em>Daily_Insurer_Billing_2.xls</em>
+      (${(d.billing_analysis?.total_rows||0).toLocaleString()} records,
+      ${d.billing_analysis?.date_from||'?'} → ${d.billing_analysis?.date_to||'?'}) ·
+      Agreement metadata from Google Drive.
       Last build: <span id="id-build-ts">—</span>
     </div>
 
@@ -1705,9 +1711,9 @@ function renderInsurerDetailsView(d) {
         <div style="font-size:.68rem;color:#6C3483;margin-top:2px">Apr + May combined</div>
       </div>
       <div style="background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border:1px solid #F9E79F;border-radius:8px;padding:12px 14px;text-align:center">
-        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#B7770D;margin-bottom:4px">🏦 Est. Revenue — All Accounts</div>
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#B7770D;margin-bottom:4px">🏦 ${grandAllIsActual ? 'Actual' : 'Est.'} Revenue — All Accounts</div>
         <div style="font-size:1.35rem;font-weight:800;color:#B7770D">${rlCr(grandAllLt)}</div>
-        <div style="font-size:.68rem;color:#B7770D;margin-top:2px">${grandAllClosed.toLocaleString()} cases · all-time</div>
+        <div style="font-size:.68rem;color:#B7770D;margin-top:2px">${grandAllClosed.toLocaleString()} cases · ${grandAllIsActual ? 'actual billing' : 'all-time est.'}</div>
       </div>
     </div>
 
@@ -1724,7 +1730,7 @@ function renderInsurerDetailsView(d) {
           <th>Relationship Since</th>
           <th>Renewals</th>
           <th>Liability</th>
-          <th style="text-align:right">Overall Revenue<br><span style="font-weight:400;font-size:.65rem;opacity:.8">Since Inception (est.)</span></th>
+          <th style="text-align:right">Overall Revenue<br><span style="font-weight:400;font-size:.65rem;opacity:.8">Since Inception (actual billing)</span></th>
           <th style="text-align:right">Revenue to Date (Q2 FY26)<br><span style="font-weight:400;font-size:.65rem;opacity:.8">Apr &amp; May breakdown below</span></th>
           <th>Status</th>
         </tr></thead>
@@ -1742,7 +1748,7 @@ function renderInsurerDetailsView(d) {
       <table>
         <thead><tr>
           <th>Account Name</th>
-          <th style="text-align:right">Overall Revenue Since Inception (est.)</th>
+          <th style="text-align:right">Overall Revenue Since Inception (actual billing)</th>
           <th>Status</th>
         </tr></thead>
         <tbody>${otherAccRows}</tbody>
@@ -1761,9 +1767,9 @@ function renderInsurerDetailsView(d) {
     </div>
 
     <div style="font-size:.72rem;color:var(--text2);padding:10px 0;border-top:1px solid var(--border);line-height:1.7">
-      <strong>Revenue to Date (Q2 FY26)</strong> = Apr + May 2026 actuals from Gmail reports — refreshes with <strong>↻ Sync All</strong>.<br>
-      <strong>Overall Revenue Since Inception (est.)</strong> = per-insurer avg revenue/case (Apr 2026) × total lifetime closed orders (Mar 2022 → present).<br>
-      <strong>† Fallback rate</strong> = global avg ₹${Math.round(FALLBACK_AVG).toLocaleString()}/case used for accounts with no current-quarter revenue data (expired/inactive insurers).
+      <strong>Revenue to Date (Q2 FY26)</strong> = Apr + May 2026 totals from <em>Daily_Insurer_Billing.xls</em> — refreshes with <strong>↻ Sync All</strong>.<br>
+      <strong>Overall Revenue Since Inception</strong> = actual billed amounts from <em>Daily_Insurer_Billing*.xls</em> (${(d.billing_analysis?.date_from||'Mar 2022')} → present).<br>
+      <strong>† Fallback est.</strong> = global avg ₹${Math.round(FALLBACK_AVG).toLocaleString()}/case used for historical accounts not in the billing files (expired/inactive insurers).
     </div>`;
 
   // Stamp the build timestamp

@@ -1,8 +1,9 @@
 {
   "meta": {
-    "generated_at": "2026-05-30T12:19:16.816030+00:00",
+    "generated_at": "2026-05-30T13:57:22.172245+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
+    "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
     "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
     "files": {
       "revenue_csv": {
@@ -34,12 +35,12 @@
   },
   "kpis": {
     "q2_target": 20000000,
-    "apr_revenue": 4952222.029999999,
-    "may_revenue": 2369584.0,
+    "apr_revenue": 4942401.0,
+    "may_revenue": 4435947.2,
     "jun_revenue": 0,
-    "q2_achieved": 7321806.029999999,
-    "gap": 12678193.97,
-    "achievement_pct": 36.6,
+    "q2_achieved": 9378348.2,
+    "gap": 10621651.8,
+    "achievement_pct": 46.9,
     "baseline_est": 15000000,
     "delta_required": 5000000,
     "delta_weighted": 5427330
@@ -65,9 +66,9 @@
     "values": [
       6866300.0,
       3841302.0,
-      3394896.0,
+      3387996.0,
       3364570.0,
-      4674553.0,
+      4672253.0,
       5235077.0,
       4933024.88,
       4203597.4,
@@ -75,23 +76,23 @@
       6331598.0,
       5995662.5,
       5880660.5,
-      6494808.0,
-      4952222.029999999,
-      2369584.0
+      6493647.0,
+      4942401.0,
+      4435947.2
     ]
   },
   "month_wise": [
     {
       "month": "April 2026",
       "target": 6000000,
-      "achieved": 4952222.029999999,
-      "pct": 82.5
+      "achieved": 4942401.0,
+      "pct": 82.4
     },
     {
       "month": "May 2026",
       "target": 6500000,
-      "achieved": 2369584.0,
-      "pct": 36.5
+      "achieved": 4435947.2,
+      "pct": 68.2
     },
     {
       "month": "June 2026",
@@ -102,60 +103,52 @@
   ],
   "apr_customers": [
     {
-      "insurer": "Aditya Birla Sun Life Insurance",
-      "closed_cases": 814,
-      "revenue": 1617039.0,
-      "avg_order": 1986.5343980344,
-      "incoming": 1866,
-      "conversion": 0.436227224008574
-    },
-    {
-      "insurer": "Ageas Federal Life Insurance",
-      "closed_cases": 61,
-      "revenue": 148821.0,
-      "avg_order": 2439.68852459016,
-      "incoming": 109,
-      "conversion": 0.559633027522936
-    },
-    {
-      "insurer": "Bajaj Life Insurance Company",
-      "closed_cases": 781,
+      "insurer": "Bajaj Life",
       "revenue": 1640934.0,
-      "avg_order": 2101.06786171575,
-      "incoming": 909,
-      "conversion": 0.859185918591859
+      "closed_cases": 1053,
+      "incoming": 1487,
+      "conversion": 0.7081,
+      "avg_order": 0
     },
     {
-      "insurer": "Cardiotrack Home Services",
-      "closed_cases": 1,
-      "revenue": 1298.03,
-      "avg_order": 1298.03,
-      "incoming": 1,
-      "conversion": 1.0
+      "insurer": "Aditya Birla Sun Life Insurance",
+      "revenue": 1617039.0,
+      "closed_cases": 1025,
+      "incoming": 2693,
+      "conversion": 0.3806,
+      "avg_order": 0
     },
     {
       "insurer": "ICICI Lombard",
-      "closed_cases": 577,
       "revenue": 1307400.0,
-      "avg_order": 2265.85788561525,
-      "incoming": 742,
-      "conversion": 0.777628032345013
-    },
-    {
-      "insurer": "Pramerica Life Insurance",
-      "closed_cases": 21,
-      "revenue": 25843.0,
-      "avg_order": 1230.61904761905,
-      "incoming": 69,
-      "conversion": 0.304347826086957
+      "closed_cases": 744,
+      "incoming": 1057,
+      "conversion": 0.7039,
+      "avg_order": 0
     },
     {
       "insurer": "Star Union Daichi Life Insurance",
-      "closed_cases": 87,
-      "revenue": 210887.0,
-      "avg_order": 2423.98850574713,
-      "incoming": 172,
-      "conversion": 0.505813953488372
+      "revenue": 202364.0,
+      "closed_cases": 82,
+      "incoming": 213,
+      "conversion": 0.385,
+      "avg_order": 0
+    },
+    {
+      "insurer": "Ageas Federal Life Insurance",
+      "revenue": 148821.0,
+      "closed_cases": 92,
+      "incoming": 176,
+      "conversion": 0.5227,
+      "avg_order": 0
+    },
+    {
+      "insurer": "Pramerica Life Insurance",
+      "revenue": 25843.0,
+      "closed_cases": 22,
+      "incoming": 179,
+      "conversion": 0.1229,
+      "avg_order": 0
     }
   ],
   "insurer_table": [
@@ -164,49 +157,49 @@
       "incoming": 2693,
       "closed": 1025,
       "conversion": 0.3806,
-      "revenue": 2374360.0
+      "revenue": 2979679.0
     },
     {
       "insurer": "Ageas Federal Life Insurance",
       "incoming": 176,
       "closed": 92,
       "conversion": 0.5227,
-      "revenue": 260247.0
+      "revenue": 382216.0
     },
     {
       "insurer": "Bajaj Life",
       "incoming": 1487,
       "closed": 1053,
       "conversion": 0.7081,
-      "revenue": 2496022.0
+      "revenue": 3147347.0
     },
     {
       "insurer": "Cardiotrack Home Services",
       "incoming": 1,
       "closed": 1,
       "conversion": 1.0,
-      "revenue": 1298.03
+      "revenue": 0
     },
     {
       "insurer": "ICICI Lombard",
       "incoming": 1057,
       "closed": 744,
       "conversion": 0.7039,
-      "revenue": 1882430.0
+      "revenue": 2403565.0
     },
     {
       "insurer": "Pramerica Life Insurance",
       "incoming": 179,
       "closed": 22,
       "conversion": 0.1229,
-      "revenue": 26318.0
+      "revenue": 120721.2
     },
     {
       "insurer": "Star Union Daichi Life Insurance",
       "incoming": 213,
       "closed": 82,
       "conversion": 0.385,
-      "revenue": 281131.0
+      "revenue": 344820.0
     },
     {
       "insurer": "Test Cardiotrack",
@@ -1890,80 +1883,64 @@
       "Apr 2026",
       "May 2026"
     ],
-    "cy_total": 8752817.03,
-    "py_total": 7236283.0,
-    "overall_growth": 1516534.03,
-    "overall_growth_pct": 21.0,
+    "cy_total": 9378348.2,
+    "py_total": 7229298.0,
+    "overall_growth": 2149050.2,
+    "overall_growth_pct": 29.7,
     "by_insurer": [
       {
         "insurer": "Bajaj Life",
-        "cy_revenue": 2967868.0,
+        "cy_revenue": 3147347.0,
         "py_revenue": 3441351.0,
-        "abs_growth": -473483.0,
-        "growth_pct": -13.8,
-        "contribution_pct": 33.9
+        "abs_growth": -294004.0,
+        "growth_pct": -8.5,
+        "contribution_pct": 33.6
       },
       {
         "insurer": "Aditya Birla Sun Life Insurance",
-        "cy_revenue": 2822198.0,
+        "cy_revenue": 2979679.0,
         "py_revenue": 1299171.0,
-        "abs_growth": 1523027.0,
-        "growth_pct": 117.2,
-        "contribution_pct": 32.2
+        "abs_growth": 1680508.0,
+        "growth_pct": 129.4,
+        "contribution_pct": 31.8
       },
       {
         "insurer": "ICICI Lombard",
-        "cy_revenue": 2226585.0,
+        "cy_revenue": 2403565.0,
         "py_revenue": 1403541.0,
-        "abs_growth": 823044.0,
-        "growth_pct": 58.6,
-        "contribution_pct": 25.4
+        "abs_growth": 1000024.0,
+        "growth_pct": 71.3,
+        "contribution_pct": 25.6
       },
       {
         "insurer": "Ageas Federal Life Insurance",
-        "cy_revenue": 334364.0,
+        "cy_revenue": 382216.0,
         "py_revenue": 70730.0,
-        "abs_growth": 263634.0,
-        "growth_pct": 372.7,
-        "contribution_pct": 3.8
+        "abs_growth": 311486.0,
+        "growth_pct": 440.4,
+        "contribution_pct": 4.1
       },
       {
         "insurer": "Star Union Daichi Life Insurance",
-        "cy_revenue": 325661.0,
+        "cy_revenue": 344820.0,
         "py_revenue": 2059.0,
-        "abs_growth": 323602.0,
-        "growth_pct": 15716.5,
+        "abs_growth": 342761.0,
+        "growth_pct": 16647.0,
         "contribution_pct": 3.7
       },
       {
         "insurer": "Pramerica Life Insurance",
-        "cy_revenue": 74843.0,
+        "cy_revenue": 120721.2,
         "py_revenue": 0,
-        "abs_growth": 74843.0,
+        "abs_growth": 120721.2,
         "growth_pct": null,
-        "contribution_pct": 0.9
-      },
-      {
-        "insurer": "Cardiotrack Home Services",
-        "cy_revenue": 1298.03,
-        "py_revenue": 0.0,
-        "abs_growth": 1298.03,
-        "growth_pct": null,
-        "contribution_pct": 0.0
+        "contribution_pct": 1.3
       },
       {
         "insurer": "Canara HSBC Life Insurance",
         "cy_revenue": 0,
         "py_revenue": 36993.0,
         "abs_growth": -36993.0,
-        "growth_pct": -100.0,
-        "contribution_pct": 0.0
-      },
-      {
-        "insurer": "Cardiotrack Corporate Services",
-        "cy_revenue": 0,
-        "py_revenue": 6900.0,
-        "abs_growth": -6900.0,
         "growth_pct": -100.0,
         "contribution_pct": 0.0
       },
@@ -1982,39 +1959,31 @@
         "abs_growth": -6578.0,
         "growth_pct": -100.0,
         "contribution_pct": 0.0
-      },
-      {
-        "insurer": "Test Cardiotrack",
-        "cy_revenue": 0,
-        "py_revenue": 85.0,
-        "abs_growth": -85.0,
-        "growth_pct": -100.0,
-        "contribution_pct": 0.0
       }
     ],
     "top_gainers": [
       {
         "insurer": "Aditya Birla Sun Life Insurance",
-        "cy_revenue": 2822198.0,
+        "cy_revenue": 2979679.0,
         "py_revenue": 1299171.0,
-        "abs_growth": 1523027.0,
-        "growth_pct": 117.2,
-        "contribution_pct": 32.2
+        "abs_growth": 1680508.0,
+        "growth_pct": 129.4,
+        "contribution_pct": 31.8
       },
       {
         "insurer": "ICICI Lombard",
-        "cy_revenue": 2226585.0,
+        "cy_revenue": 2403565.0,
         "py_revenue": 1403541.0,
-        "abs_growth": 823044.0,
-        "growth_pct": 58.6,
-        "contribution_pct": 25.4
+        "abs_growth": 1000024.0,
+        "growth_pct": 71.3,
+        "contribution_pct": 25.6
       },
       {
         "insurer": "Star Union Daichi Life Insurance",
-        "cy_revenue": 325661.0,
+        "cy_revenue": 344820.0,
         "py_revenue": 2059.0,
-        "abs_growth": 323602.0,
-        "growth_pct": 15716.5,
+        "abs_growth": 342761.0,
+        "growth_pct": 16647.0,
         "contribution_pct": 3.7
       }
     ],
@@ -2029,11 +1998,11 @@
       },
       {
         "insurer": "Bajaj Life",
-        "cy_revenue": 2967868.0,
+        "cy_revenue": 3147347.0,
         "py_revenue": 3441351.0,
-        "abs_growth": -473483.0,
-        "growth_pct": -13.8,
-        "contribution_pct": 33.9
+        "abs_growth": -294004.0,
+        "growth_pct": -8.5,
+        "contribution_pct": 33.6
       },
       {
         "insurer": "Canara HSBC Life Insurance",
@@ -2046,34 +2015,24 @@
     ]
   },
   "billing_lifetime_by_insurer": {
-    "ICICI Lombard": 69382278.74,
-    "Bajaj Life": 41239603.38,
-    "Aditya Birla Sun Life Insurance": 30365360.28,
-    "Pramerica Life Insurance": 528968.74,
-    "Ageas Federal Life Insurance": 2380995.0,
-    "Star Union Daichi Life Insurance": 1934402.68,
-    "Cardiotrack Home Services": 34552.75,
+    "Bajaj Life": 41419082.38,
+    "Aditya Birla Sun Life Insurance": 30522841.28,
     "Canara HSBC Life Insurance": 4401416.73,
-    "Test Cardiotrack": 32375.86,
+    "Star Union Daichi Life Insurance": 1953561.68,
+    "Ageas Federal Life Insurance": 2428847.0,
+    "ICICI Lombard": 69522627.74,
+    "Pramerica Life Insurance": 574846.94,
     "HDFC Life": 15870087.35,
-    "Cardiotrack Corporate Services": 32500.0,
     "TATA AIG Health Insurance": 39721.0,
     "Acko Life Insurance": 3404336.18,
     "Acko Health Insurance": 1627477.53,
     "SBI LIfe Insurance Company": 5716911.09,
     "TATA AIA Life Insurance Company": 4835663.43,
     "Acko Health Insurance Limited": 7439.0,
-    "Pramerica Life Insurance VMER": 440.0,
-    "India First Life Insurance": 3370.0,
-    "Shriram Life Insurance": 2444.0,
-    "MD India LIC": 120250.0,
-    "MD India Max Life": 610897.03,
-    "MD India Tata AIA": 1108832.6,
-    "Health Assure Tata AIA": 2683.0,
-    "Aditya Birla Health Insurance": 1212.0
+    "MD India LIC": 119500.0
   },
   "billing_analysis": {
-    "generated_at": "2026-05-30T12:19:51.265291+00:00",
+    "generated_at": "2026-05-30T13:57:22.151162+00:00",
     "total_rows": 95774,
     "date_from": "Mar 2022",
     "date_to": "May 2026",
