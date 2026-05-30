@@ -47,6 +47,11 @@ INCOMING_FILE       = INPUT  / "Incoming_Order_Count_Insurer_Wise.csv"
 REVENUE_FILE        = INPUT  / "Revenue_Generated_Insurer_Wise.csv"
 CLOSED_FILE         = INPUT  / "Closed_Case_Count_Insurer_Wise.csv"
 BILLING_FILE        = INPUT  / "Daily_Insurer_Billing_Data.xls"
+# Detailed transaction-level billing files (category breakdown: package, ancillary,
+# videography, service charges, home visit, interpretation).  Two files because the
+# Zoho report is split when row-count exceeds the export limit.
+DETAILED_BILLING_FILE1 = INPUT / "Daily_Insurer_Billing.xls"
+DETAILED_BILLING_FILE2 = INPUT / "Daily_Insurer_Billing_2.xls"
 
 DASHBOARD_HTML = OUTPUT / "Cardiotrack_Dashboard.html"
 DATA_JSON      = OUTPUT / "dashboard_data.json"
@@ -73,6 +78,11 @@ EMAIL_MAP = {
     'Revenue Generated Insurer Wise':    REVENUE_FILE,
     'Closed Case Count Insurer Wise':    CLOSED_FILE,
     'Daily Insurer Billing Data':        BILLING_FILE,
+    # Detailed category-level billing exports (two files due to Zoho row limit).
+    # ⚠  Verify these subject strings match the actual Gmail "report name" in
+    #    quotes — e.g. subject: Check out the "Daily Insurer Billing" report
+    'Daily Insurer Billing':             DETAILED_BILLING_FILE1,
+    'Daily Insurer Billing 2':           DETAILED_BILLING_FILE2,
 }
 
 # Full subject prefix/suffix on incoming Gmail messages.
@@ -1369,9 +1379,10 @@ def build_dashboard_data() -> dict:
 
     # ── Insurer-wise Q2 orders ────────────────────────────────────────────────
     def group_by_insurer(records, value_key):
+        """Aggregate by canonical insurer name so variant spellings are merged."""
         out = {}
         for r in records:
-            ins = r["insurer"]
+            ins = _canonical_insurer_name(r["insurer"])
             out[ins] = out.get(ins, 0) + r[value_key]
         return out
 
@@ -1508,14 +1519,244 @@ def build_dashboard_data() -> dict:
         },
         "_plan_has_month_col": qt.get("plan_has_month_col", False),
         # ── YoY comparison ───────────────────────────────────────────────────
-        # Primary source: Daily_Insurer_Billing_Data.csv (most granular).
+        # Primary source: Daily_Insurer_Billing_Data.xls (most granular).
         # Fallback: Revenue_Generated_Insurer_Wise.csv (always present, covers
         # full history) — so the section is never blank even before the billing
-        # CSV is set up.
+        # file is set up.
         "yoy_comparison": _compute_yoy(billing) if billing else _compute_yoy(
             [{"month_label": r["month"], "insurer": _canonical_insurer_name(r["insurer"]),
               "amount": r["amount"]} for r in rev]
         ),
+
+        # ── Actual lifetime billing revenue per canonical insurer ─────────────
+        # Aggregated from Daily_Insurer_Billing_Data.xls across all history.
+        # Used by the Insurer Details tab to show REAL billed amounts instead of
+        # closed-case × avg-order estimates.
+        "billing_lifetime_by_insurer": _billing_lifetime(billing) if billing else {},
+
+        # ── Detailed category-level billing analysis ───────────────────────────
+        # Sourced from Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls.
+        # Breaks revenue into: package / ancillary / videography / service charges
+        # / home visit / interpretation — all-time, FY 25-26, Q2 2026.
+        "billing_analysis": build_billing_analysis(
+            read_detailed_billing_files()
+        ),
+    }
+
+
+def _billing_lifetime(billing_records: list) -> dict:
+    """Sum all-time actual billed revenue per canonical insurer name."""
+    from collections import defaultdict
+    totals: dict = defaultdict(float)
+    for r in billing_records:
+        ins = r.get("insurer", "")
+        if ins:
+            totals[ins] += r.get("amount", 0)
+    return {k: round(v, 2) for k, v in totals.items()}
+
+
+# ─── Detailed billing analysis (category-level breakdown) ─────────────────────
+
+# Noise patterns to exclude from category billing analysis
+_BILLING_NOISE = {
+    'Cardiotrack Corporate Services', 'Cardiotrack Home Services',
+    'India First Life Insurance', 'Health Assure Tata AIA',
+    'Shriram Life Insurance', 'Aditya Birla Health Insurance',
+    'Pramerica Life Insurance VMER', 'MD India Tata AIA', 'MD India Max Life',
+}
+
+def read_detailed_billing_files() -> list:
+    """Load Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls.
+
+    Both files share identical columns (ID, Insurer Name, …, Total Amount to be
+    Billed, …).  Returns a list of flat dicts with canonical insurer name and all
+    six revenue category amounts.
+
+    Column indices (0-based):
+        1  Insurer Name
+        9  Order Closure Date
+       12  Billing Rate for Core Package   → pkg
+       13  Insurer Approved Amount         → anc
+       14  Videography + Digital MER Rate  → video
+       15  Service Charges                 → svc
+       17  Home Visit Charges              → hv
+       18  Interpretation Charges          → interp
+       19  Total Amount to be Billed       → total
+    """
+    import io as _io
+    from collections import defaultdict as _dd
+
+    records: list = []
+    for path in (DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2):
+        if not path.exists():
+            log.warning(f"Detailed billing file not found: {path.name}")
+            continue
+        try:
+            with open(path, "rb") as fh:
+                raw = _io.BytesIO(fh.read())
+            wb = openpyxl.load_workbook(raw, read_only=True, data_only=True)
+            ws = wb.active
+            all_rows = list(ws.iter_rows(values_only=True))
+            wb.close()
+        except Exception as e:
+            log.warning(f"Cannot open {path.name}: {e}")
+            continue
+
+        if len(all_rows) < 2:
+            continue
+
+        for row in all_rows[1:]:
+            if not row or len(row) < 20:
+                continue
+            ins_raw = row[1]
+            date_val = row[9]
+            if ins_raw is None or date_val is None:
+                continue
+
+            ins_str = str(ins_raw).strip()
+            if (ins_str in _BILLING_NOISE or ins_str.startswith('Test')
+                    or 'Purge' in ins_str):
+                continue
+
+            ins = _canonical_insurer_name(ins_str)
+            if not ins:
+                continue
+
+            if not isinstance(date_val, datetime):
+                continue
+
+            def _sf(v):
+                try: return float(v) if v not in (None, '') else 0.0
+                except: return 0.0
+
+            records.append({
+                "insurer":   ins,
+                "date":      date_val,
+                "month":     date_val.strftime("%b %Y"),
+                "pkg":       _sf(row[12]),
+                "anc":       _sf(row[13]),
+                "video":     _sf(row[14]),
+                "svc":       _sf(row[15]),
+                "hv":        _sf(row[17]),
+                "interp":    _sf(row[18]),
+                "total":     _sf(row[19]),
+            })
+
+    log.info(f"  Detailed billing: {len(records)} rows from "
+             f"{sum(1 for p in (DETAILED_BILLING_FILE1,DETAILED_BILLING_FILE2) if p.exists())} files")
+    return records
+
+
+def build_billing_analysis(records: list) -> dict:
+    """Aggregate detailed billing records into the billing_analysis JSON block.
+
+    Periods:
+        all   → all available history
+        fy    → FY 2025-26  (Apr 2025 – present)
+        fy_prev → FY 2024-25 (Apr 2024 – Mar 2025)
+        q2    → Q2 2026 (Apr 2026 – present)
+    """
+    from collections import defaultdict as _dd
+
+    if not records:
+        return {}
+
+    FY_START   = datetime(2025, 4,  1)
+    FY_PREV_S  = datetime(2024, 4,  1)
+    FY_PREV_E  = datetime(2025, 3, 31, 23, 59, 59)
+    Q2_START   = datetime(2026, 4,  1)
+    CATS       = ["pkg", "anc", "video", "svc", "hv", "interp", "total"]
+
+    def _empty():
+        return {c: 0.0 for c in CATS + ["cases"]}
+
+    all_s  = _dd(_empty)
+    fy_s   = _dd(_empty)
+    fyp_s  = _dd(_empty)
+    q2_s   = _dd(_empty)
+    monthly: dict = _dd(lambda: _dd(float))
+
+    date_min = date_max = None
+
+    for r in records:
+        ins = r["insurer"]
+        d   = r["date"]
+
+        for bucket in ([all_s] +
+                       ([fy_s]  if d >= FY_START  else []) +
+                       ([fyp_s] if FY_PREV_S <= d <= FY_PREV_E else []) +
+                       ([q2_s]  if d >= Q2_START  else [])):
+            for c in CATS:
+                bucket[ins][c] += r[c]
+            bucket[ins]["cases"] += 1
+
+        monthly[r["month"]][ins] += r["total"]
+
+        if date_min is None or d < date_min: date_min = d
+        if date_max is None or d > date_max: date_max = d
+
+    # Sort insurers by all-time total desc
+    ins_order = sorted(all_s, key=lambda i: -all_s[i]["total"])
+
+    def _row(bucket, ins):
+        b = bucket.get(ins, {})
+        return {c: round(b.get(c, 0), 2) for c in CATS + ["cases"]}
+
+    by_insurer = []
+    for rank, ins in enumerate(ins_order, 1):
+        a   = all_s[ins]
+        tot = a["total"]
+        grand_all = sum(all_s[i]["total"] for i in ins_order)
+        fy_tot   = fy_s.get(ins, {}).get("total", 0)
+        fyp_tot  = fyp_s.get(ins, {}).get("total", 0)
+        yoy_pct  = round((fy_tot - fyp_tot) / fyp_tot * 100, 1) if fyp_tot else None
+        by_insurer.append({
+            "insurer":      ins,
+            "rank":         rank,
+            "all":          _row(all_s,  ins),
+            "fy":           _row(fy_s,   ins),
+            "fy_prev":      _row(fyp_s,  ins),
+            "q2":           _row(q2_s,   ins),
+            "share_pct":    round(tot / grand_all * 100, 1) if grand_all else 0,
+            "yoy_pct":      yoy_pct,
+            "active_fy":    fy_tot > 0,
+            "active_q2":    q2_s.get(ins, {}).get("total", 0) > 0,
+        })
+
+    # Monthly totals (all insurers combined) — last 24 months
+    sorted_months = sorted(monthly.keys(),
+                           key=lambda m: datetime.strptime(m, "%b %Y"))
+    monthly_totals = [
+        {"month": m, "total": round(sum(monthly[m].values()), 2)}
+        for m in sorted_months[-24:]
+    ]
+
+    # Grand totals
+    grand_all  = sum(all_s[i]["total"]  for i in ins_order)
+    grand_fy   = sum(fy_s.get(i,{}).get("total",0)  for i in ins_order)
+    grand_fyp  = sum(fyp_s.get(i,{}).get("total",0) for i in ins_order)
+    grand_q2   = sum(q2_s.get(i,{}).get("total",0)  for i in ins_order)
+    grand_cases= sum(int(all_s[i]["cases"]) for i in ins_order)
+
+    # Category totals (all-time, for mix chart)
+    cat_totals = {c: round(sum(all_s[i][c] for i in ins_order), 2) for c in CATS}
+
+    return {
+        "generated_at":  datetime.now(timezone.utc).isoformat(),
+        "total_rows":    len(records),
+        "date_from":     date_min.strftime("%b %Y") if date_min else None,
+        "date_to":       date_max.strftime("%b %Y") if date_max else None,
+        "grand_totals":  {
+            "all_time": round(grand_all, 2),
+            "fy_2526":  round(grand_fy, 2),
+            "fy_prev":  round(grand_fyp, 2),
+            "q2_2026":  round(grand_q2, 2),
+            "cases":    grand_cases,
+            "yoy_pct":  round((grand_fy - grand_fyp) / grand_fyp * 100, 1) if grand_fyp else None,
+        },
+        "cat_totals":    cat_totals,
+        "by_insurer":    by_insurer,
+        "monthly_totals": monthly_totals,
     }
 
 

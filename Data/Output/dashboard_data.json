@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-27T02:45:53.798311+00:00",
+    "generated_at": "2026-05-30T12:19:16.816030+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
@@ -174,7 +174,7 @@
       "revenue": 260247.0
     },
     {
-      "insurer": "Bajaj Life Insurance Company",
+      "insurer": "Bajaj Life",
       "incoming": 1487,
       "closed": 1053,
       "conversion": 0.7081,
@@ -505,7 +505,7 @@
     "incoming_by_insurer": {
       "Aditya Birla Sun Life Insurance": 2693,
       "Ageas Federal Life Insurance": 176,
-      "Bajaj Life Insurance Company": 1487,
+      "Bajaj Life": 1487,
       "Cardiotrack Home Services": 1,
       "ICICI Lombard": 1057,
       "Pramerica Life Insurance": 179,
@@ -515,7 +515,7 @@
     "closed_by_insurer": {
       "Aditya Birla Sun Life Insurance": 1025,
       "Ageas Federal Life Insurance": 92,
-      "Bajaj Life Insurance Company": 1053,
+      "Bajaj Life": 1053,
       "Cardiotrack Home Services": 1,
       "ICICI Lombard": 744,
       "Pramerica Life Insurance": 22,
@@ -2042,6 +2042,876 @@
         "abs_growth": -36993.0,
         "growth_pct": -100.0,
         "contribution_pct": 0.0
+      }
+    ]
+  },
+  "billing_lifetime_by_insurer": {
+    "ICICI Lombard": 69382278.74,
+    "Bajaj Life": 41239603.38,
+    "Aditya Birla Sun Life Insurance": 30365360.28,
+    "Pramerica Life Insurance": 528968.74,
+    "Ageas Federal Life Insurance": 2380995.0,
+    "Star Union Daichi Life Insurance": 1934402.68,
+    "Cardiotrack Home Services": 34552.75,
+    "Canara HSBC Life Insurance": 4401416.73,
+    "Test Cardiotrack": 32375.86,
+    "HDFC Life": 15870087.35,
+    "Cardiotrack Corporate Services": 32500.0,
+    "TATA AIG Health Insurance": 39721.0,
+    "Acko Life Insurance": 3404336.18,
+    "Acko Health Insurance": 1627477.53,
+    "SBI LIfe Insurance Company": 5716911.09,
+    "TATA AIA Life Insurance Company": 4835663.43,
+    "Acko Health Insurance Limited": 7439.0,
+    "Pramerica Life Insurance VMER": 440.0,
+    "India First Life Insurance": 3370.0,
+    "Shriram Life Insurance": 2444.0,
+    "MD India LIC": 120250.0,
+    "MD India Max Life": 610897.03,
+    "MD India Tata AIA": 1108832.6,
+    "Health Assure Tata AIA": 2683.0,
+    "Aditya Birla Health Insurance": 1212.0
+  },
+  "billing_analysis": {
+    "generated_at": "2026-05-30T12:19:51.265291+00:00",
+    "total_rows": 95774,
+    "date_from": "Mar 2022",
+    "date_to": "May 2026",
+    "grand_totals": {
+      "all_time": 182444359.33,
+      "fy_2526": 69019918.48,
+      "fy_prev": 52586615.31,
+      "q2_2026": 9378348.2,
+      "cases": 95774,
+      "yoy_pct": 31.2
+    },
+    "cat_totals": {
+      "pkg": 164429946.85,
+      "anc": 540964.48,
+      "video": 1172282.0,
+      "svc": 7408530.0,
+      "hv": 7821108.0,
+      "interp": 1139420.0,
+      "total": 182444359.33
+    },
+    "by_insurer": [
+      {
+        "insurer": "ICICI Lombard",
+        "rank": 1,
+        "all": {
+          "pkg": 69548799.74,
+          "anc": 5007.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 69522627.74,
+          "cases": 46743.0
+        },
+        "fy": {
+          "pkg": 10845885.0,
+          "anc": 5007.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 10850892.0,
+          "cases": 5013.0
+        },
+        "fy_prev": {
+          "pkg": 18976502.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 18976502.0,
+          "cases": 10036.0
+        },
+        "q2": {
+          "pkg": 2403565.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 2403565.0,
+          "cases": 1066.0
+        },
+        "share_pct": 38.1,
+        "yoy_pct": -42.8,
+        "active_fy": true,
+        "active_q2": true
+      },
+      {
+        "insurer": "Bajaj Life",
+        "rank": 2,
+        "all": {
+          "pkg": 33989576.38,
+          "anc": 94352.0,
+          "video": 211700.0,
+          "svc": 3007950.0,
+          "hv": 2977510.0,
+          "interp": 1139350.0,
+          "total": 41419082.38,
+          "cases": 20077.0
+        },
+        "fy": {
+          "pkg": 22195158.0,
+          "anc": 90703.0,
+          "video": 50400.0,
+          "svc": 1926750.0,
+          "hv": 1922075.0,
+          "interp": 856710.0,
+          "total": 27041796.0,
+          "cases": 12845.0
+        },
+        "fy_prev": {
+          "pkg": 10659961.0,
+          "anc": 3649.0,
+          "video": 49200.0,
+          "svc": 973800.0,
+          "hv": 962885.0,
+          "interp": 282640.0,
+          "total": 12932135.0,
+          "cases": 6515.0
+        },
+        "q2": {
+          "pkg": 2594076.0,
+          "anc": 5381.0,
+          "video": 0.0,
+          "svc": 224550.0,
+          "hv": 223500.0,
+          "interp": 99840.0,
+          "total": 3147347.0,
+          "cases": 1497.0
+        },
+        "share_pct": 22.7,
+        "yoy_pct": 109.1,
+        "active_fy": true,
+        "active_q2": true
+      },
+      {
+        "insurer": "Aditya Birla Sun Life Insurance",
+        "rank": 3,
+        "all": {
+          "pkg": 25865004.0,
+          "anc": 363426.28,
+          "video": 195000.0,
+          "svc": 2121170.0,
+          "hv": 1978328.0,
+          "interp": 35.0,
+          "total": 30522841.28,
+          "cases": 13290.0
+        },
+        "fy": {
+          "pkg": 18903256.0,
+          "anc": 356717.28,
+          "video": 24800.0,
+          "svc": 1603890.0,
+          "hv": 1316112.0,
+          "interp": 35.0,
+          "total": 22204810.28,
+          "cases": 10052.0
+        },
+        "fy_prev": {
+          "pkg": 5167945.0,
+          "anc": 6709.0,
+          "video": 25200.0,
+          "svc": 383040.0,
+          "hv": 470962.0,
+          "interp": 0.0,
+          "total": 6053856.0,
+          "cases": 2399.0
+        },
+        "q2": {
+          "pkg": 2537681.0,
+          "anc": 51938.0,
+          "video": 0.0,
+          "svc": 238560.0,
+          "hv": 151500.0,
+          "interp": 0.0,
+          "total": 2979679.0,
+          "cases": 1507.0
+        },
+        "share_pct": 16.7,
+        "yoy_pct": 266.8,
+        "active_fy": true,
+        "active_q2": true
+      },
+      {
+        "insurer": "HDFC Life",
+        "rank": 4,
+        "all": {
+          "pkg": 14228632.35,
+          "anc": 15500.0,
+          "video": 234770.0,
+          "svc": 568070.0,
+          "hv": 837060.0,
+          "interp": 0.0,
+          "total": 15870087.35,
+          "cases": 3575.0
+        },
+        "fy": {
+          "pkg": 3600125.0,
+          "anc": 15500.0,
+          "video": 0.0,
+          "svc": 151520.0,
+          "hv": 217590.0,
+          "interp": 0.0,
+          "total": 3984735.0,
+          "cases": 947.0
+        },
+        "fy_prev": {
+          "pkg": 3887700.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 156640.0,
+          "hv": 225970.0,
+          "interp": 0.0,
+          "total": 4270310.0,
+          "cases": 990.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 8.7,
+        "yoy_pct": -6.7,
+        "active_fy": true,
+        "active_q2": false
+      },
+      {
+        "insurer": "SBI LIfe Insurance Company",
+        "rank": 5,
+        "all": {
+          "pkg": 5088826.09,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 287265.0,
+          "hv": 340820.0,
+          "interp": 0.0,
+          "total": 5716911.09,
+          "cases": 1662.0
+        },
+        "fy": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "fy_prev": {
+          "pkg": 1078425.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 54425.0,
+          "hv": 66020.0,
+          "interp": 0.0,
+          "total": 1198870.0,
+          "cases": 332.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 3.1,
+        "yoy_pct": -100.0,
+        "active_fy": false,
+        "active_q2": false
+      },
+      {
+        "insurer": "TATA AIA Life Insurance Company",
+        "rank": 6,
+        "all": {
+          "pkg": 3579286.43,
+          "anc": 0.0,
+          "video": 511692.0,
+          "svc": 355075.0,
+          "hv": 389610.0,
+          "interp": 0.0,
+          "total": 4835663.43,
+          "cases": 2033.0
+        },
+        "fy": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "fy_prev": {
+          "pkg": 961757.6,
+          "anc": 0.0,
+          "video": 118976.0,
+          "svc": 102025.0,
+          "hv": 105840.0,
+          "interp": 0.0,
+          "total": 1288598.6,
+          "cases": 583.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 2.7,
+        "yoy_pct": -100.0,
+        "active_fy": false,
+        "active_q2": false
+      },
+      {
+        "insurer": "Canara HSBC Life Insurance",
+        "rank": 7,
+        "all": {
+          "pkg": 3483519.73,
+          "anc": 4827.0,
+          "video": 10500.0,
+          "svc": 466400.0,
+          "hv": 436170.0,
+          "interp": 0.0,
+          "total": 4401416.73,
+          "cases": 2932.0
+        },
+        "fy": {
+          "pkg": 1217384.0,
+          "anc": 4076.0,
+          "video": 500.0,
+          "svc": 138080.0,
+          "hv": 91380.0,
+          "interp": 0.0,
+          "total": 1451420.0,
+          "cases": 863.0
+        },
+        "fy_prev": {
+          "pkg": 1407222.0,
+          "anc": 751.0,
+          "video": 3500.0,
+          "svc": 210560.0,
+          "hv": 206490.0,
+          "interp": 0.0,
+          "total": 1828523.0,
+          "cases": 1333.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 2.4,
+        "yoy_pct": -20.6,
+        "active_fy": true,
+        "active_q2": false
+      },
+      {
+        "insurer": "Acko Life Insurance",
+        "rank": 8,
+        "all": {
+          "pkg": 2799206.18,
+          "anc": 8500.0,
+          "video": 0.0,
+          "svc": 260670.0,
+          "hv": 342960.0,
+          "interp": 0.0,
+          "total": 3404336.18,
+          "cases": 1812.0
+        },
+        "fy": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "fy_prev": {
+          "pkg": 2793363.18,
+          "anc": 8500.0,
+          "video": 0.0,
+          "svc": 260670.0,
+          "hv": 342960.0,
+          "interp": 0.0,
+          "total": 3398493.18,
+          "cases": 1808.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 1.9,
+        "yoy_pct": -100.0,
+        "active_fy": false,
+        "active_q2": false
+      },
+      {
+        "insurer": "Ageas Federal Life Insurance",
+        "rank": 9,
+        "all": {
+          "pkg": 2062798.0,
+          "anc": 11339.0,
+          "video": 0.0,
+          "svc": 148500.0,
+          "hv": 206210.0,
+          "interp": 0.0,
+          "total": 2428847.0,
+          "cases": 904.0
+        },
+        "fy": {
+          "pkg": 1430960.0,
+          "anc": 11339.0,
+          "video": 0.0,
+          "svc": 107910.0,
+          "hv": 149240.0,
+          "interp": 0.0,
+          "total": 1699449.0,
+          "cases": 654.0
+        },
+        "fy_prev": {
+          "pkg": 631838.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 40590.0,
+          "hv": 56970.0,
+          "interp": 0.0,
+          "total": 729398.0,
+          "cases": 250.0
+        },
+        "q2": {
+          "pkg": 321445.0,
+          "anc": 2291.0,
+          "video": 0.0,
+          "svc": 24420.0,
+          "hv": 34060.0,
+          "interp": 0.0,
+          "total": 382216.0,
+          "cases": 148.0
+        },
+        "share_pct": 1.3,
+        "yoy_pct": 133.0,
+        "active_fy": true,
+        "active_q2": true
+      },
+      {
+        "insurer": "Star Union Daichi Life Insurance",
+        "rank": 10,
+        "all": {
+          "pkg": 1659491.68,
+          "anc": 19095.0,
+          "video": 3500.0,
+          "svc": 135090.0,
+          "hv": 136350.0,
+          "interp": 35.0,
+          "total": 1953561.68,
+          "cases": 820.0
+        },
+        "fy": {
+          "pkg": 1381648.0,
+          "anc": 19095.0,
+          "video": 1000.0,
+          "svc": 112415.0,
+          "hv": 112140.0,
+          "interp": 35.0,
+          "total": 1626333.0,
+          "cases": 682.0
+        },
+        "fy_prev": {
+          "pkg": 196964.0,
+          "anc": 0.0,
+          "video": 1000.0,
+          "svc": 18315.0,
+          "hv": 20320.0,
+          "interp": 0.0,
+          "total": 236599.0,
+          "cases": 112.0
+        },
+        "q2": {
+          "pkg": 297548.0,
+          "anc": 5697.0,
+          "video": 0.0,
+          "svc": 23595.0,
+          "hv": 17980.0,
+          "interp": 0.0,
+          "total": 344820.0,
+          "cases": 143.0
+        },
+        "share_pct": 1.1,
+        "yoy_pct": 587.4,
+        "active_fy": true,
+        "active_q2": true
+      },
+      {
+        "insurer": "Acko Health Insurance",
+        "rank": 11,
+        "all": {
+          "pkg": 1510637.53,
+          "anc": 13700.0,
+          "video": 0.0,
+          "svc": 2240.0,
+          "hv": 114600.0,
+          "interp": 0.0,
+          "total": 1627477.53,
+          "cases": 1095.0
+        },
+        "fy": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "fy_prev": {
+          "pkg": 1510637.53,
+          "anc": 13700.0,
+          "video": 0.0,
+          "svc": 2240.0,
+          "hv": 114600.0,
+          "interp": 0.0,
+          "total": 1627477.53,
+          "cases": 1095.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 0.9,
+        "yoy_pct": -100.0,
+        "active_fy": false,
+        "active_q2": false
+      },
+      {
+        "insurer": "Pramerica Life Insurance",
+        "rank": 12,
+        "all": {
+          "pkg": 447508.74,
+          "anc": 5218.2,
+          "video": 5120.0,
+          "svc": 56100.0,
+          "hv": 61490.0,
+          "interp": 0.0,
+          "total": 574846.94,
+          "cases": 330.0
+        },
+        "fy": {
+          "pkg": 106390.0,
+          "anc": 5218.2,
+          "video": 0.0,
+          "svc": 19720.0,
+          "hv": 16850.0,
+          "interp": 0.0,
+          "total": 148178.2,
+          "cases": 116.0
+        },
+        "fy_prev": {
+          "pkg": 8038.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 1190.0,
+          "hv": 1770.0,
+          "interp": 0.0,
+          "total": 10998.0,
+          "cases": 7.0
+        },
+        "q2": {
+          "pkg": 83648.0,
+          "anc": 5218.2,
+          "video": 0.0,
+          "svc": 17170.0,
+          "hv": 14685.0,
+          "interp": 0.0,
+          "total": 120721.2,
+          "cases": 101.0
+        },
+        "share_pct": 0.3,
+        "yoy_pct": 1247.3,
+        "active_fy": true,
+        "active_q2": true
+      },
+      {
+        "insurer": "MD India LIC",
+        "rank": 13,
+        "all": {
+          "pkg": 119500.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 119500.0,
+          "cases": 478.0
+        },
+        "fy": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "fy_prev": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 0.1,
+        "yoy_pct": null,
+        "active_fy": false,
+        "active_q2": false
+      },
+      {
+        "insurer": "TATA AIG Health Insurance",
+        "rank": 14,
+        "all": {
+          "pkg": 39721.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 39721.0,
+          "cases": 19.0
+        },
+        "fy": {
+          "pkg": 12305.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 12305.0,
+          "cases": 5.0
+        },
+        "fy_prev": {
+          "pkg": 27416.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 27416.0,
+          "cases": 14.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 0.0,
+        "yoy_pct": -55.1,
+        "active_fy": true,
+        "active_q2": false
+      },
+      {
+        "insurer": "Acko Health Insurance Limited",
+        "rank": 15,
+        "all": {
+          "pkg": 7439.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 7439.0,
+          "cases": 4.0
+        },
+        "fy": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "fy_prev": {
+          "pkg": 7439.0,
+          "anc": 0.0,
+          "video": 0.0,
+          "svc": 0.0,
+          "hv": 0.0,
+          "interp": 0.0,
+          "total": 7439.0,
+          "cases": 4.0
+        },
+        "q2": {
+          "pkg": 0,
+          "anc": 0,
+          "video": 0,
+          "svc": 0,
+          "hv": 0,
+          "interp": 0,
+          "total": 0,
+          "cases": 0
+        },
+        "share_pct": 0.0,
+        "yoy_pct": -100.0,
+        "active_fy": false,
+        "active_q2": false
+      }
+    ],
+    "monthly_totals": [
+      {
+        "month": "Jun 2024",
+        "total": 3550136.58
+      },
+      {
+        "month": "Jul 2024",
+        "total": 4151456.43
+      },
+      {
+        "month": "Aug 2024",
+        "total": 3982306.0
+      },
+      {
+        "month": "Sep 2024",
+        "total": 3924151.1
+      },
+      {
+        "month": "Oct 2024",
+        "total": 3087547.0
+      },
+      {
+        "month": "Nov 2024",
+        "total": 4462704.0
+      },
+      {
+        "month": "Dec 2024",
+        "total": 5343976.0
+      },
+      {
+        "month": "Jan 2025",
+        "total": 5298155.0
+      },
+      {
+        "month": "Feb 2025",
+        "total": 5875967.0
+      },
+      {
+        "month": "Mar 2025",
+        "total": 6866300.0
+      },
+      {
+        "month": "Apr 2025",
+        "total": 3841302.0
+      },
+      {
+        "month": "May 2025",
+        "total": 3387996.0
+      },
+      {
+        "month": "Jun 2025",
+        "total": 3364570.0
+      },
+      {
+        "month": "Jul 2025",
+        "total": 4672253.0
+      },
+      {
+        "month": "Aug 2025",
+        "total": 5235077.0
+      },
+      {
+        "month": "Sep 2025",
+        "total": 4933024.88
+      },
+      {
+        "month": "Oct 2025",
+        "total": 4203597.4
+      },
+      {
+        "month": "Nov 2025",
+        "total": 5302182.0
+      },
+      {
+        "month": "Dec 2025",
+        "total": 6331598.0
+      },
+      {
+        "month": "Jan 2026",
+        "total": 5995662.5
+      },
+      {
+        "month": "Feb 2026",
+        "total": 5880660.5
+      },
+      {
+        "month": "Mar 2026",
+        "total": 6493647.0
+      },
+      {
+        "month": "Apr 2026",
+        "total": 4942401.0
+      },
+      {
+        "month": "May 2026",
+        "total": 4435947.2
       }
     ]
   }

@@ -239,6 +239,51 @@
   .yoy-insight-item::before{content:"•";color:#1B7F79;font-weight:800;flex-shrink:0}
   .yoy-no-data{background:#F0F4F8;border-radius:8px;padding:18px;text-align:center;
     color:#7F8C8D;font-size:.82rem}
+
+  /* ── BILLING ANALYSIS section ── */
+  .ba-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .ba-kpi{border-radius:10px;padding:13px 16px;text-align:center;border:1px solid transparent}
+  .ba-kpi .ba-lbl{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+  .ba-kpi .ba-val{font-size:1.45rem;font-weight:800;line-height:1;margin:4px 0 3px}
+  .ba-kpi .ba-sub{font-size:.65rem}
+  .ba-kpi.ba-all{background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border-color:#F9E79F}
+  .ba-kpi.ba-all .ba-lbl,.ba-kpi.ba-all .ba-sub{color:#B7770D}
+  .ba-kpi.ba-all .ba-val{color:#B7770D}
+  .ba-kpi.ba-fy{background:linear-gradient(135deg,#E8F8F5,#D1F2EB);border-color:#A9DFBF}
+  .ba-kpi.ba-fy .ba-lbl,.ba-kpi.ba-fy .ba-sub{color:#1A5276}
+  .ba-kpi.ba-fy .ba-val{color:#117A65}
+  .ba-kpi.ba-q2{background:linear-gradient(135deg,#F4ECF7,#E8DAEF);border-color:#C39BD3}
+  .ba-kpi.ba-q2 .ba-lbl,.ba-kpi.ba-q2 .ba-sub{color:#6C3483}
+  .ba-kpi.ba-q2 .ba-val{color:#6C3483}
+  .ba-kpi.ba-yoy-up{background:linear-gradient(135deg,#EAFAF1,#D5F5E3);border-color:#A9DFBF}
+  .ba-kpi.ba-yoy-up .ba-lbl,.ba-kpi.ba-yoy-up .ba-sub{color:#1E8449}
+  .ba-kpi.ba-yoy-up .ba-val{color:#1E8449}
+  .ba-kpi.ba-yoy-dn{background:linear-gradient(135deg,#FDEDEC,#FADBD8);border-color:#F1948A}
+  .ba-kpi.ba-yoy-dn .ba-lbl,.ba-kpi.ba-yoy-dn .ba-sub{color:#922B21}
+  .ba-kpi.ba-yoy-dn .ba-val{color:#C0392B}
+  .ba-cat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+  .ba-cat-card{background:#F8F9FA;border:1px solid var(--border);border-radius:8px;padding:9px 10px;text-align:center}
+  .ba-cat-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-bottom:3px}
+  .ba-cat-val{font-size:.85rem;font-weight:800;color:var(--navy)}
+  .ba-cat-pct{font-size:.6rem;color:var(--text2);margin-top:2px}
+  .ba-table-wrap{overflow-x:auto;margin-bottom:14px}
+  .ba-table{width:100%;border-collapse:collapse;font-size:.74rem}
+  .ba-table th{background:#154360;color:#fff;padding:7px 8px;text-align:right;font-weight:600;font-size:.67rem;letter-spacing:.3px}
+  .ba-table th:first-child{text-align:left}
+  .ba-table td{padding:6px 8px;border-bottom:1px solid #EEF0F2;text-align:right;color:#2C3E50}
+  .ba-table td:first-child{text-align:left;font-weight:600;white-space:nowrap}
+  .ba-table tr:nth-child(even) td{background:#F9FAFB}
+  .ba-table tr:hover td{background:#EBF5FB}
+  .ba-table tr.ba-total-row td{background:var(--navy)!important;color:#fff;font-weight:700}
+  .ba-table tr.ba-total-row:hover td{background:var(--navy)!important}
+  .ba-bar{display:inline-block;height:5px;border-radius:3px;background:linear-gradient(90deg,#1B4F72,#1B7F79);vertical-align:middle;margin-left:4px;opacity:.65}
+  .ba-active-q2{color:#1E8449;font-size:.7rem;font-weight:700}
+  .ba-inactive-q2{color:#BDC3C7;font-size:.7rem}
+  .ba-insight-box{background:linear-gradient(135deg,#F5F0FF,#EDE7F6);border:1px solid #C39BD3;border-radius:10px;padding:14px 16px;margin-top:14px}
+  .ba-insight-box h4{margin:0 0 8px;font-size:.78rem;color:#6C3483;font-weight:700}
+  .ba-insight-item{font-size:.78rem;color:#2C3E50;padding:3px 0;line-height:1.5;display:flex;gap:8px}
+  .ba-insight-item::before{content:"◆";color:#9B59B6;font-size:.58rem;flex-shrink:0;margin-top:4px}
+  .ba-no-data{background:#F0F4F8;border-radius:8px;padding:18px;text-align:center;color:#7F8C8D;font-size:.82rem}
 </style>
 </head>
 <body>
@@ -1476,7 +1521,23 @@ function renderInsurerDetailsView(d) {
   const grandQ2       = Object.values(canonQ2RevMap).reduce((s,v)=>s+v,0);
   const grandApr      = Object.values(canonAprRevMap).reduce((s,v)=>s+v,0);
   const grandMay      = Math.max(grandQ2 - grandApr, 0);
-  const grandLifetime = Object.values(canonLifetimeRevMap).reduce((s,v)=>s+v,0);
+  // For lifetime total: prefer actual billing amounts (from billing XLS) over
+  // closed-case estimates; fall back to estimate for any insurer not in billing data.
+  // Include both INSURER_DETAILS entries AND any "Other Historical" insurers.
+  const _billingLt = d.billing_lifetime_by_insurer || {};
+  const _mainCanonNames = new Set(INSURER_DETAILS.map(i => _canonicalName(i.name)));
+  const grandLifetime = (() => {
+    // Sum INSURER_DETAILS insurers (actual billing if available, else estimate)
+    let total = INSURER_DETAILS.reduce((s, ins) => {
+      const c = _canonicalName(ins.name);
+      return s + (_billingLt[c] || canonLifetimeRevMap[c] || 0);
+    }, 0);
+    // Add "Other Historical" insurers (estimate only — no billing data split)
+    Object.entries(canonLifetimeRevMap).forEach(([c, v]) => {
+      if (!_mainCanonNames.has(c) && !_isNoise(c)) total += v;
+    });
+    return total;
+  })();
 
   // Active agreements table rows
   const activeRows = INSURER_DETAILS
@@ -1491,19 +1552,30 @@ function renderInsurerDetailsView(d) {
         : '');
 
       const rel    = _calcRelationship(ins.originalDate);
-      const q2Rev  = canonQ2RevMap[ins.name]       || 0;
-      const aprRev = canonAprRevMap[ins.name]      || 0;
+      // Always look up revenue maps by canonical name so variant INSURER_DETAILS
+      // names (e.g. "TATA AIG General Insurance") resolve correctly.
+      const cName  = _canonicalName(ins.name);
+      const q2Rev  = canonQ2RevMap[cName]       || 0;
+      const aprRev = canonAprRevMap[cName]      || 0;
       const mayRev = Math.max(q2Rev - aprRev, 0);
-      const ltRev  = canonLifetimeRevMap[ins.name] || 0;
+      // Prefer actual billed lifetime revenue from the billing XLS; fall back to
+      // the closed-case × avg-order estimate only when billing data is absent.
+      const billingLt = (d.billing_lifetime_by_insurer || {})[cName] || 0;
+      const ltRev  = billingLt || canonLifetimeRevMap[cName] || 0;
 
       const badgeHtml = ins.status === 'Active'
         ? '<span class="id-badge-active">Active</span>'
         : '<span class="id-badge-expired">Expired</span>';
 
       // Lifetime revenue cell — always populated (fallback for expired/inactive)
-      const ltClosedCount = canonLifetimeClosedMap[ins.name] || 0;
-      const usedFallback  = !canonAvgOrderMap[ins.name] && ltClosedCount > 0;
-      const ltCellHtml = ltClosedCount > 0
+      const ltClosedCount = canonLifetimeClosedMap[cName] || 0;
+      const usedFallback  = !billingLt && !canonAvgOrderMap[cName] && ltClosedCount > 0;
+      const ltCellHtml = billingLt > 0
+        ? `<div style="font-size:1rem;font-weight:800;color:#6C3483">${rlCr(billingLt)}</div>
+           <div style="font-size:.65rem;color:#8E44AD;margin-top:2px">
+             ${ltClosedCount.toLocaleString()} cases · actual
+           </div>`
+        : ltClosedCount > 0
         ? `<div style="font-size:1rem;font-weight:800;color:#6C3483">${rlCr(ltRev)}</div>
            <div style="font-size:.65rem;color:#8E44AD;margin-top:2px">
              ${ltClosedCount.toLocaleString()} cases${usedFallback ? ' · est.†' : ' · est.'}
@@ -1839,6 +1911,169 @@ function renderInsurerDetailsView(d) {
 
   yoySection.innerHTML = kpiHtml;
   container.appendChild(yoySection);
+
+  // ── BILLING ANALYSIS section ─────────────────────────────────────────────
+  const baSection = document.createElement('div');
+  baSection.style.cssText = 'margin-top:28px';
+
+  const ba = d.billing_analysis;
+  if (!ba || !ba.grand_totals || !ba.by_insurer || !ba.by_insurer.length) {
+    baSection.innerHTML = `
+      <div class="id-section-hdr">📦 Revenue Category Analysis (Actual Billing)</div>
+      <div class="ba-no-data">
+        No detailed billing data yet — attach <strong>Daily_Insurer_Billing.xls</strong>
+        and <strong>Daily_Insurer_Billing_2.xls</strong> to Gmail reports and hit
+        <strong>↻ Sync All</strong> to populate this section.
+      </div>`;
+    container.appendChild(baSection);
+    return;
+  }
+
+  const bagt   = ba.grand_totals;
+  const bacats = ba.cat_totals || {};
+  const BA_CATS = ['pkg','anc','video','svc','hv','interp'];
+  const BA_CAT_LABELS = {pkg:'Package', anc:'Ancillary', video:'Videography', svc:'Svc Charge', hv:'Home Visit', interp:'Interpretation'};
+
+  // ── 1. KPI strip ──────────────────────────────────────────────────────────
+  const baYoyUp = (bagt.yoy_pct || 0) >= 0;
+  const baKpiHtml = `
+    <div class="ba-kpi-row">
+      <div class="ba-kpi ba-all">
+        <div class="ba-lbl">🏦 All-Time Revenue</div>
+        <div class="ba-val">${rlCr(bagt.all_time)}</div>
+        <div class="ba-sub">${(bagt.cases||0).toLocaleString()} cases · ${ba.date_from||''}–${ba.date_to||''}</div>
+      </div>
+      <div class="ba-kpi ba-fy">
+        <div class="ba-lbl">📅 FY 2025-26</div>
+        <div class="ba-val">${rlCr(bagt.fy_2526)}</div>
+        <div class="ba-sub">Current financial year</div>
+      </div>
+      <div class="ba-kpi ba-q2">
+        <div class="ba-lbl">📊 Q2 2026</div>
+        <div class="ba-val">${rlCr(bagt.q2_2026)}</div>
+        <div class="ba-sub">Apr–Jun 2026 to date</div>
+      </div>
+      <div class="ba-kpi ${baYoyUp ? 'ba-yoy-up' : 'ba-yoy-dn'}">
+        <div class="ba-lbl">📈 YoY Growth</div>
+        <div class="ba-val">${bagt.yoy_pct != null ? (bagt.yoy_pct >= 0 ? '+' : '') + bagt.yoy_pct + '%' : 'N/A'}</div>
+        <div class="ba-sub">FY 25-26 vs FY 24-25 · ${baYoyUp ? '▲ Growing' : '▼ Declining'}</div>
+      </div>
+    </div>`;
+
+  // ── 2. Category mix grid ──────────────────────────────────────────────────
+  const baCatTotal = BA_CATS.reduce((s,c) => s + (bacats[c]||0), 0) || 1;
+  const baCatGridHtml = `
+    <div class="ba-cat-grid">
+      ${BA_CATS.map(c => {
+        const v   = bacats[c] || 0;
+        const pct = Math.round(v / baCatTotal * 100);
+        return `<div class="ba-cat-card">
+          <div class="ba-cat-lbl">${BA_CAT_LABELS[c]}</div>
+          <div class="ba-cat-val">${rlCr(v)}</div>
+          <div class="ba-cat-pct">${pct}% of revenue</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // ── 3. Insurer × category table (all-time) ────────────────────────────────
+  const baMaxAllTime = Math.max(...ba.by_insurer.map(r => (r.all && r.all.total) || 0), 1);
+  const baCatTotRow  = {pkg:0, anc:0, video:0, svc:0, hv:0, interp:0, total:0, cases:0};
+
+  const baTableRowsHtml = ba.by_insurer.map(r => {
+    const a = r.all || {};
+    BA_CATS.forEach(c => { baCatTotRow[c] += a[c] || 0; });
+    baCatTotRow.total += a.total || 0;
+    baCatTotRow.cases += a.cases || 0;
+    const barW = Math.round(((a.total || 0) / baMaxAllTime) * 70);
+    const q2Dot = r.active_q2
+      ? '<span class="ba-active-q2" title="Active in Q2 2026">● Q2</span>'
+      : '<span class="ba-inactive-q2" title="No Q2 billing">○</span>';
+    const yoyTxt = r.yoy_pct != null
+      ? `<span class="${r.yoy_pct >= 0 ? 'yoy-up-txt' : 'yoy-dn-txt'}">${r.yoy_pct >= 0 ? '+' : ''}${r.yoy_pct}%</span>`
+      : '<span class="yoy-neutral">—</span>';
+    return `<tr>
+      <td>${r.rank}. ${r.insurer}<span class="ba-bar" style="width:${barW}px"></span></td>
+      <td>${rlCr(a.pkg   || 0)}</td>
+      <td>${rlCr(a.anc   || 0)}</td>
+      <td>${rlCr(a.video || 0)}</td>
+      <td>${rlCr(a.svc   || 0)}</td>
+      <td>${rlCr(a.hv    || 0)}</td>
+      <td>${rlCr(a.interp|| 0)}</td>
+      <td><strong>${rlCr(a.total || 0)}</strong></td>
+      <td>${r.share_pct != null ? r.share_pct + '%' : '—'}</td>
+      <td>${yoyTxt}</td>
+      <td>${q2Dot}</td>
+    </tr>`;
+  }).join('');
+
+  const baTableTotalHtml = `<tr class="ba-total-row">
+    <td>TOTAL · ${baCatTotRow.cases.toLocaleString()} cases</td>
+    <td>${rlCr(baCatTotRow.pkg)}</td>
+    <td>${rlCr(baCatTotRow.anc)}</td>
+    <td>${rlCr(baCatTotRow.video)}</td>
+    <td>${rlCr(baCatTotRow.svc)}</td>
+    <td>${rlCr(baCatTotRow.hv)}</td>
+    <td>${rlCr(baCatTotRow.interp)}</td>
+    <td>${rlCr(baCatTotRow.total)}</td>
+    <td>100%</td>
+    <td>—</td>
+    <td>—</td>
+  </tr>`;
+
+  // ── 4. Insights ──────────────────────────────────────────────────────────
+  const baTopIns   = ba.by_insurer[0];
+  const baPkgPct   = Math.round((bacats.pkg || 0) / baCatTotal * 100);
+  const baNonPkgPct = 100 - baPkgPct;
+  const baActiveQ2 = ba.by_insurer.filter(r => r.active_q2).length;
+  const baYoyRanked = ba.by_insurer
+    .filter(r => r.yoy_pct != null && r.active_fy)
+    .sort((a,b) => (b.yoy_pct||0) - (a.yoy_pct||0));
+
+  const baInsights = [];
+  if (baTopIns) baInsights.push(`<strong>${baTopIns.insurer}</strong> leads all-time revenue with ${rlCr(baTopIns.all.total)} (${baTopIns.share_pct}% share) across ${(baTopIns.all.cases||0).toLocaleString()} cases.`);
+  baInsights.push(`Package billing drives <strong>${baPkgPct}%</strong> of all revenue; non-package services (ancillary, videography, etc.) contribute <strong>${baNonPkgPct}%</strong>.`);
+  if (baActiveQ2 > 0) baInsights.push(`<strong>${baActiveQ2} of ${ba.by_insurer.length} insurers</strong> have active Q2 2026 billing (billed at least once this quarter).`);
+  if (baYoyRanked[0] && baYoyRanked[0].yoy_pct > 0) baInsights.push(`Fastest-growing insurer YoY: <strong>${baYoyRanked[0].insurer}</strong> at +${baYoyRanked[0].yoy_pct}% (FY 25-26 vs FY 24-25).`);
+  if (bagt.yoy_pct != null) baInsights.push(`Overall billing ${bagt.yoy_pct >= 0 ? 'grew' : 'declined'} by <strong>${bagt.yoy_pct >= 0 ? '+' : ''}${bagt.yoy_pct}%</strong> in FY 25-26 versus prior year.`);
+
+  const baInsightHtml = baInsights.length ? `
+    <div class="ba-insight-box">
+      <h4>💡 Billing Insights</h4>
+      ${baInsights.map(i => `<div class="ba-insight-item">${i}</div>`).join('')}
+    </div>` : '';
+
+  baSection.innerHTML = `
+    <div class="id-section-hdr">📦 Revenue Category Analysis (Actual Billing)</div>
+    <div style="font-size:.72rem;color:var(--text2);margin-bottom:12px">
+      Category-level breakdown from <strong>Daily_Insurer_Billing.xls</strong> files (${(ba.total_rows||0).toLocaleString()} records,
+      <strong>${ba.date_from||'?'}</strong> → <strong>${ba.date_to||'?'}</strong>).
+      Refreshes automatically with <strong>↻ Sync All</strong>.
+    </div>
+    ${baKpiHtml}
+    <div class="id-section-hdr" style="margin-bottom:10px;margin-top:2px">🗂️ Revenue Mix by Category (All-Time)</div>
+    ${baCatGridHtml}
+    <div class="id-section-hdr" style="margin-bottom:10px;margin-top:2px">📊 Insurer × Revenue Category Breakdown (All-Time)</div>
+    <div class="ba-table-wrap">
+      <table class="ba-table">
+        <thead><tr>
+          <th>Insurer</th>
+          <th>Package</th>
+          <th>Ancillary</th>
+          <th>Videography</th>
+          <th>Svc Charge</th>
+          <th>Home Visit</th>
+          <th>Interpretation</th>
+          <th>Total</th>
+          <th>Share %</th>
+          <th>YoY</th>
+          <th>Q2 Status</th>
+        </tr></thead>
+        <tbody>${baTableRowsHtml}${baTableTotalHtml}</tbody>
+      </table>
+    </div>
+    ${baInsightHtml}`;
+
+  container.appendChild(baSection);
 }
 
 // ─────────────────────────────────────────────────────────────────
