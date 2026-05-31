@@ -1363,7 +1363,7 @@ const INSURER_HISTORY = [
 function _calcRelationship(dateStr) {
   if (!dateStr) return '—';
   const start = new Date(dateStr);
-  const today = new Date('2026-05-25');
+  const today = new Date();
   const years = (today - start) / (365.25 * 24 * 60 * 60 * 1000);
   return years >= 1 ? Math.floor(years) + ' yr' + (Math.floor(years) > 1 ? 's' : '')
                     : Math.round(years * 12) + ' mo';
@@ -1372,7 +1372,8 @@ function _calcRelationship(dateStr) {
 function _daysUntilExpiry(dateStr) {
   if (!dateStr) return null;
   const expiry = new Date(dateStr);
-  const today  = new Date('2026-05-25');
+  const today  = new Date();
+  today.setHours(0, 0, 0, 0);   // compare dates only, ignore time-of-day
   return Math.round((expiry - today) / (24 * 60 * 60 * 1000));
 }
 
