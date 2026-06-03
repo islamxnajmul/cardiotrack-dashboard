@@ -3100,62 +3100,33 @@ async function triggerCloudRefresh(workerUrl) {
   showCloudRefreshModal();
   setCloudRefreshStep(1, 'Asking the cloud to sync…');
 
-  // POST to the Worker. Worker → GitHub workflow_dispatch.
+  // POST to the Worker → triggers GitHub Actions workflow_dispatch
   let triggered;
   try {
-    const r = await fetch(workerUrl + '/', {method:'POST'});
+    const r = await fetch(workerUrl + '/', {method:'POST', signal: AbortSignal.timeout(15000)});
     triggered = await r.json();
-    if (!triggered.ok) throw new Error(triggered.error || ('Worker returned ' + r.status));
+    if (!triggered.ok) throw new Error(triggered.error || ('Worker error ' + r.status));
   } catch(e) {
-    return cloudRefreshError(`Couldn't reach the sync Worker.\n${e.message}`);
+    return cloudRefreshError('Could not reach the sync Worker: ' + e.message);
   }
 
-  setCloudRefreshStep(2, 'Triggered. Waiting for the run to start…');
+  // Trigger confirmed. Show countdown — no polling, just wait for CI to finish.
+  setCloudRefreshStep(2, 'Triggered ✓ — pipeline starting on GitHub Actions…');
+  await new Promise(r => setTimeout(r, 2000));
 
-  // Record when we triggered so we can detect the new run by created_at
-  // (more reliable than ID comparison — works even with queued/concurrent runs).
-  const triggeredAt = triggered.triggered_at
-    ? new Date(triggered.triggered_at)
-    : new Date();   // fallback: current time
-
-  // Wait a few seconds for GitHub to register the queued run
-  await new Promise(r => setTimeout(r, 5000));
-
-  // Poll for a run created AFTER our trigger time (up to 90s)
-  const newRunId = await pollWorkerStatus(workerUrl, r => {
-    if (!r || !r.id || !r.created_at) return null;
-    const runCreated = new Date(r.created_at);
-    // Accept run if it was created within 10s before or any time after trigger
-    return runCreated >= new Date(triggeredAt.getTime() - 10000) ? r.id : null;
-  }, 3000, 30);    // 3s × 30 = 90s window
-  if (!newRunId) {
-    return cloudRefreshError('Triggered, but the new run never appeared in GitHub. '
-      + 'Open the Actions tab manually to check: ' + (triggered.actions_url || ''));
+  setCloudRefreshStep(3, 'Running pipeline (Gmail pull + rebuild)…');
+  // Typical run: 60–90s sync + 20–30s Pages deploy = ~2 min total
+  // Count down visibly so user knows something is happening
+  const TOTAL_WAIT = 120; // seconds
+  for (let s = TOTAL_WAIT; s > 0; s -= 5) {
+    setCloudRefreshStep(3, `Running pipeline… (~${s}s remaining)`);
+    await new Promise(r => setTimeout(r, 5000));
   }
 
-  setCloudRefreshStep(3, 'Running pipeline (pulling Drive + Gmail)…');
-
-  // Watch this specific run until it completes
-  const conclusion = await pollWorkerStatus(workerUrl, r => {
-    if (r && r.id === newRunId && r.status === 'completed') return r.conclusion || 'unknown';
-    return null;
-  }, 4000, 90);    // up to 6 min total (sync + deploy can take ~5 min)
-
-  if (!conclusion) {
-    return cloudRefreshError('Run started but didn\'t finish within 3 minutes. '
-      + 'It may still complete — check the Actions tab.');
-  }
-  if (conclusion !== 'success') {
-    return cloudRefreshError(`Run finished with status: ${conclusion}. `
-      + `Check the Actions log for details.`);
-  }
-
-  setCloudRefreshStep(4, 'Deployment publishing on GitHub Pages…');
-  // GitHub Pages typically takes 20-40s to publish after the commit lands
-  await new Promise(r => setTimeout(r, 25000));
+  setCloudRefreshStep(4, 'Deploying to GitHub Pages…');
+  await new Promise(r => setTimeout(r, 20000));
 
   setCloudRefreshStep(5, 'Reloading with fresh data…');
-  // Cache-bust so the new HTML is fetched fresh
   setTimeout(() => location.reload(), 1000);
 }
 
