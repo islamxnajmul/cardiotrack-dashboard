@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-05-30T13:57:22.172245+00:00",
+    "generated_at": "2026-06-03T17:11:32.141056+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
@@ -209,6 +209,26 @@
       "revenue": 0
     }
   ],
+  "may_revenue_csv_by_insurer": {
+    "Aditya Birla Sun Life Insurance": 757321.0,
+    "Ageas Federal Life Insurance": 111426.0,
+    "Bajaj Life": 855088.0,
+    "ICICI Lombard": 575030.0,
+    "Pramerica Life Insurance": 475.0,
+    "Star Union Daichi Life Insurance": 70244.0
+  },
+  "apr_revenue_csv_by_insurer": {
+    "Aditya Birla Sun Life Insurance": 1617039.0,
+    "Ageas Federal Life Insurance": 148821.0,
+    "Bajaj Life": 1640934.0,
+    "Cardiotrack Home Services": 1298.03,
+    "ICICI Lombard": 1307400.0,
+    "Pramerica Life Insurance": 25843.0,
+    "Star Union Daichi Life Insurance": 210887.0
+  },
+  "may_revenue_csv_total": 2369584.0,
+  "apr_revenue_csv_total": 4952222.03,
+  "revenue_csv_mtime": "2026-05-18T03:24:35.162853+00:00",
   "pipeline": [
     {
       "name": "Aditya Birla Sun Life Insurance - May",
@@ -2032,7 +2052,7 @@
     "MD India LIC": 119500.0
   },
   "billing_analysis": {
-    "generated_at": "2026-05-30T13:57:22.151162+00:00",
+    "generated_at": "2026-06-03T17:11:32.114590+00:00",
     "total_rows": 95774,
     "date_from": "Mar 2022",
     "date_to": "May 2026",

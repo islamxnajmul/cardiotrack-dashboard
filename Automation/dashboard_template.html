@@ -316,6 +316,30 @@
   .ica-delta-dn{color:#C0392B;font-weight:700}
   .ica-delta-neu{color:#7F8C8D}
 
+  /* ── BILLING vs CSV RECONCILIATION ── */
+  .recon-wrap{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1px solid #F59E0B;
+    border-radius:10px;padding:14px 16px;margin-top:16px}
+  .recon-hdr{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+    color:#92400E;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .recon-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .recon-kpi{background:#fff;border-radius:8px;padding:10px 12px;text-align:center;
+    border:1px solid #FDE68A}
+  .recon-kpi .rk-lbl{font-size:.62rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.5px;color:#92400E;margin-bottom:3px}
+  .recon-kpi .rk-val{font-size:1.1rem;font-weight:800;color:#B45309}
+  .recon-kpi .rk-sub{font-size:.65rem;color:#92400E;margin-top:2px}
+  .recon-table{width:100%;border-collapse:collapse;font-size:.75rem}
+  .recon-table th{background:#92400E;color:#fff;padding:7px 9px;text-align:right;
+    font-size:.67rem;font-weight:700;letter-spacing:.3px}
+  .recon-table th:first-child{text-align:left}
+  .recon-table td{padding:6px 9px;border-bottom:1px solid #FDE68A;text-align:right;color:#2C3E50}
+  .recon-table td:first-child{text-align:left;font-weight:600}
+  .recon-table tr:hover td{background:#FFFBF0}
+  .recon-table tr.recon-total td{background:#92400E!important;color:#fff;font-weight:700}
+  .recon-pct{display:inline-block;width:60px;height:5px;border-radius:3px;
+    background:#FDE68A;vertical-align:middle;margin-left:6px;overflow:hidden}
+  .recon-pct-fill{height:100%;background:#F59E0B;border-radius:3px}
+
   /* ── ACTIONABLE INSIGHTS ── */
   .ai-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:0}
   @media(max-width:900px){.ai-grid{grid-template-columns:1fr}}
@@ -529,6 +553,45 @@
           <tbody id="ica-may-tbody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- BILLING vs CSV RECONCILIATION PANEL -->
+  <div class="recon-wrap" id="recon-panel" style="display:none">
+    <div class="recon-hdr">⚠️ Data Freshness Gap — Billing XLS vs Gmail CSV (May 2026)</div>
+    <div class="recon-kpi-row">
+      <div class="recon-kpi">
+        <div class="rk-lbl">Billing XLS Revenue</div>
+        <div class="rk-val" id="recon-billing">—</div>
+        <div class="rk-sub" id="recon-billing-dt">from Daily_Insurer_Billing*.xls</div>
+      </div>
+      <div class="recon-kpi">
+        <div class="rk-lbl">Gmail CSV Revenue</div>
+        <div class="rk-val" id="recon-csv">—</div>
+        <div class="rk-sub" id="recon-csv-dt">from Revenue_Generated_Insurer_Wise.csv</div>
+      </div>
+      <div class="recon-kpi" style="background:#FEF2F2;border-color:#FECACA">
+        <div class="rk-lbl" style="color:#991B1B">Gap (not in CSV yet)</div>
+        <div class="rk-val" id="recon-gap" style="color:#DC2626">—</div>
+        <div class="rk-sub" id="recon-gap-days" style="color:#991B1B">days of data missing</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="recon-table">
+        <thead><tr>
+          <th>Insurer</th>
+          <th>Billing XLS (₹)</th>
+          <th>Gmail CSV (₹)</th>
+          <th>Gap (₹)</th>
+          <th>CSV Coverage</th>
+        </tr></thead>
+        <tbody id="recon-tbody"></tbody>
+      </table>
+    </div>
+    <div style="font-size:.72rem;color:#92400E;margin-top:10px;line-height:1.6">
+      💡 <strong>Why the gap?</strong> The Gmail CSV (<code>Revenue_Generated_Insurer_Wise.csv</code>)
+      uses <em>order closure date</em> while the Billing XLS uses <em>billing date</em>.
+      Run <strong>↻ Sync All</strong> after the next Gmail report arrives to close this gap.
     </div>
   </div>
 
@@ -1853,6 +1916,91 @@ function renderActionableInsights(d) {
   `;
 }
 
+// ─────────────────────────────────────────────────────────────────
+// BILLING vs CSV RECONCILIATION PANEL
+// ─────────────────────────────────────────────────────────────────
+function renderReconPanel(d) {
+  const panel = document.getElementById('recon-panel');
+  if (!panel) return;
+
+  const csvMap     = d.may_revenue_csv_by_insurer || {};
+  const csvTotal   = d.may_revenue_csv_total || 0;
+  const csvMtime   = d.revenue_csv_mtime || null;
+  const billingMtime = d.meta?.files?.billing_csv?.mtime || null;
+
+  // billing May = Q2 - Apr from insurer_table / apr_customers
+  const aprRevMap = {};
+  (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue || 0; });
+  const q2RevMap  = {};
+  (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue || 0; });
+  const billingMap = {};
+  Object.keys(q2RevMap).forEach(ins => {
+    if (!ins.includes('Test') && !ins.includes('Cardiotrack'))
+      billingMap[ins] = (q2RevMap[ins] || 0) - (aprRevMap[ins] || 0);
+  });
+  const billingTotal = Object.values(billingMap).reduce((s,v)=>s+v,0);
+  const gap = billingTotal - csvTotal;
+
+  // Only show panel if there is a meaningful gap (>1% of billing total)
+  if (gap < billingTotal * 0.01) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  // Format dates for display
+  const fmtDate = iso => {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Kolkata'});
+  };
+  const daysBetween = (a, b) => {
+    if (!a || !b) return null;
+    return Math.round(Math.abs(new Date(b) - new Date(a)) / 86400000);
+  };
+
+  const set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('recon-billing',    fmtL(billingTotal));
+  set('recon-csv',        fmtL(csvTotal));
+  set('recon-gap',        fmtL(gap));
+  set('recon-billing-dt', billingMtime ? 'Updated ' + fmtDate(billingMtime) : 'Billing XLS');
+  set('recon-csv-dt',     csvMtime     ? 'Updated ' + fmtDate(csvMtime)     : 'Gmail CSV');
+
+  const days = daysBetween(csvMtime, billingMtime);
+  set('recon-gap-days', days ? days + ' days of data missing from CSV' : 'data gap detected');
+
+  // Per-insurer table
+  const allIns = new Set([...Object.keys(billingMap), ...Object.keys(csvMap)]);
+  const rows = [];
+  allIns.forEach(ins => {
+    const b = billingMap[ins] || 0;
+    const c = csvMap[ins] || 0;
+    if (b === 0 && c === 0) return;
+    rows.push({ ins, b, c, gap: b - c });
+  });
+  rows.sort((a,b) => b.gap - a.gap);
+
+  const tbody = document.getElementById('recon-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(r => {
+    const covPct = r.b > 0 ? Math.min(Math.round(r.c / r.b * 100), 100) : 0;
+    const barColor = covPct >= 80 ? '#10B981' : covPct >= 50 ? '#F59E0B' : '#EF4444';
+    return `<tr>
+      <td>${r.ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')}</td>
+      <td>${fmt(r.b)}</td>
+      <td>${fmt(r.c)}</td>
+      <td style="color:${r.gap>0?'#DC2626':'#059669'};font-weight:700">${fmt(r.gap)}</td>
+      <td>
+        <span style="font-size:.75rem;font-weight:700;color:${barColor}">${covPct}%</span>
+        <span class="recon-pct"><span class="recon-pct-fill" style="width:${covPct}%;background:${barColor}"></span></span>
+      </td>
+    </tr>`;
+  }).join('') + `<tr class="recon-total">
+    <td>TOTAL</td>
+    <td>${fmt(billingTotal)}</td>
+    <td>${fmt(csvTotal)}</td>
+    <td>${fmt(gap)}</td>
+    <td>${Math.round(csvTotal/billingTotal*100)}% covered</td>
+  </tr>`;
+}
+
 function renderActions(d) {
   const actions = d.key_actions || [];
   const tbody = document.getElementById('actions-tbody');
@@ -2742,6 +2890,7 @@ async function loadData() {
     ['Orders trend',    () => renderOrdersTrendChart(data)],
     ['Pipeline',                () => renderPipeline(data)],
     ['Insurer conversion',      () => renderInsurerConversionAnalysis(data)],
+    ['Revenue reconciliation',  () => renderReconPanel(data)],
     ['Actionable insights',     () => renderActionableInsights(data)],
     ['Actions',                 () => renderActions(data)],
     ['Insurer details',         () => renderInsurerDetailsView(data)],

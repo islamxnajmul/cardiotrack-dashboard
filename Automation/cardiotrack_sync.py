@@ -1555,6 +1555,27 @@ def build_dashboard_data() -> dict:
         for r in insurer_table if r["revenue"] > 0
     ]
 
+    # ── CSV-based per-insurer revenue (Gmail Revenue_Generated_Insurer_Wise.csv) ──
+    # Read separately so we can show the billing-vs-CSV gap in the dashboard.
+    import datetime as _dt
+    _rev_csv = read_revenue_file(REVENUE_FILE)
+    _may_csv_by_ins: dict = {}
+    _apr_csv_by_ins: dict = {}
+    for _r in _rev_csv:
+        _m   = (_r.get("month") or "").strip()
+        _ins = _canonical_insurer_name(_r.get("insurer", ""))
+        _amt = _r.get("amount", 0) or 0
+        if _m == "May 2026":
+            _may_csv_by_ins[_ins] = _may_csv_by_ins.get(_ins, 0) + _amt
+        elif _m == "Apr 2026":
+            _apr_csv_by_ins[_ins] = _apr_csv_by_ins.get(_ins, 0) + _amt
+    _may_csv_total = round(sum(_may_csv_by_ins.values()), 2)
+    _apr_csv_total = round(sum(_apr_csv_by_ins.values()), 2)
+    _rev_csv_mtime_iso = (
+        _dt.datetime.fromtimestamp(REVENUE_FILE.stat().st_mtime, tz=_dt.timezone.utc).isoformat()
+        if REVENUE_FILE.exists() else None
+    )
+
     return {
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -1586,6 +1607,19 @@ def build_dashboard_data() -> dict:
         ],
         "apr_customers": apr_customers,
         "insurer_table": insurer_table,
+        # CSV-based revenue per insurer (Gmail Revenue_Generated_Insurer_Wise.csv)
+        "may_revenue_csv_by_insurer": {k: round(v,2) for k,v in _may_csv_by_ins.items()},
+        "apr_revenue_csv_by_insurer": {k: round(v,2) for k,v in _apr_csv_by_ins.items()},
+        "may_revenue_csv_total": _may_csv_total,
+        "apr_revenue_csv_total": _apr_csv_total,
+        "revenue_csv_mtime": _rev_csv_mtime_iso,
+        # CSV-based revenue (Gmail Revenue_Generated_Insurer_Wise.csv)
+        # Used by the dashboard to show billing-vs-CSV gap.
+        "may_revenue_csv_by_insurer": {k: round(v,2) for k,v in _may_csv_by_ins.items()},
+        "apr_revenue_csv_by_insurer": {k: round(v,2) for k,v in _apr_csv_by_ins.items()},
+        "may_revenue_csv_total": _may_csv_total,
+        "apr_revenue_csv_total": _apr_csv_total,
+        "revenue_csv_mtime": _rev_csv_mtime_iso,
         "pipeline": pipeline,
         "existing_pipeline_total": round(sum(p["weighted"] for p in existing_pipe)),
         "prospect_pipeline_total": round(sum(p["weighted"] for p in prospect_pipe)),
