@@ -90,6 +90,7 @@ jobs:
         env:
           QUARTER_TARGET_FILE_ID: ${{ secrets.QUARTER_TARGET_FILE_ID }}
         run: python3 Automation/drive_pull.py
+        continue-on-error: true   # Drive failure must not block HTML rebuild
 
       - name: Run sync (Gmail → CSVs → JSON → HTML)
         run: python3 Automation/cardiotrack_sync.py
