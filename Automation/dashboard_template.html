@@ -3046,9 +3046,9 @@ async function detectServer() {
   const workerUrl = window.__EMBEDDED_DATA__?.meta?.public_refresh_url;
   if (workerUrl) {
     modeLabel.innerHTML = '<span style="color:#27AE60">● live cloud data</span>';
-    // Refresh button is fully functional via the Worker — don't grey it out
+    // Both Refresh AND Sync All work via the Worker — keep both enabled
     const s = document.querySelector('.btn-sync');
-    if (s) { s.disabled = true; s.style.opacity = 0.4; s.title = 'Use Refresh — it pulls Drive + Gmail via the cloud Worker.'; }
+    if (s) { s.disabled = false; s.style.opacity = ''; s.title = 'Pull latest from Google Drive + Gmail via cloud Worker'; }
   } else {
     modeLabel.innerHTML = '<span style="color:#E8A838">📁 static snapshot</span>';
     markRefreshOffline();
@@ -3285,7 +3285,13 @@ function showOfflineRefreshDialog() {
 }
 
 async function syncFromGmail() {
-  if (!SERVER_AVAILABLE) { showOfflineRefreshDialog(); return; }
+  if (!SERVER_AVAILABLE) {
+    // On GitHub Pages / static mode: use the Cloudflare Worker if configured
+    const workerUrl = (window.__EMBEDDED_DATA__?.meta?.public_refresh_url || '').replace(/\/+$/,'');
+    if (workerUrl) { await triggerCloudRefresh(workerUrl); return; }
+    showOfflineRefreshDialog();
+    return;
+  }
   if (!confirm('Pull latest Quarter Target from Drive + latest 3 report CSVs from Gmail, then rebuild?')) return;
   setButtonsBusy(true, '↻ Syncing Drive + Gmail…');
   try {
