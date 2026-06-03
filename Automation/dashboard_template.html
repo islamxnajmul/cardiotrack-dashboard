@@ -3112,15 +3112,22 @@ async function triggerCloudRefresh(workerUrl) {
 
   setCloudRefreshStep(2, 'Triggered. Waiting for the run to start…');
 
-  // The freshly-triggered workflow takes a few seconds to appear in the API.
-  // Note the previous run-id so we can detect the new one rather than
-  // mistaking a stale "completed" run for the just-triggered one.
-  const baselineRunId = await pollWorkerStatus(workerUrl, r => r?.id, 1000, 3);
+  // Record when we triggered so we can detect the new run by created_at
+  // (more reliable than ID comparison — works even with queued/concurrent runs).
+  const triggeredAt = triggered.triggered_at
+    ? new Date(triggered.triggered_at)
+    : new Date();   // fallback: current time
 
-  // Poll for the new run to start, then for it to finish.
+  // Wait a few seconds for GitHub to register the queued run
+  await new Promise(r => setTimeout(r, 5000));
+
+  // Poll for a run created AFTER our trigger time (up to 90s)
   const newRunId = await pollWorkerStatus(workerUrl, r => {
-    return (r && r.id && r.id !== baselineRunId) ? r.id : null;
-  }, 2000, 30);    // up to 60s for the run to appear
+    if (!r || !r.id || !r.created_at) return null;
+    const runCreated = new Date(r.created_at);
+    // Accept run if it was created within 10s before or any time after trigger
+    return runCreated >= new Date(triggeredAt.getTime() - 10000) ? r.id : null;
+  }, 3000, 30);    // 3s × 30 = 90s window
   if (!newRunId) {
     return cloudRefreshError('Triggered, but the new run never appeared in GitHub. '
       + 'Open the Actions tab manually to check: ' + (triggered.actions_url || ''));
@@ -3132,7 +3139,7 @@ async function triggerCloudRefresh(workerUrl) {
   const conclusion = await pollWorkerStatus(workerUrl, r => {
     if (r && r.id === newRunId && r.status === 'completed') return r.conclusion || 'unknown';
     return null;
-  }, 3000, 60);    // up to 3 min total
+  }, 4000, 90);    // up to 6 min total (sync + deploy can take ~5 min)
 
   if (!conclusion) {
     return cloudRefreshError('Run started but didn\'t finish within 3 minutes. '

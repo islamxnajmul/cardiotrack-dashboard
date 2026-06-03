@@ -54,7 +54,7 @@ async function triggerWorkflow(env) {
 
 async function getLatestRun(env) {
   const workflow = env.WORKFLOW || "sync.yml";
-  const url = `https://api.github.com/repos/${env.GH_REPO}/actions/workflows/${workflow}/runs?per_page=1`;
+  const url = `https://api.github.com/repos/${env.GH_REPO}/actions/workflows/${workflow}/runs?per_page=5`;
   const resp = await fetch(url, {
     headers: {
       "Authorization": `Bearer ${env.GH_TOKEN}`,
@@ -66,7 +66,11 @@ async function getLatestRun(env) {
     return { ok: false, status: resp.status, error: (await resp.text()).slice(0, 400) };
   }
   const body = await resp.json();
-  const run  = body.workflow_runs?.[0];
+  // Sort by created_at descending to always get the newest run
+  const runs = (body.workflow_runs || []).sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+  const run  = runs[0];
   if (!run) return { ok: true, run: null };
   return {
     ok: true,
@@ -119,6 +123,7 @@ export default {
       }
       return json({
         ok: true,
+        triggered_at: new Date().toISOString(),
         message: "Workflow triggered. Poll /status to watch progress.",
         actions_url: `https://github.com/${env.GH_REPO}/actions/workflows/${env.WORKFLOW || "sync.yml"}`,
       });
