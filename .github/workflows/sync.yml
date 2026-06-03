@@ -23,7 +23,7 @@ permissions:
 # Serialize runs — newer scheduled triggers queue rather than racing
 concurrency:
   group: cardiotrack-sync
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   sync-and-deploy:
