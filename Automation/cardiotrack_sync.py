@@ -1970,18 +1970,26 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
     if gmail_status is not None:
         data.setdefault("meta", {})["gmail_status"] = gmail_status
 
-    # Embed the public Refresh-button Worker URL if configured locally.
-    # Without this, the public github.io site falls back to a deep-link to
-    # GitHub Actions (manual workflow trigger).
+    # Embed the public Refresh-button Worker URL.
+    # Priority: env var PUBLIC_REFRESH_URL (set via GitHub Actions secret)
+    # → local_config.json (local dev) → hardcoded fallback.
     try:
-        cfg_path = AUTO / "local_config.json"
-        if cfg_path.exists():
-            cfg = json.loads(cfg_path.read_text())
-            url = (cfg.get("public_refresh_url") or "").strip()
-            if url and not url.startswith("PASTE_"):
-                data.setdefault("meta", {})["public_refresh_url"] = url
+        import os as _os
+        _worker_url = (
+            _os.environ.get("PUBLIC_REFRESH_URL", "").strip()
+            or ""
+        )
+        if not _worker_url:
+            cfg_path = AUTO / "local_config.json"
+            if cfg_path.exists():
+                cfg = json.loads(cfg_path.read_text())
+                _worker_url = (cfg.get("public_refresh_url") or "").strip()
+        # Hardcoded fallback — always works even if secret/config is missing
+        if not _worker_url or _worker_url.startswith("PASTE_"):
+            _worker_url = "https://cardiotrack-sync-trigger.islam-najmul.workers.dev"
+        data.setdefault("meta", {})["public_refresh_url"] = _worker_url
     except Exception:
-        pass    # config issues should never break the build
+        data.setdefault("meta", {})["public_refresh_url"] =             "https://cardiotrack-sync-trigger.islam-najmul.workers.dev"
 
     # Also stamp each input file's mtime so the UI can show "Revenue data is
     # from a CSV last refreshed at <time>" — answers the question

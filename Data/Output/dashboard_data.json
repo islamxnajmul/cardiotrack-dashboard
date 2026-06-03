@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-06-03T17:11:32.141056+00:00",
+    "generated_at": "2026-06-03T17:37:55.482468+00:00",
     "q2_target": 20000000,
     "as_of": "14 May 2026",
     "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
@@ -2052,7 +2052,7 @@
     "MD India LIC": 119500.0
   },
   "billing_analysis": {
-    "generated_at": "2026-06-03T17:11:32.114590+00:00",
+    "generated_at": "2026-06-03T17:37:55.451856+00:00",
     "total_rows": 95774,
     "date_from": "Mar 2022",
     "date_to": "May 2026",

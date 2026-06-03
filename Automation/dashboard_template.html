@@ -3083,12 +3083,12 @@ async function refreshFromExcel() {
 
   // Public site (github.io) — if a Cloudflare Worker URL is configured,
   // trigger a real cloud sync. Otherwise fall back to the deep-link modal.
-  const workerUrl = (window.__EMBEDDED_DATA__?.meta?.public_refresh_url || '').replace(/\/+$/,'');
-  if (workerUrl) {
-    await triggerCloudRefresh(workerUrl);
-  } else {
-    showOfflineRefreshDialog();
-  }
+  const WORKER_FALLBACK = 'https://cardiotrack-sync-trigger.islam-najmul.workers.dev';
+  const workerUrl = (
+    (window.__EMBEDDED_DATA__?.meta?.public_refresh_url || '').replace(/\/+$/,'')
+    || WORKER_FALLBACK
+  );
+  await triggerCloudRefresh(workerUrl);
 }
 
 /**
@@ -3286,10 +3286,14 @@ function showOfflineRefreshDialog() {
 
 async function syncFromGmail() {
   if (!SERVER_AVAILABLE) {
-    // On GitHub Pages / static mode: use the Cloudflare Worker if configured
-    const workerUrl = (window.__EMBEDDED_DATA__?.meta?.public_refresh_url || '').replace(/\/+$/,'');
-    if (workerUrl) { await triggerCloudRefresh(workerUrl); return; }
-    showOfflineRefreshDialog();
+    // On GitHub Pages / static mode: use the Cloudflare Worker.
+    // Falls back to the hardcoded URL if the build didn't embed one.
+    const WORKER_FALLBACK = 'https://cardiotrack-sync-trigger.islam-najmul.workers.dev';
+    const workerUrl = (
+      (window.__EMBEDDED_DATA__?.meta?.public_refresh_url || '').replace(/\/+$/,'')
+      || WORKER_FALLBACK
+    );
+    await triggerCloudRefresh(workerUrl);
     return;
   }
   if (!confirm('Pull latest Quarter Target from Drive + latest 3 report CSVs from Gmail, then rebuild?')) return;
