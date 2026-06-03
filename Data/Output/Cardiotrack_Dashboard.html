@@ -284,6 +284,58 @@
   .ba-insight-item{font-size:.78rem;color:#2C3E50;padding:3px 0;line-height:1.5;display:flex;gap:8px}
   .ba-insight-item::before{content:"◆";color:#9B59B6;font-size:.58rem;flex-shrink:0;margin-top:4px}
   .ba-no-data{background:#F0F4F8;border-radius:8px;padding:18px;text-align:center;color:#7F8C8D;font-size:.82rem}
+
+  /* ── INSURER CONVERSION ANALYSIS ── */
+  .ica-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border)}
+  .ica-tab{padding:7px 18px;background:transparent;border:none;border-bottom:3px solid transparent;
+    margin-bottom:-2px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s}
+  .ica-tab.active{color:var(--subblue);border-bottom-color:var(--subblue)}
+  .ica-panel{display:none;padding-top:14px}.ica-panel.active{display:block}
+  .ica-table{width:100%;border-collapse:collapse;font-size:.77rem}
+  .ica-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:right;
+    font-weight:600;font-size:.68rem;letter-spacing:.3px;white-space:nowrap}
+  .ica-table th:first-child{text-align:left}
+  .ica-table td{padding:7px 10px;border-bottom:1px solid #F0F0F0;text-align:right}
+  .ica-table td:first-child{text-align:left;font-weight:600}
+  .ica-table tr:nth-child(even) td{background:#F9FAFB}
+  .ica-table tr:hover td{background:#EBF5FB}
+  .ica-table tr.ica-total td{background:var(--navy)!important;color:#fff;font-weight:700}
+  .ica-compare-wrap{overflow-x:auto}
+  .ica-compare-table{width:100%;border-collapse:collapse;font-size:.74rem}
+  .ica-compare-table th{padding:8px 9px;text-align:right;font-weight:700;font-size:.66rem;
+    letter-spacing:.3px;white-space:nowrap}
+  .ica-compare-table th:first-child{text-align:left}
+  .ica-compare-table td{padding:6px 9px;border-bottom:1px solid #EEF0F2;text-align:right;color:#2C3E50}
+  .ica-compare-table td:first-child{text-align:left;font-weight:600;white-space:nowrap}
+  .ica-compare-table tr:hover td{background:#F7FAFC}
+  .ica-compare-table tr.ica-total td{background:var(--navy)!important;color:#fff;font-weight:700}
+  .ica-apr-hdr{background:linear-gradient(90deg,#1a5276,#1b4f72)!important;color:#fff!important}
+  .ica-may-hdr{background:linear-gradient(90deg,#1b7f79,#148f77)!important;color:#fff!important}
+  .ica-span-hdr{background:var(--navy)!important;color:#fff!important;font-size:.7rem!important}
+  .ica-delta-up{color:#1E8449;font-weight:700}
+  .ica-delta-dn{color:#C0392B;font-weight:700}
+  .ica-delta-neu{color:#7F8C8D}
+
+  /* ── ACTIONABLE INSIGHTS ── */
+  .ai-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:0}
+  @media(max-width:900px){.ai-grid{grid-template-columns:1fr}}
+  .ai-card{border-radius:10px;padding:14px 16px;border:1px solid transparent}
+  .ai-card.ai-green{background:linear-gradient(135deg,#EAFAF1,#D5F5E3);border-color:#A9DFBF}
+  .ai-card.ai-blue{background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border-color:#AED6F1}
+  .ai-card.ai-amber{background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border-color:#F9E79F}
+  .ai-card.ai-red{background:linear-gradient(135deg,#FDEDEC,#FADBD8);border-color:#F1948A}
+  .ai-card-hdr{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
+    margin-bottom:10px;display:flex;align-items:center;gap:7px}
+  .ai-card.ai-green .ai-card-hdr{color:#1E8449}
+  .ai-card.ai-blue  .ai-card-hdr{color:#1A5276}
+  .ai-card.ai-amber .ai-card-hdr{color:#B7770D}
+  .ai-card.ai-red   .ai-card-hdr{color:#922B21}
+  .ai-item{font-size:.8rem;color:#2C3E50;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);
+    line-height:1.5;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .ai-item:last-child{border-bottom:none}
+  .ai-item-name{font-weight:600;flex:1}
+  .ai-item-stat{font-size:.78rem;font-weight:700;white-space:nowrap;text-align:right}
+  .ai-item-sub{font-size:.7rem;color:#7F8C8D;margin-top:1px}
 </style>
 </head>
 <body>
@@ -427,6 +479,64 @@
     <div class="card">
       <div class="card-title">🥧 April Revenue Share</div>
       <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- INSURER-WISE CONVERSION ANALYSIS -->
+  <div class="card" style="margin-bottom:20px" id="insurer-conv-card">
+    <div class="section-hdr">📊 Insurer-wise Conversion Analysis — Apr &amp; May 2026</div>
+    <p style="font-size:.72rem;color:var(--text2);margin-bottom:12px">
+      Month-wise breakdown: Incoming Orders · Closed · Conversion % · Revenue · Avg/Order · Pending.
+      May revenue includes <strong>₹48K confirmed pipeline (100% probability)</strong> added to actual billing.
+    </p>
+
+    <!-- Tab switcher -->
+    <div class="ica-tabs">
+      <button class="ica-tab active" onclick="icaTab('ica-compare')">📋 Side-by-Side (Apr vs May)</button>
+      <button class="ica-tab" onclick="icaTab('ica-apr')">📅 April 2026</button>
+      <button class="ica-tab" onclick="icaTab('ica-may')">📅 May 2026</button>
+    </div>
+
+    <div id="ica-compare" class="ica-panel active">
+      <div class="ica-compare-wrap">
+        <table class="ica-compare-table" id="ica-compare-table">
+          <thead id="ica-compare-thead"></thead>
+          <tbody id="ica-compare-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="ica-apr" class="ica-panel">
+      <div style="overflow-x:auto">
+        <table class="ica-table" id="ica-apr-table">
+          <thead><tr>
+            <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th>
+            <th>Revenue (₹)</th><th>Avg/Order (₹)</th><th>Pending</th>
+          </tr></thead>
+          <tbody id="ica-apr-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="ica-may" class="ica-panel">
+      <div style="overflow-x:auto">
+        <table class="ica-table" id="ica-may-table">
+          <thead><tr>
+            <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th>
+            <th>Revenue (₹)<br><span style="font-size:.62rem;font-weight:400;opacity:.8">incl. 100% pipeline</span></th>
+            <th>Avg/Order (₹)</th><th>Pending</th>
+          </tr></thead>
+          <tbody id="ica-may-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONABLE INSIGHTS -->
+  <div class="card" style="margin-bottom:20px" id="actionable-insights-card">
+    <div class="section-hdr">💡 Actionable Insights — Q2 FY2026</div>
+    <div class="ai-grid" id="ai-grid-container">
+      <!-- Rendered by renderActionableInsights(d) -->
     </div>
   </div>
 
@@ -627,6 +737,17 @@ function destroyChart(id) {
 // UTILS
 // ─────────────────────────────────────────────────────────────────
 const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+// Returns the sum of weighted revenue for May pipeline items with probability = 1.0
+// These are "confirmed" deals that should be counted as realized for May totals.
+function getMay100Weighted(d) {
+  return (d.pipeline || [])
+    .filter(p => {
+      const m = p.month || (p.name?.includes('May') ? 'May' : '');
+      return m === 'May' && Number(p.probability) === 1.0;
+    })
+    .reduce((s, p) => s + (p.weighted || 0), 0);
+}
 const fmtL = n => '₹' + (n/100000).toFixed(1) + 'L';
 const pct = (a,b) => b ? Math.round(a/b*100*10)/10 : 0;
 
@@ -684,12 +805,23 @@ function switchTab(id, groupId) {
 // ─────────────────────────────────────────────────────────────────
 function renderKPIs(d) {
   const k = d.kpis;
+  const may100w     = getMay100Weighted(d);
+  const mayAdj      = (k.may_revenue || 0) + may100w;
+  const q2Adj       = (k.apr_revenue || 0) + mayAdj;
+  const gapAdj      = Math.max((k.q2_target || 20000000) - q2Adj, 0);
+  const pctAdj      = k.q2_target ? Math.round(q2Adj / k.q2_target * 100 * 10) / 10 : 0;
+
   document.getElementById('kpi-target').textContent = fmtL(k.q2_target);
   document.getElementById('kpi-apr').textContent    = fmtL(k.apr_revenue);
-  document.getElementById('kpi-may').textContent    = fmtL(k.may_revenue);
-  document.getElementById('kpi-q2').textContent     = fmtL(k.q2_achieved);
-  document.getElementById('kpi-q2-pct').textContent = k.achievement_pct + '% of target';
-  document.getElementById('kpi-gap').textContent    = fmtL(k.gap);
+  document.getElementById('kpi-may').textContent    = fmtL(mayAdj);
+  document.getElementById('kpi-q2').textContent     = fmtL(q2Adj);
+  document.getElementById('kpi-q2-pct').textContent = pctAdj + '% of target';
+  document.getElementById('kpi-gap').textContent    = fmtL(gapAdj);
+
+  // Update KPI sublabels
+  const maySubEl = document.querySelector('.kpi-may .sub');
+  if (maySubEl && may100w > 0)
+    maySubEl.textContent = 'MTD + ₹' + Math.round(may100w/1000) + 'K confirmed';
 
   renderQ2Tracker(d);
 }
@@ -707,11 +839,15 @@ function renderKPIs(d) {
 function renderQ2Tracker(d) {
   const k        = d.kpis || {};
   const target   = k.q2_target || 20000000;
-  const realized = k.q2_achieved || 0;
-  // Weighted pipeline = existing + prospect, May + June.
-  // Source already computed by the Python build.
-  const pipeline = (d.pipeline_by_type?.existing_weighted || 0) +
-                   (d.pipeline_by_type?.prospect_weighted || 0);
+  // Realized = Apr actual + May actual + May 100%-probability pipeline
+  const may100w  = getMay100Weighted(d);
+  const realized = (k.apr_revenue || 0) + (k.may_revenue || 0) + may100w;
+  // Weighted pipeline = existing + prospect (May + June), EXCLUDING already-counted 100% items
+  const pipeline = Math.max(
+    ((d.pipeline_by_type?.existing_weighted || 0) +
+     (d.pipeline_by_type?.prospect_weighted || 0)) - may100w,
+    0
+  );
   const gap      = Math.max(target - realized, 0);
   // Cap the visualised pipeline at the size of the remaining gap so the bar
   // never overflows past 100% of the target.
@@ -762,13 +898,19 @@ function renderQ2Tracker(d) {
 function renderTrendChart(d) {
   destroyChart('trend');
   const ctx = document.getElementById('trendChart').getContext('2d');
+  // Adjust the last value (May 2026) by adding 100%-probability pipeline
+  const may100w    = getMay100Weighted(d);
+  const trendVals  = (d.monthly_trend.values || []).map((v, i) => {
+    const lbl = (d.monthly_trend.labels || [])[i] || '';
+    return (lbl === 'May 2026' && may100w > 0) ? v + may100w : v;
+  });
   charts['trend'] = new Chart(ctx, {
     type: 'line',
     data: {
       labels: d.monthly_trend.labels.map(shortName),
       datasets: [{
         label: 'Revenue (₹)',
-        data: d.monthly_trend.values,
+        data: trendVals,
         borderColor: '#2E86C1',
         backgroundColor: 'rgba(46,134,193,.12)',
         fill: true,
@@ -794,6 +936,15 @@ function renderTrendChart(d) {
 function renderMonthChart(d) {
   destroyChart('month');
   const ctx = document.getElementById('monthChart').getContext('2d');
+  const may100w = getMay100Weighted(d);
+  // Adjust May achieved by adding 100%-probability pipeline
+  const achievedAdj = d.month_wise.map(r => {
+    if (r.month === 'May 2026' && may100w > 0) return (r.achieved || 0) + may100w;
+    return r.achieved || 0;
+  });
+  const pctAdj = d.month_wise.map((r, i) =>
+    r.target ? (achievedAdj[i] / r.target * 100) : 0
+  );
   charts['month'] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -801,9 +952,9 @@ function renderMonthChart(d) {
       datasets: [
         { label:'Target', data: d.month_wise.map(r=>r.target),
           backgroundColor:'rgba(27,79,114,.25)', borderColor:'#1B4F72', borderWidth:2 },
-        { label:'Achieved', data: d.month_wise.map(r=>r.achieved),
-          backgroundColor: d.month_wise.map(r =>
-            r.pct>=75?'rgba(39,174,96,.8)':r.pct>=40?'rgba(232,168,56,.8)':'rgba(192,57,43,.8)'),
+        { label:'Achieved', data: achievedAdj,
+          backgroundColor: pctAdj.map(p =>
+            p>=75?'rgba(39,174,96,.8)':p>=40?'rgba(232,168,56,.8)':'rgba(192,57,43,.8)'),
           borderRadius: 4 }
       ]
     },
@@ -1276,6 +1427,430 @@ function renderPipeline(d) {
       }
     }
   });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// INSURER-WISE CONVERSION ANALYSIS — Apr & May 2026
+// ─────────────────────────────────────────────────────────────────
+function icaTab(id) {
+  document.querySelectorAll('.ica-tab').forEach((t,i) => {
+    const panels = ['ica-compare','ica-apr','ica-may'];
+    t.classList.toggle('active', panels[i] === id);
+  });
+  document.querySelectorAll('.ica-panel').forEach(p => {
+    p.classList.toggle('active', p.id === id);
+  });
+}
+
+function renderInsurerConversionAnalysis(d) {
+  const may100w = getMay100Weighted(d);
+
+  // ── Revenue maps (canonical insurer names) ──
+  const aprRevMap = {};
+  (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue || 0; });
+  const q2RevMap = {};
+  (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue || 0; });
+
+  // ── Order counts from orders_monthly ──
+  const aprOrders = d.orders_monthly?.['Apr 2026'] || {};
+  const mayOrders = d.orders_monthly?.['May 2026'] || {};
+  const aprInc = aprOrders.incoming || {};
+  const aprCl  = aprOrders.closed   || {};
+  const mayInc = mayOrders.incoming || {};
+  const mayCl  = mayOrders.closed   || {};
+
+  // Canonical name mapper (mirrors the one in renderInsurerDetailsView)
+  function canon(n) {
+    if (n === 'Bajaj Life Insurance Company' ||
+        n === 'Bajaj Allianz Life Insurance Company') return 'Bajaj Life';
+    if (n === 'TATA AIG Health Insurance Company Ltd.' ||
+        n === 'TAIG Health Insurance Company Ltd.')   return 'TATA AIG Health Insurance';
+    return n;
+  }
+
+  // ── Build per-insurer rows ──
+  // Use the union of Apr + May incoming keys
+  const insurerSet = new Set();
+  [aprInc, aprCl, mayInc, mayCl].forEach(m =>
+    Object.keys(m).forEach(k => {
+      if (!k.includes('Test') && !k.includes('Cardiotrack') &&
+          !k.match(/^\d{10,}/) && k.length > 4) insurerSet.add(canon(k));
+    })
+  );
+
+  // Helper: sum across all raw keys that canonicalise to `cName`
+  function sumFor(map, cName) {
+    return Object.entries(map)
+      .filter(([k]) => canon(k) === cName)
+      .reduce((s,[,v]) => s + (Number(v)||0), 0);
+  }
+
+  const rows = [];
+  insurerSet.forEach(ins => {
+    const aInc = sumFor(aprInc, ins);
+    const aCl  = sumFor(aprCl,  ins);
+    const mInc = sumFor(mayInc, ins);
+    const mCl  = sumFor(mayCl,  ins);
+    if (aInc === 0 && mInc === 0) return;
+
+    const aRev  = aprRevMap[ins] || 0;
+    const q2Rev = q2RevMap[ins]  || 0;
+    const mRev  = Math.max(q2Rev - aRev, 0);
+
+    rows.push({
+      insurer: ins,
+      aInc, aCl, aRev,
+      aConv: aInc ? aCl / aInc : 0,
+      aAvg:  aCl  ? aRev / aCl : 0,
+      aPend: Math.max(aInc - aCl, 0),
+      mInc, mCl, mRev,
+      mConv: mInc ? mCl / mInc : 0,
+      mAvg:  mCl  ? mRev / mCl : 0,
+      mPend: Math.max(mInc - mCl, 0),
+    });
+  });
+
+  // Sort by total Q2 revenue desc
+  rows.sort((a,b) => (b.aRev + b.mRev) - (a.aRev + a.mRev));
+
+  const convBadgeICA = c => {
+    const p = Math.round(c * 100);
+    if (p >= 75) return `<span class="badge badge-green">${p}%</span>`;
+    if (p >= 45) return `<span class="badge badge-amber">${p}%</span>`;
+    return `<span class="badge badge-red">${p}%</span>`;
+  };
+  const deltaChip = (a, b) => {
+    if (b === 0 && a === 0) return '<span class="ica-delta-neu">—</span>';
+    const d = b - a;
+    const cls = d > 0 ? 'ica-delta-up' : d < 0 ? 'ica-delta-dn' : 'ica-delta-neu';
+    const sign = d > 0 ? '+' : '';
+    return `<span class="${cls}">${sign}${d >= 0 ? '' : ''}${sign}${Math.round(d).toLocaleString('en-IN')}</span>`;
+  };
+  const deltaRevChip = (a, b) => {
+    if (b === 0 && a === 0) return '<span class="ica-delta-neu">—</span>';
+    const d = b - a;
+    const cls = d > 0 ? 'ica-delta-up' : d < 0 ? 'ica-delta-dn' : 'ica-delta-neu';
+    return `<span class="${cls}">${d >= 0 ? '+' : '−'}${fmt(Math.abs(d))}</span>`;
+  };
+  const convDeltaChip = (a, b) => {
+    const pA = Math.round(a * 100);
+    const pB = Math.round(b * 100);
+    const d  = pB - pA;
+    if (pA === 0 && pB === 0) return '<span class="ica-delta-neu">—</span>';
+    const cls = d > 0 ? 'ica-delta-up' : d < 0 ? 'ica-delta-dn' : 'ica-delta-neu';
+    return `<span class="${cls}">${d >= 0 ? '+' : ''}${d}pp</span>`;
+  };
+
+  // ── 1. Side-by-side comparison table ──
+  const thead = document.getElementById('ica-compare-thead');
+  const tbody = document.getElementById('ica-compare-tbody');
+  if (thead && tbody) {
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2" style="text-align:left;background:var(--navy);color:#fff;vertical-align:middle">Insurer</th>
+        <th colspan="6" class="ica-apr-hdr" style="text-align:center">📅 April 2026</th>
+        <th colspan="6" class="ica-may-hdr" style="text-align:center">📅 May 2026</th>
+        <th colspan="2" class="ica-span-hdr" style="text-align:center">MoM Change</th>
+      </tr>
+      <tr>
+        <th class="ica-apr-hdr">In</th><th class="ica-apr-hdr">Cls</th><th class="ica-apr-hdr">Conv</th>
+        <th class="ica-apr-hdr">Revenue</th><th class="ica-apr-hdr">Avg/Ord</th><th class="ica-apr-hdr">Pend</th>
+        <th class="ica-may-hdr">In</th><th class="ica-may-hdr">Cls</th><th class="ica-may-hdr">Conv</th>
+        <th class="ica-may-hdr">Revenue</th><th class="ica-may-hdr">Avg/Ord</th><th class="ica-may-hdr">Pend</th>
+        <th class="ica-span-hdr">Rev Δ</th><th class="ica-span-hdr">Conv Δ</th>
+      </tr>`;
+
+    // Totals
+    const totAInc = rows.reduce((s,r)=>s+r.aInc,0);
+    const totACl  = rows.reduce((s,r)=>s+r.aCl,0);
+    const totARev = rows.reduce((s,r)=>s+r.aRev,0);
+    const totAPend= rows.reduce((s,r)=>s+r.aPend,0);
+    const totMInc = rows.reduce((s,r)=>s+r.mInc,0);
+    const totMCl  = rows.reduce((s,r)=>s+r.mCl,0);
+    const totMRevBase = rows.reduce((s,r)=>s+r.mRev,0);
+    const totMRev = totMRevBase + may100w;  // add confirmed pipeline to May total
+    const totMPend= rows.reduce((s,r)=>s+r.mPend,0);
+
+    let compareRows = rows.map(r => {
+      // For Pramerica May, distribute the 100% pipeline (48K) proportionally —
+      // since Vortex ECG is a non-insurer prospect, we show it as a separate total note,
+      // not attributed to any insurer. Per-insurer May revenue stays as-is.
+      return `<tr>
+        <td style="white-space:nowrap">${r.insurer.replace(' Life Insurance','').replace(' Sun Life Insurance','').replace(' Insurance Company','')}</td>
+        <td>${r.aInc.toLocaleString()}</td>
+        <td>${r.aCl.toLocaleString()}</td>
+        <td>${convBadgeICA(r.aConv)}</td>
+        <td style="font-weight:600">${fmt(r.aRev)}</td>
+        <td>${Math.round(r.aAvg).toLocaleString()}</td>
+        <td><span class="badge badge-amber">${r.aPend.toLocaleString()}</span></td>
+        <td>${r.mInc.toLocaleString()}</td>
+        <td>${r.mCl.toLocaleString()}</td>
+        <td>${convBadgeICA(r.mConv)}</td>
+        <td style="font-weight:600">${fmt(r.mRev)}</td>
+        <td>${r.mCl ? Math.round(r.mRev/r.mCl).toLocaleString() : '—'}</td>
+        <td><span class="badge badge-amber">${r.mPend.toLocaleString()}</span></td>
+        <td>${deltaRevChip(r.aRev, r.mRev)}</td>
+        <td>${convDeltaChip(r.aConv, r.mConv)}</td>
+      </tr>`;
+    }).join('');
+
+    // Total row
+    compareRows += `<tr class="ica-total">
+      <td>TOTAL</td>
+      <td>${totAInc.toLocaleString()}</td>
+      <td>${totACl.toLocaleString()}</td>
+      <td>${totACl && totAInc ? Math.round(totACl/totAInc*100)+'%' : '—'}</td>
+      <td>${fmt(totARev)}</td>
+      <td>${totACl ? Math.round(totARev/totACl).toLocaleString() : '—'}</td>
+      <td>${totAPend.toLocaleString()}</td>
+      <td>${totMInc.toLocaleString()}</td>
+      <td>${totMCl.toLocaleString()}</td>
+      <td>${totMCl && totMInc ? Math.round(totMCl/totMInc*100)+'%' : '—'}</td>
+      <td>${fmt(totMRev)}<span style="font-size:.62rem;opacity:.75;display:block">+₹${Math.round(may100w/1000)}K pipeline</span></td>
+      <td>${totMCl ? Math.round(totMRevBase/totMCl).toLocaleString() : '—'}</td>
+      <td>${totMPend.toLocaleString()}</td>
+      <td>${deltaRevChip(totARev, totMRev)}</td>
+      <td>${convDeltaChip(totACl/Math.max(totAInc,1), totMCl/Math.max(totMInc,1))}</td>
+    </tr>`;
+
+    tbody.innerHTML = compareRows;
+  }
+
+  // ── 2. Apr-only table ──
+  const aprTbody = document.getElementById('ica-apr-tbody');
+  if (aprTbody) {
+    let totInc=0,totCl=0,totRev=0,totPend=0;
+    let aprRows = rows.map(r => {
+      totInc+=r.aInc; totCl+=r.aCl; totRev+=r.aRev; totPend+=r.aPend;
+      return `<tr>
+        <td>${r.insurer}</td>
+        <td>${r.aInc.toLocaleString()}</td>
+        <td>${r.aCl.toLocaleString()}</td>
+        <td>${convBadgeICA(r.aConv)}</td>
+        <td style="font-weight:600">${fmt(r.aRev)}</td>
+        <td>${Math.round(r.aAvg).toLocaleString()}</td>
+        <td><span class="badge badge-amber">${r.aPend.toLocaleString()}</span></td>
+      </tr>`;
+    }).join('');
+    aprRows += `<tr class="ica-total">
+      <td>TOTAL</td>
+      <td>${totInc.toLocaleString()}</td>
+      <td>${totCl.toLocaleString()}</td>
+      <td>${totInc ? Math.round(totCl/totInc*100)+'%' : '—'}</td>
+      <td>${fmt(totRev)}</td>
+      <td>${totCl ? Math.round(totRev/totCl).toLocaleString() : '—'}</td>
+      <td>${totPend.toLocaleString()}</td>
+    </tr>`;
+    aprTbody.innerHTML = aprRows;
+  }
+
+  // ── 3. May-only table ──
+  const mayTbody = document.getElementById('ica-may-tbody');
+  if (mayTbody) {
+    let totInc=0,totCl=0,totRev=0,totPend=0;
+    let mayRows = rows.map(r => {
+      totInc+=r.mInc; totCl+=r.mCl; totRev+=r.mRev; totPend+=r.mPend;
+      return `<tr>
+        <td>${r.insurer}</td>
+        <td>${r.mInc.toLocaleString()}</td>
+        <td>${r.mCl.toLocaleString()}</td>
+        <td>${convBadgeICA(r.mConv)}</td>
+        <td style="font-weight:600">${fmt(r.mRev)}</td>
+        <td>${r.mCl ? Math.round(r.mRev/r.mCl).toLocaleString() : '—'}</td>
+        <td><span class="badge badge-amber">${r.mPend.toLocaleString()}</span></td>
+      </tr>`;
+    }).join('');
+    // Add a note row for the 100% pipeline
+    if (may100w > 0) {
+      mayRows += `<tr style="background:#FFFBEB">
+        <td style="font-style:italic;color:#B7770D">+ Confirmed Pipeline (Vortex ECG)</td>
+        <td>—</td><td>—</td><td>—</td>
+        <td style="font-weight:700;color:#B7770D">${fmt(may100w)}</td>
+        <td>—</td><td>—</td>
+      </tr>`;
+      totRev += may100w;
+    }
+    mayRows += `<tr class="ica-total">
+      <td>TOTAL (incl. pipeline)</td>
+      <td>${totInc.toLocaleString()}</td>
+      <td>${totCl.toLocaleString()}</td>
+      <td>${totInc ? Math.round(totCl/totInc*100)+'%' : '—'}</td>
+      <td>${fmt(totRev)}</td>
+      <td>${totCl ? Math.round((totRev-may100w)/totCl).toLocaleString() : '—'}</td>
+      <td>${totPend.toLocaleString()}</td>
+    </tr>`;
+    mayTbody.innerHTML = mayRows;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ACTIONABLE INSIGHTS — Q2 FY2026
+// ─────────────────────────────────────────────────────────────────
+function renderActionableInsights(d) {
+  const container = document.getElementById('ai-grid-container');
+  if (!container) return;
+
+  const may100w = getMay100Weighted(d);
+  const k = d.kpis || {};
+  const target    = k.q2_target    || 20000000;
+  const aprRev    = k.apr_revenue  || 0;
+  const mayRev    = (k.may_revenue || 0) + may100w;
+  const q2Adj     = aprRev + mayRev;
+  const gapAdj    = Math.max(target - q2Adj, 0);
+  const aprTarget = 6000000, mayTarget = 6500000, junTarget = 7500000;
+
+  // Revenue maps
+  const aprRevMap = {}, q2RevMap = {};
+  (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue||0; });
+  (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue||0; });
+
+  // Order counts
+  function canon(n) {
+    if (n === 'Bajaj Life Insurance Company' ||
+        n === 'Bajaj Allianz Life Insurance Company') return 'Bajaj Life';
+    return n;
+  }
+  const aprOrders = d.orders_monthly?.['Apr 2026'] || {};
+  const mayOrders = d.orders_monthly?.['May 2026'] || {};
+  function sumFor(map, cName) {
+    return Object.entries(map).filter(([k])=>canon(k)===cName).reduce((s,[,v])=>s+(Number(v)||0),0);
+  }
+
+  // Build insurer stats list
+  const q2InsSet = new Set(Object.keys(q2RevMap).filter(k=>!k.includes('Test')&&!k.includes('Cardiotrack')));
+  const stats = [];
+  q2InsSet.forEach(ins => {
+    const aRev  = aprRevMap[ins] || 0;
+    const q2Rev = q2RevMap[ins]  || 0;
+    const mRev  = q2Rev - aRev;
+    const aInc  = sumFor(aprOrders.incoming||{}, ins);
+    const aCl   = sumFor(aprOrders.closed||{},   ins);
+    const mInc  = sumFor(mayOrders.incoming||{}, ins);
+    const mCl   = sumFor(mayOrders.closed||{},   ins);
+    const aConv = aInc ? aCl/aInc : 0;
+    const mConv = mInc ? mCl/mInc : 0;
+    const avgConv= (aInc+mInc) ? (aCl+mCl)/(aInc+mInc) : 0;
+    const totalInc = aInc + mInc;
+    const totalCl  = aCl  + mCl;
+    stats.push({ ins, aRev, mRev, q2Rev, aConv, mConv, avgConv, totalInc, totalCl, aInc, mInc });
+  });
+
+  // 1. Best conversion insurers (both months, min 30 incoming)
+  const bestConv = stats
+    .filter(r => r.totalInc >= 30)
+    .sort((a,b) => b.avgConv - a.avgConv)
+    .slice(0, 4);
+
+  // 2. High revenue insurers (Q2 total)
+  const highRev = [...stats].sort((a,b) => b.q2Rev - a.q2Rev).slice(0, 4);
+
+  // 3. Low conversion / high opportunity (high incoming, low conv, significant revenue potential)
+  const lowConvHigh = stats
+    .filter(r => r.totalInc >= 50 && r.avgConv < 0.50)
+    .sort((a,b) => b.totalInc - a.totalInc)
+    .slice(0, 4);
+
+  // 4. Revenue gap analysis
+  const aprGap  = Math.max(aprTarget - aprRev, 0);
+  const mayGap  = Math.max(mayTarget - mayRev, 0);
+  const junGap  = junTarget;   // June not started
+  const aprPct  = Math.round(aprRev / aprTarget * 100);
+  const mayPct  = Math.round(mayRev / mayTarget * 100);
+
+  // Helper
+  const fmtL2 = v => '₹' + (v/100000).toFixed(1) + 'L';
+  const fmtPct = v => Math.round(v*100) + '%';
+
+  container.innerHTML = `
+    <!-- Card 1: Best Conversion -->
+    <div class="ai-card ai-green">
+      <div class="ai-card-hdr">🏆 Best Conversion Insurers (Q2 Avg)</div>
+      ${bestConv.map(r => `
+        <div class="ai-item">
+          <div>
+            <div class="ai-item-name">${r.ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')}</div>
+            <div class="ai-item-sub">Apr: ${fmtPct(r.aConv)} · May: ${fmtPct(r.mConv)} · ${r.totalInc.toLocaleString()} incoming</div>
+          </div>
+          <div class="ai-item-stat" style="color:#1E8449">${fmtPct(r.avgConv)}</div>
+        </div>`).join('')}
+      <div style="font-size:.72rem;color:#1E8449;margin-top:8px;padding-top:6px;border-top:1px solid #A9DFBF">
+        💡 Focus on maintaining high conversion with Bajaj Life &amp; ICICI Lombard through June.
+      </div>
+    </div>
+
+    <!-- Card 2: High Revenue -->
+    <div class="ai-card ai-blue">
+      <div class="ai-card-hdr">💰 High Revenue Insurers (Q2 Total)</div>
+      ${highRev.map((r,i) => `
+        <div class="ai-item">
+          <div>
+            <div class="ai-item-name">${r.ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')}</div>
+            <div class="ai-item-sub">Apr: ${fmtL2(r.aRev)} · May: ${fmtL2(r.mRev)} · Avg/order: ₹${r.totalCl ? Math.round(r.q2Rev/r.totalCl).toLocaleString() : '—'}</div>
+          </div>
+          <div class="ai-item-stat" style="color:#1A5276">${fmtL2(r.q2Rev)}</div>
+        </div>`).join('')}
+      <div style="font-size:.72rem;color:#1A5276;margin-top:8px;padding-top:6px;border-top:1px solid #AED6F1">
+        💡 Top 3 account for ${Math.round(highRev.slice(0,3).reduce((s,r)=>s+r.q2Rev,0)/q2Adj*100)}% of Q2 revenue — protect these relationships for June.
+      </div>
+    </div>
+
+    <!-- Card 3: Low Conversion / High Opportunity -->
+    <div class="ai-card ai-amber">
+      <div class="ai-card-hdr">⚡ Low Conversion — High Opportunity</div>
+      ${lowConvHigh.length ? lowConvHigh.map(r => `
+        <div class="ai-item">
+          <div>
+            <div class="ai-item-name">${r.ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')}</div>
+            <div class="ai-item-sub">${r.totalInc.toLocaleString()} incoming · ${(r.totalCl).toLocaleString()} closed · potential: ${fmtL2(r.totalInc * (r.aConv ? r.aConv : 0.5) * (r.q2Rev/(r.totalCl||1)))}</div>
+          </div>
+          <div class="ai-item-stat" style="color:#B7770D">${fmtPct(r.avgConv)}</div>
+        </div>`).join('') :
+        '<div style="font-size:.8rem;color:#B7770D">All active insurers are converting at ≥50%</div>'}
+      <div style="font-size:.72rem;color:#B7770D;margin-top:8px;padding-top:6px;border-top:1px solid #F9E79F">
+        💡 Improving Aditya Birla conversion by 10pp could unlock ~${fmtL2(sumFor(aprOrders.incoming||{},'Aditya Birla Sun Life Insurance') * 0.10 * (aprRevMap['Aditya Birla Sun Life Insurance']/(sumFor(aprOrders.closed||{},'Aditya Birla Sun Life Insurance')||1)))} additional revenue in June.
+      </div>
+    </div>
+
+    <!-- Card 4: Revenue Gap vs Target -->
+    <div class="ai-card ai-red">
+      <div class="ai-card-hdr">🎯 Revenue Gap vs Target</div>
+      <div class="ai-item">
+        <div>
+          <div class="ai-item-name">April 2026</div>
+          <div class="ai-item-sub">Target: ${fmtL2(aprTarget)} · Achieved: ${fmtL2(aprRev)}</div>
+        </div>
+        <div class="ai-item-stat" style="color:${aprGap===0?'#1E8449':'#C0392B'}">
+          ${aprGap===0 ? '✅ Hit' : '-'+fmtL2(aprGap)} <span style="font-size:.7rem">(${aprPct}%)</span>
+        </div>
+      </div>
+      <div class="ai-item">
+        <div>
+          <div class="ai-item-name">May 2026</div>
+          <div class="ai-item-sub">Target: ${fmtL2(mayTarget)} · Achieved: ${fmtL2(mayRev)}<span style="font-size:.65rem;color:#B7770D"> +₹${Math.round(may100w/1000)}K pipeline</span></div>
+        </div>
+        <div class="ai-item-stat" style="color:${mayGap===0?'#1E8449':'#C0392B'}">
+          ${mayGap===0 ? '✅ Hit' : '-'+fmtL2(mayGap)} <span style="font-size:.7rem">(${mayPct}%)</span>
+        </div>
+      </div>
+      <div class="ai-item">
+        <div>
+          <div class="ai-item-name">June 2026 (required)</div>
+          <div class="ai-item-sub">To close Q2 gap of ${fmtL2(gapAdj)} on target ${fmtL2(junTarget)}</div>
+        </div>
+        <div class="ai-item-stat" style="color:#C0392B">${fmtL2(Math.max(gapAdj, junTarget))}</div>
+      </div>
+      <div class="ai-item" style="border:none">
+        <div>
+          <div class="ai-item-name">Q2 Total Gap</div>
+          <div class="ai-item-sub">Q2 so far: ${fmtL2(q2Adj)} / Target: ${fmtL2(target)}</div>
+        </div>
+        <div class="ai-item-stat" style="color:#C0392B">${fmtL2(gapAdj)}</div>
+      </div>
+      <div style="font-size:.72rem;color:#922B21;margin-top:8px;padding-top:6px;border-top:1px solid #F1948A">
+        💡 June needs ${fmtL2(gapAdj)} above its ₹75L target to close the Q2 shortfall — requires ${Math.round(gapAdj/junTarget*100+100)}% of June target.
+      </div>
+    </div>
+  `;
 }
 
 function renderActions(d) {
@@ -2165,9 +2740,11 @@ async function loadData() {
     ['Orders table',    () => renderOrdersTable(data)],
     ['Orders KPI row',  () => renderOrdersKPIRow(data)],
     ['Orders trend',    () => renderOrdersTrendChart(data)],
-    ['Pipeline',        () => renderPipeline(data)],
-    ['Actions',         () => renderActions(data)],
-    ['Insurer details', () => renderInsurerDetailsView(data)],
+    ['Pipeline',                () => renderPipeline(data)],
+    ['Insurer conversion',      () => renderInsurerConversionAnalysis(data)],
+    ['Actionable insights',     () => renderActionableInsights(data)],
+    ['Actions',                 () => renderActions(data)],
+    ['Insurer details',         () => renderInsurerDetailsView(data)],
   ];
   const failures = [];
   for (const [label, fn] of renderSteps) {
