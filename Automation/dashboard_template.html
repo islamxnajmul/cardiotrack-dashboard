@@ -659,12 +659,15 @@
       </div>
     </div>
 
-    <!-- Monthly trend chart — incoming + closed orders -->
+    <!-- Monthly trend chart — incoming + closed orders (insurer filter) -->
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
-      <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">
-        📈 Monthly trend — Incoming vs Closed Orders (last 15 months)
+      <p style="font-size:.75rem;color:var(--text2);margin-bottom:10px">
+        📈 Monthly trend — Incoming &amp; Closed Orders (last 15 months)
       </p>
-      <div class="chart-wrap" style="height:280px"><canvas id="ordersTrendChart"></canvas></div>
+      <div id="orders-trend-filters" class="trend-filters" style="margin-bottom:10px">
+        <!-- injected by renderOrdersTrendChart -->
+      </div>
+      <div class="chart-wrap" style="height:300px"><canvas id="ordersTrendChart"></canvas></div>
     </div>
   </div>
 
@@ -1421,40 +1424,144 @@ function renderOrdersTable(d) {
   tbody.innerHTML = rows || `<tr><td colspan="${showTargets?5:5}" style="text-align:center;color:var(--text2);padding:18px">No data for this period</td></tr>`;
 }
 
+// ─────────────────────────────────────────────────────────────────
+// ORDERS TREND CHART — insurer filter (last 15 months)
+// ─────────────────────────────────────────────────────────────────
+let _ordersTrendData   = null;
+let _ordersTrendActive = 'All';
+
+const TREND_MONTHS = [
+  'Mar 2025','Apr 2025','May 2025','Jun 2025','Jul 2025','Aug 2025',
+  'Sep 2025','Oct 2025','Nov 2025','Dec 2025',
+  'Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026'
+];
+
 function renderOrdersTrendChart(d) {
+  _ordersTrendData = d;
+  _buildOrdersTrendFilters(d);
+  _drawOrdersTrendChart(d, _ordersTrendActive);
+}
+
+function _buildOrdersTrendFilters(d) {
+  const wrap = document.getElementById('orders-trend-filters');
+  if (!wrap) return;
+
+  // Compute top insurers by total incoming across 15 months
+  const insTotal = {};
+  TREND_MONTHS.forEach(m => {
+    const mo = (d.orders_monthly || {})[m] || {};
+    Object.entries(mo.incoming || {}).forEach(([ins, v]) => {
+      if (!ins.includes('Test') && !ins.includes('Cardiotrack') && !ins.match(/^\d{10,}/))
+        insTotal[ins] = (insTotal[ins] || 0) + (v || 0);
+    });
+  });
+
+  const topIns = Object.entries(insTotal)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, 10)
+    .map(([k], i) => ({ key: k, color: TREND_COLORS[i % TREND_COLORS.length] }));
+
+  wrap.innerHTML = '';
+
+  const allBtn = document.createElement('span');
+  allBtn.className = 'trend-chip chip-all' + (_ordersTrendActive === 'All' ? ' active' : '');
+  allBtn.textContent = 'All';
+  allBtn.onclick = () => _ordersFilterSelect('All', d);
+  wrap.appendChild(allBtn);
+
+  topIns.forEach(({key, color}) => {
+    const label = key.replace(' Life Insurance','').replace(' Sun Life Insurance','')
+                     .replace(' Insurance Company','').replace(' Life','')
+                     .replace(' Daichi','').replace(' Federal','');
+    const btn = document.createElement('span');
+    btn.className = 'trend-chip' + (_ordersTrendActive === key ? ' active' : '');
+    if (_ordersTrendActive === key) btn.style.background = color;
+    btn.dataset.insurer = key;
+    btn.dataset.color   = color;
+    btn.textContent = label;
+    btn.onclick = () => _ordersFilterSelect(key, d);
+    wrap.appendChild(btn);
+  });
+}
+
+function _ordersFilterSelect(key, d) {
+  _ordersTrendActive = key;
+  const wrap = document.getElementById('orders-trend-filters');
+  if (wrap) {
+    wrap.querySelectorAll('.trend-chip').forEach(btn => {
+      const isActive = (btn.textContent === 'All' && key === 'All') || btn.dataset.insurer === key;
+      btn.classList.toggle('active', isActive);
+      if (isActive && btn.dataset.color) btn.style.background = btn.dataset.color;
+      else if (!isActive && btn.dataset.color) btn.style.background = '';
+    });
+  }
+  _drawOrdersTrendChart(d, key);
+}
+
+function _drawOrdersTrendChart(d, activeKey) {
   destroyChart('ordersTrend');
   const ctx = document.getElementById('ordersTrendChart')?.getContext('2d');
   if (!ctx) return;
-  const series = d.orders_monthly_totals || [];
-  if (!series.length) return;
-  charts['ordersTrend'] = new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels: series.map(r=>r.month),
-      datasets:[
-        {label:'Incoming', data:series.map(r=>r.incoming), backgroundColor:'rgba(46,134,193,.78)', borderRadius:3, order:2},
-        {label:'Closed',   data:series.map(r=>r.closed),   backgroundColor:'rgba(39,174,96,.78)',  borderRadius:3, order:2},
-        {label:'Conversion %', data:series.map(r=>r.incoming?Math.round(r.closed/r.incoming*100):0),
-         type:'line', borderColor:'#E8A838', backgroundColor:'rgba(232,168,56,.15)',
-         tension:0.3, borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#E8A838',
-         yAxisID:'y1', order:1},
+
+  let incData, clData, labels;
+
+  if (activeKey === 'All') {
+    const series = d.orders_monthly_totals || [];
+    labels  = series.map(r => r.month);
+    incData = series.map(r => r.incoming || 0);
+    clData  = series.map(r => r.closed   || 0);
+  } else {
+    labels  = TREND_MONTHS;
+    incData = TREND_MONTHS.map(m => {
+      const mo = (d.orders_monthly || {})[m] || {};
+      return (mo.incoming || {})[activeKey] || 0;
+    });
+    clData = TREND_MONTHS.map(m => {
+      const mo = (d.orders_monthly || {})[m] || {};
+      return (mo.closed || {})[activeKey] || 0;
+    });
+  }
+
+  const convData = incData.map((inc, i) => inc > 0 ? Math.round(clData[i] / inc * 100) : 0);
+
+  const wrap  = document.getElementById('orders-trend-filters');
+  const btn   = wrap ? wrap.querySelector('[data-insurer="'+activeKey+'"]') : null;
+  const color = btn?.dataset.color || '#2E86C1';
+  const clColor = activeKey === 'All' ? 'rgba(39,174,96,.78)'
+                : color.replace(/[\d.]+\)$/, '0.55)').replace('rgb(','rgba(');
+
+  charts['ordersTrend'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'Incoming', data:incData,
+          backgroundColor: activeKey==='All' ? 'rgba(46,134,193,.78)' : color+'cc',
+          borderRadius:3, order:2 },
+        { label:'Closed', data:clData,
+          backgroundColor: activeKey==='All' ? 'rgba(39,174,96,.78)' : color+'66',
+          borderRadius:3, order:2 },
+        { label:'Conv %', data:convData,
+          type:'line', borderColor:'#E8A838', backgroundColor:'rgba(232,168,56,.12)',
+          tension:0.3, borderWidth:2.5, pointRadius:3, pointBackgroundColor:'#E8A838',
+          yAxisID:'y1', order:1 }
       ]
     },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      plugins: {
+        legend:{position:'bottom', labels:{boxWidth:10, font:{size:10}}},
         tooltip:{callbacks:{label:c=>{
-          if (c.dataset.label === 'Conversion %') return `  Conversion: ${c.raw}%`;
-          return `  ${c.dataset.label}: ${c.raw.toLocaleString()}`;
+          if (c.dataset.label==='Conv %') return '  Conversion: '+c.raw+'%';
+          return '  '+c.dataset.label+': '+c.raw.toLocaleString();
         }}}
       },
-      scales:{
-        x:{ticks:{font:{size:10},maxRotation:35},grid:{display:false}},
-        y:{title:{display:true,text:'Order count',font:{size:10}},grid:{color:'#EEF2F5'},beginAtZero:true},
-        y1:{position:'right',title:{display:true,text:'Conversion %',font:{size:10}},grid:{display:false},beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}
+      scales: {
+        x:  {ticks:{font:{size:10}, maxRotation:35}, grid:{display:false}},
+        y:  {title:{display:true, text:'Orders', font:{size:10}}, grid:{color:'#EEF2F5'}, beginAtZero:true},
+        y1: {position:'right', title:{display:true, text:'Conv %', font:{size:10}},
+             grid:{display:false}, beginAtZero:true, max:100, ticks:{callback:v=>v+'%'}}
       }
     }
   });
