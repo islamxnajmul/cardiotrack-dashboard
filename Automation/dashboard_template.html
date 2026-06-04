@@ -107,6 +107,16 @@
   /* ── CHART CONTAINER ── */
   .chart-wrap{position:relative;width:100%}
   .chart-wrap canvas{max-height:260px}
+
+  /* ── TREND INSURER FILTER ── */
+  .trend-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .trend-chip{padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:600;
+    cursor:pointer;border:1.5px solid transparent;transition:.15s;user-select:none}
+  .trend-chip.active{color:#fff;border-color:transparent}
+  .trend-chip:not(.active){background:#F0F4F8;color:var(--text2);border-color:var(--border)}
+  .trend-chip:not(.active):hover{background:#E0E6EC}
+  .trend-chip.chip-all{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .trend-chip.chip-all:not(.active){background:#F0F4F8;color:var(--navy);border-color:var(--navy)}
   .chart-wrap-tall canvas{max-height:320px}
 
   /* ── FOOTER ── */
@@ -498,7 +508,8 @@
   <div class="grid-2">
     <div class="card">
       <div class="card-title">📈 Monthly Revenue Trend (Last 15 Months)</div>
-      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      <div id="trend-filters" class="trend-filters"><!-- injected by renderTrendChart --></div>
+      <div class="chart-wrap" style="max-height:280px"><canvas id="trendChart"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">📅 Q2 Month-Wise: Target vs Achieved</div>
@@ -963,97 +974,139 @@ function renderQ2Tracker(d) {
   if (segG) { segG.style.width = gPct + '%'; segG.textContent = gPct >= 10 ? fmtL(uncovered)      : ''; }
 }
 
+// ─────────────────────────────────────────────────────────────────
+// TREND CHART — insurer filter buttons
+// ─────────────────────────────────────────────────────────────────
+let _trendData   = null;   // cached for re-render on filter change
+let _trendActive = 'All';  // currently selected insurer or 'All'
+
+const TREND_COLORS = [
+  '#1B4F72','#1B7F79','#27AE60','#E8A838','#C0392B',
+  '#8E44AD','#2E86C1','#E67E22','#117A65','#6C3483','#AAB7B8'
+];
+
 function renderTrendChart(d) {
-  destroyChart('trend');
-  const ctx = document.getElementById('trendChart').getContext('2d');
+  _trendData = d;
+  _buildTrendFilters(d);
+  _drawTrendChart(d, _trendActive);
+}
 
-  const labels    = d.monthly_trend.labels || [];
-  const byIns     = d.monthly_trend.by_insurer || {};
-  const COLORS    = [
-    '#1B4F72','#1B7F79','#27AE60','#E8A838','#C0392B',
-    '#8E44AD','#2E86C1','#E67E22','#117A65','#6C3483'
-  ];
+function _buildTrendFilters(d) {
+  const wrap = document.getElementById('trend-filters');
+  if (!wrap) return;
 
-  // Pick top-N insurers by total revenue across the 15 months; rest → "Others"
+  const byIns    = d.monthly_trend.by_insurer || {};
+  const labels   = d.monthly_trend.labels     || [];
+
+  // Compute total revenue per insurer across all 15 months
   const insRevTot = {};
   labels.forEach(m => {
-    Object.entries(byIns[m] || {}).forEach(([ins,v]) => {
-      insRevTot[ins] = (insRevTot[ins]||0) + v;
+    Object.entries(byIns[m] || {}).forEach(([ins, v]) => {
+      if (!ins.includes('Test') && !ins.includes('Cardiotrack'))
+        insRevTot[ins] = (insRevTot[ins] || 0) + v;
     });
   });
-  const TOP_N   = 7;
-  const topIns  = Object.entries(insRevTot)
-    .filter(([k]) => !k.includes('Test') && !k.includes('Cardiotrack'))
+
+  // Top insurers by total + "All"
+  const topIns = Object.entries(insRevTot)
     .sort((a,b) => b[1]-a[1])
-    .slice(0, TOP_N)
-    .map(([k]) => k);
+    .slice(0, 10)
+    .map(([k], i) => ({ key: k, color: TREND_COLORS[i] }));
 
-  // Build one dataset per top insurer + one "Others"
-  const datasets = topIns.map((ins, i) => ({
-    label: ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')
-              .replace(' Insurance Company','').replace(' Life','')
-              .replace(' Daichi','').replace(' Federal',''),
-    data: labels.map(m => Math.round((byIns[m]||{})[ins]||0)),
-    backgroundColor: COLORS[i % COLORS.length],
-    stack: 'rev',
-    borderWidth: 0,
-    borderRadius: 2,
-  }));
+  wrap.innerHTML = '';
 
-  // "Others" = total - sum of top insurers
-  const othersData = labels.map((m, mi) => {
-    const monthMap = byIns[m] || {};
-    const topSum   = topIns.reduce((s,ins) => s+(monthMap[ins]||0), 0);
-    const total    = d.monthly_trend.values[mi] || 0;
-    return Math.max(Math.round(total - topSum), 0);
+  // "All" button
+  const allBtn = document.createElement('span');
+  allBtn.className = 'trend-chip chip-all' + (_trendActive==='All'?' active':'');
+  allBtn.textContent = 'All';
+  allBtn.onclick = () => _trendSelectFilter('All', d);
+  wrap.appendChild(allBtn);
+
+  // Per-insurer buttons
+  topIns.forEach(({key, color}) => {
+    const label = key.replace(' Life Insurance','').replace(' Sun Life Insurance','')
+                     .replace(' Insurance Company','').replace(' Life','')
+                     .replace(' Daichi','').replace(' Federal','');
+    const btn = document.createElement('span');
+    btn.className = 'trend-chip' + (_trendActive===key?' active':'');
+    if (_trendActive===key) btn.style.background = color;
+    btn.style.setProperty('--chip-color', color);
+    btn.textContent = label;
+    btn.dataset.insurer = key;
+    btn.dataset.color   = color;
+    btn.onclick = () => _trendSelectFilter(key, d);
+    wrap.appendChild(btn);
   });
-  if (othersData.some(v => v > 0)) {
-    datasets.push({
-      label: 'Others',
-      data: othersData,
-      backgroundColor: '#AAB7B8',
-      stack: 'rev',
-      borderWidth: 0,
-      borderRadius: 2,
+}
+
+function _trendSelectFilter(key, d) {
+  _trendActive = key;
+  // Update chip styles
+  const wrap = document.getElementById('trend-filters');
+  if (wrap) {
+    wrap.querySelectorAll('.trend-chip').forEach(btn => {
+      const isActive = (btn.textContent === 'All' && key === 'All')
+                    || btn.dataset.insurer === key;
+      btn.classList.toggle('active', isActive);
+      if (isActive && btn.dataset.color) btn.style.background = btn.dataset.color;
+      else if (!isActive && btn.dataset.color) btn.style.background = '';
     });
   }
+  _drawTrendChart(d, key);
+}
 
-  // Overlay total line
-  datasets.push({
-    label: 'Total',
-    data: d.monthly_trend.values.map(v => Math.round(v)),
-    type: 'line',
-    borderColor: '#0D1B2A',
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    pointRadius: 3,
-    pointBackgroundColor: '#0D1B2A',
-    tension: 0.3,
-    stack: undefined,
-    order: -1,
-  });
+function _drawTrendChart(d, activeKey) {
+  destroyChart('trend');
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const labels = d.monthly_trend.labels || [];
+  const byIns  = d.monthly_trend.by_insurer || {};
+
+  let datasets;
+  if (activeKey === 'All') {
+    // Single line — total revenue
+    datasets = [{
+      label: 'Total Revenue',
+      data: d.monthly_trend.values.map(v => Math.round(v)),
+      borderColor: '#1B4F72',
+      backgroundColor: 'rgba(27,79,114,.1)',
+      fill: true,
+      tension: .4,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5,
+    }];
+  } else {
+    // Single insurer line
+    const wrap = document.getElementById('trend-filters');
+    const btn  = wrap ? wrap.querySelector('[data-insurer="'+activeKey+'"]') : null;
+    const color = (btn && btn.dataset.color) || '#1B7F79';
+    datasets = [{
+      label: activeKey.replace(' Life Insurance','').replace(' Sun Life Insurance','')
+                      .replace(' Insurance Company','').replace(' Life',''),
+      data: labels.map(m => Math.round((byIns[m] || {})[activeKey] || 0)),
+      borderColor: color,
+      backgroundColor: color.replace(')',',0.12)').replace('rgb','rgba'),
+      fill: true,
+      tension: .4,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5,
+    }];
+  }
 
   charts['trend'] = new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: { labels: labels.map(shortName), datasets },
     options: {
       responsive: true,
-      interaction: { mode:'index', intersect:false },
+      maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { boxWidth:10, font:{size:10}, padding:8 }
-        },
-        tooltip: {
-          callbacks: {
-            label: c => '  '+c.dataset.label+': '+fmt(c.raw),
-            footer: items => '  Total: '+fmt(items.reduce((s,i)=>s+(i.dataset.label==='Total'?0:i.raw),0))
-          }
-        }
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => '  ' + fmt(c.raw) } }
       },
       scales: {
-        x: { stacked:true, ticks:{font:{size:10}, maxRotation:45}, grid:{display:false} },
-        y: { stacked:true, beginAtZero:true, ticks:{callback:v=>fmtL(v)}, grid:{color:'#EEF2F5'} }
+        y: { beginAtZero:true, ticks:{ callback:v=>fmtL(v) }, grid:{ color:'#EEF2F5' } },
+        x: { ticks:{ font:{size:10}, maxRotation:45 }, grid:{ display:false } }
       }
     }
   });
