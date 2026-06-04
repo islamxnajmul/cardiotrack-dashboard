@@ -1576,6 +1576,23 @@ def build_dashboard_data() -> dict:
         if REVENUE_FILE.exists() else None
     )
 
+    # ── Override may_rev with CSV total when CSV is fresher than billing XLS ──
+    # The Revenue_Generated_Insurer_Wise.csv is emailed daily and represents
+    # the most complete picture of revenue closed in each month.
+    # When the CSV is more recent than the billing XLS (e.g. June 2 CSV vs
+    # May 30 billing XLS), use the CSV total as the authoritative May figure.
+    _billing_mtime = max(
+        (f.stat().st_mtime if f.exists() else 0)
+        for f in [DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2, BILLING_FILE]
+    )
+    _csv_mtime = REVENUE_FILE.stat().st_mtime if REVENUE_FILE.exists() else 0
+    if _may_csv_total > 0 and _csv_mtime > _billing_mtime:
+        log.info(f"  ↻ Using CSV May total ₹{_may_csv_total:,.0f} "
+                 f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b')} "
+                 f"> billing XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b')})")
+        may_rev  = _may_csv_total
+        q2_total = apr_rev + may_rev + jun_rev
+
     return {
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
