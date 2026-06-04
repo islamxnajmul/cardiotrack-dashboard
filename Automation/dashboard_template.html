@@ -966,32 +966,94 @@ function renderQ2Tracker(d) {
 function renderTrendChart(d) {
   destroyChart('trend');
   const ctx = document.getElementById('trendChart').getContext('2d');
-  // monthly_trend.values already has the correct May figure from Python
-  // (CSV override + 100% pipeline both handled server-side)
-  charts['trend'] = new Chart(ctx, {
+
+  const labels    = d.monthly_trend.labels || [];
+  const byIns     = d.monthly_trend.by_insurer || {};
+  const COLORS    = [
+    '#1B4F72','#1B7F79','#27AE60','#E8A838','#C0392B',
+    '#8E44AD','#2E86C1','#E67E22','#117A65','#6C3483'
+  ];
+
+  // Pick top-N insurers by total revenue across the 15 months; rest → "Others"
+  const insRevTot = {};
+  labels.forEach(m => {
+    Object.entries(byIns[m] || {}).forEach(([ins,v]) => {
+      insRevTot[ins] = (insRevTot[ins]||0) + v;
+    });
+  });
+  const TOP_N   = 7;
+  const topIns  = Object.entries(insRevTot)
+    .filter(([k]) => !k.includes('Test') && !k.includes('Cardiotrack'))
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, TOP_N)
+    .map(([k]) => k);
+
+  // Build one dataset per top insurer + one "Others"
+  const datasets = topIns.map((ins, i) => ({
+    label: ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')
+              .replace(' Insurance Company','').replace(' Life','')
+              .replace(' Daichi','').replace(' Federal',''),
+    data: labels.map(m => Math.round((byIns[m]||{})[ins]||0)),
+    backgroundColor: COLORS[i % COLORS.length],
+    stack: 'rev',
+    borderWidth: 0,
+    borderRadius: 2,
+  }));
+
+  // "Others" = total - sum of top insurers
+  const othersData = labels.map((m, mi) => {
+    const monthMap = byIns[m] || {};
+    const topSum   = topIns.reduce((s,ins) => s+(monthMap[ins]||0), 0);
+    const total    = d.monthly_trend.values[mi] || 0;
+    return Math.max(Math.round(total - topSum), 0);
+  });
+  if (othersData.some(v => v > 0)) {
+    datasets.push({
+      label: 'Others',
+      data: othersData,
+      backgroundColor: '#AAB7B8',
+      stack: 'rev',
+      borderWidth: 0,
+      borderRadius: 2,
+    });
+  }
+
+  // Overlay total line
+  datasets.push({
+    label: 'Total',
+    data: d.monthly_trend.values.map(v => Math.round(v)),
     type: 'line',
-    data: {
-      labels: d.monthly_trend.labels.map(shortName),
-      datasets: [{
-        label: 'Revenue (₹)',
-        data: d.monthly_trend.values,
-        borderColor: '#2E86C1',
-        backgroundColor: 'rgba(46,134,193,.12)',
-        fill: true,
-        tension: .4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        borderWidth: 2.5,
-      }]
-    },
+    borderColor: '#0D1B2A',
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    pointRadius: 3,
+    pointBackgroundColor: '#0D1B2A',
+    tension: 0.3,
+    stack: undefined,
+    order: -1,
+  });
+
+  charts['trend'] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels.map(shortName), datasets },
     options: {
       responsive: true,
-      plugins: { legend:{ display:false }, tooltip:{
-        callbacks:{ label: ctx => '  ' + fmt(ctx.raw) }
-      }},
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { boxWidth:10, font:{size:10}, padding:8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: c => '  '+c.dataset.label+': '+fmt(c.raw),
+            footer: items => '  Total: '+fmt(items.reduce((s,i)=>s+(i.dataset.label==='Total'?0:i.raw),0))
+          }
+        }
+      },
       scales: {
-        y:{ beginAtZero: true, ticks:{ callback: v => fmtL(v) }, grid:{ color:'#EEF2F5' }},
-        x:{ ticks:{ font:{size:10}, maxRotation:45 }, grid:{ display:false }},
+        x: { stacked:true, ticks:{font:{size:10}, maxRotation:45}, grid:{display:false} },
+        y: { stacked:true, beginAtZero:true, ticks:{callback:v=>fmtL(v)}, grid:{color:'#EEF2F5'} }
       }
     }
   });

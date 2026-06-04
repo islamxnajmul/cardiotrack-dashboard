@@ -1358,12 +1358,23 @@ def _revenue_kpis_from_detailed(records: list) -> dict:
     jun_rev  = sum(jun_ins.values())
     q2_total = apr_rev + may_rev + jun_rev
 
+    # Per-insurer revenue by month (for trend chart)
+    monthly_by_ins: dict = _dd(lambda: _dd(float))
+    for r in records:
+        monthly_by_ins[r["month"]][r["insurer"]] += r["total"]
+    # Convert nested defaultdicts to plain dicts for JSON serialisation
+    monthly_by_ins_plain = {
+        m: {k: round(v, 2) for k, v in ins_map.items()}
+        for m, ins_map in monthly_by_ins.items()
+    }
+
     return {
         "apr_rev":              round(apr_rev,  2),
         "may_rev":              round(may_rev,  2),
         "jun_rev":              round(jun_rev,  2),
         "q2_total":             round(q2_total, 2),
         "monthly_billing":      {m: round(v, 2) for m, v in monthly.items()},
+        "monthly_by_insurer":   monthly_by_ins_plain,
         "q2_by_insurer":        {k: round(v, 2) for k, v in q2_ins.items()},
         "apr_by_insurer":       {k: round(v, 2) for k, v in apr_ins.items()},
         "may_by_insurer":       {k: round(v, 2) for k, v in may_ins.items()},
@@ -1621,6 +1632,10 @@ def build_dashboard_data() -> dict:
         "monthly_trend": {
             "labels": trend_labels,
             "values": trend_values,
+            "by_insurer": {
+                m: bk["monthly_by_insurer"].get(m, {})
+                for m in trend_labels
+            } if bk and bk.get("monthly_by_insurer") else {},
         },
         # Q2 monthly targets — Apr ₹60L + May ₹65L + Jun ₹75L = ₹2 Cr
         "month_wise": [
