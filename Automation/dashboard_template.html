@@ -1446,13 +1446,31 @@ function _buildOrdersTrendFilters(d) {
   const wrap = document.getElementById('orders-trend-filters');
   if (!wrap) return;
 
-  // Compute top insurers by total incoming across 15 months
+// Canonical insurer name for orders trend chart
+  function _odrCanon(n) {
+    if (n === 'Bajaj Life Insurance Company' || n === 'Bajaj Allianz Life Insurance Company')
+      return 'Bajaj Life';
+    if (n === 'Acko Health - Insurance Limited' || n === 'Acko Health -  Insurance Limited')
+      return 'Acko Health Insurance';
+    if (n === 'TATA AIG Health Insurance Company Ltd.' || n === 'TAIG Health Insurance Company Ltd.')
+      return 'TATA AIG Health';
+    return n;
+  }
+  // Filter: skip test, internal, encoded (M7P4h..., 5MyHaB..., etc.) and Cardiotrack
+  function _odrSkip(n) {
+    return n.includes('Test') || n.includes('Cardiotrack')
+        || /^[A-Z0-9]{8}\s/.test(n)     // encoded names like M7P4hW7Z, 5MyHaB07
+        || /^\d{10,}/.test(n)            // numeric IDs
+        || n.length <= 4;
+  }
+  // Compute top insurers by total incoming across 15 months (canonical names)
   const insTotal = {};
   TREND_MONTHS.forEach(m => {
     const mo = (d.orders_monthly || {})[m] || {};
-    Object.entries(mo.incoming || {}).forEach(([ins, v]) => {
-      if (!ins.includes('Test') && !ins.includes('Cardiotrack') && !ins.match(/^\d{10,}/))
-        insTotal[ins] = (insTotal[ins] || 0) + (v || 0);
+    Object.entries(mo.incoming || {}).forEach(([raw, v]) => {
+      if (_odrSkip(raw)) return;
+      const ins = _odrCanon(raw);
+      insTotal[ins] = (insTotal[ins] || 0) + (v || 0);
     });
   });
 
@@ -1511,14 +1529,28 @@ function _drawOrdersTrendChart(d, activeKey) {
     incData = series.map(r => r.incoming || 0);
     clData  = series.map(r => r.closed   || 0);
   } else {
+    // Sum all raw insurer keys that canonicalise to activeKey
+    function _odrCanon2(n) {
+      if (n === 'Bajaj Life Insurance Company' || n === 'Bajaj Allianz Life Insurance Company')
+        return 'Bajaj Life';
+      if (n === 'Acko Health - Insurance Limited' || n === 'Acko Health -  Insurance Limited')
+        return 'Acko Health Insurance';
+      if (n === 'TATA AIG Health Insurance Company Ltd.' || n === 'TAIG Health Insurance Company Ltd.')
+        return 'TATA AIG Health';
+      return n;
+    }
     labels  = TREND_MONTHS;
     incData = TREND_MONTHS.map(m => {
       const mo = (d.orders_monthly || {})[m] || {};
-      return (mo.incoming || {})[activeKey] || 0;
+      return Object.entries(mo.incoming || {})
+        .filter(([k]) => _odrCanon2(k) === activeKey)
+        .reduce((s,[,v]) => s+(v||0), 0);
     });
     clData = TREND_MONTHS.map(m => {
       const mo = (d.orders_monthly || {})[m] || {};
-      return (mo.closed || {})[activeKey] || 0;
+      return Object.entries(mo.closed || {})
+        .filter(([k]) => _odrCanon2(k) === activeKey)
+        .reduce((s,[,v]) => s+(v||0), 0);
     });
   }
 
