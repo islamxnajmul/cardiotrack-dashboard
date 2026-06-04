@@ -1592,6 +1592,12 @@ def build_dashboard_data() -> dict:
                  f"> billing XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b')})")
         may_rev  = _may_csv_total
         q2_total = apr_rev + may_rev + jun_rev
+        # Keep monthly_billing and trend_values in sync with the override
+        # so the trend chart shows the same May figure as the KPI card
+        monthly_billing['May 2026'] = may_rev
+        if 'May 2026' in trend_labels:
+            idx = trend_labels.index('May 2026')
+            trend_values[idx] = may_rev
 
     return {
         "meta": {

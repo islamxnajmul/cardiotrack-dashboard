@@ -966,19 +966,15 @@ function renderQ2Tracker(d) {
 function renderTrendChart(d) {
   destroyChart('trend');
   const ctx = document.getElementById('trendChart').getContext('2d');
-  // Adjust the last value (May 2026) by adding 100%-probability pipeline
-  const may100w    = getMay100Weighted(d);
-  const trendVals  = (d.monthly_trend.values || []).map((v, i) => {
-    const lbl = (d.monthly_trend.labels || [])[i] || '';
-    return (lbl === 'May 2026' && may100w > 0) ? v + may100w : v;
-  });
+  // monthly_trend.values already has the correct May figure from Python
+  // (CSV override + 100% pipeline both handled server-side)
   charts['trend'] = new Chart(ctx, {
     type: 'line',
     data: {
       labels: d.monthly_trend.labels.map(shortName),
       datasets: [{
         label: 'Revenue (₹)',
-        data: trendVals,
+        data: d.monthly_trend.values,
         borderColor: '#2E86C1',
         backgroundColor: 'rgba(46,134,193,.12)',
         fill: true,
