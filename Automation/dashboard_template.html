@@ -683,6 +683,7 @@
     <div class="tabs">
       <div class="tab active" onclick="switchTab('tab-may','tabs-pipe')">May 2026</div>
       <div class="tab" onclick="switchTab('tab-jun','tabs-pipe')">June 2026</div>
+      <div class="tab" onclick="switchTab('tab-scenario','tabs-pipe')">🎯 June Scenarios</div>
       <div class="tab" onclick="switchTab('tab-chart','tabs-pipe')">Chart View</div>
     </div>
 
@@ -705,6 +706,10 @@
           <tbody id="jun-pipe-tbody"></tbody></table>
         </div>
       </div>
+      <div class="tab-panel" id="tab-scenario">
+        <div id="pipe-scenario-content"><!-- rendered by renderPipelineScenario() --></div>
+      </div>
+
       <div class="tab-panel" id="tab-chart">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="chart-wrap-tall"><canvas id="pipeBarChart"></canvas></div>
@@ -1395,6 +1400,7 @@ function renderPipeline(d) {
   }
 
   document.getElementById('may-pipe-tbody').innerHTML = pipeRows(mayPipe);
+  renderPipelineScenario(d);
   document.getElementById('jun-pipe-tbody').innerHTML = pipeRows(junPipe);
 
   // Pipeline bar chart
@@ -1965,6 +1971,135 @@ function renderReconPanel(d) {
     <td>${fmt(gap)}</td>
     <td>${Math.round(csvTotal/billingTotal*100)}% covered</td>
   </tr>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// JUNE PIPELINE SCENARIO ANALYSIS
+// Compares: Realized | + Weighted Pipeline | + Best Case (100%)
+// ─────────────────────────────────────────────────────────────────
+function renderPipelineScenario(d) {
+  const el = document.getElementById('pipe-scenario-content');
+  if (!el) return;
+
+  const may100w   = getMay100Weighted(d);
+  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + may100w;
+  const target    = d.kpis?.q2_target || 20000000;
+
+  // Separate June pipeline items
+  const pipeline  = d.pipeline || [];
+  const monthOf   = p => p.month || (p.name?.includes('June')?'June':'May');
+  const junPipe   = pipeline.filter(p => monthOf(p)==='June' || monthOf(p)==='Q2');
+
+  const junWeighted  = junPipe.reduce((s,p) => s + (p.weighted||0), 0);
+  const junBestCase  = junPipe.reduce((s,p) => s + (p.delta||0),    0);
+
+  const totalWeighted = realized + junWeighted;
+  const totalBestCase = realized + junBestCase;
+  const gap           = Math.max(target - realized, 0);
+
+  // Pct of target
+  const pR  = Math.round(realized/target*100);
+  const pW  = Math.min(Math.round(totalWeighted/target*100), 100);
+  const pBC = Math.min(Math.round(totalBestCase/target*100), 100);
+
+  // Colour helper
+  function targetColor(pct) {
+    return pct>=100?'#1E8449':pct>=75?'#1B7F79':pct>=50?'#B7770D':'#C0392B';
+  }
+
+  // Per-opportunity table for June
+  const rows = junPipe.map(function(p) {
+    const isProspect = (p.type||'').includes('Prospect');
+    const name = (p.name||'').replace(' - June','').replace(' - May','');
+    const probPct = Math.round((p.probability||0)*100);
+    const delta100 = p.delta||0;
+    const wt = p.weighted||0;
+    const upside = delta100 - wt;
+    return '<tr>'
+      +'<td style="font-weight:600">'+name+'</td>'
+      +'<td><span class="badge '+(isProspect?'badge-blue':'badge-green')+'">'+(isProspect?'Prospect':'Existing')+'</span></td>'
+      +'<td style="font-weight:700;color:#1B4F72">'+fmt(delta100)+'</td>'
+      +'<td>'+probBadge(p.probability||0)+'</td>'
+      +'<td style="font-weight:700;color:#1B7F79">'+fmt(wt)+'</td>'
+      +'<td style="color:'+(upside>0?'#E8A838':'#7F8C8D')+'">'+fmt(upside)+'</td>'
+      +'</tr>';
+  }).join('');
+
+  el.innerHTML = ''
+    // ── Scenario summary strip ──────────────────────────────────
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">'
+
+      // Card 1: Realized
+      +'<div style="background:linear-gradient(135deg,#EAFAF1,#D5F5E3);border:1px solid #A9DFBF;border-radius:10px;padding:14px 16px">'
+        +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1E8449;margin-bottom:6px">✅ Realized (Apr+May)</div>'
+        +'<div style="font-size:1.4rem;font-weight:800;color:#1E8449">'+fmtL(realized)+'</div>'
+        +'<div style="font-size:.72rem;color:#1E8449;margin-top:3px">'+pR+'% of ₹2Cr target</div>'
+        +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
+          +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px"></div>'
+        +'</div>'
+      +'</div>'
+
+      // Card 2: Weighted pipeline
+      +'<div style="background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border:1px solid #F9E79F;border-radius:10px;padding:14px 16px">'
+        +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#B7770D;margin-bottom:6px">📊 Realized + Weighted June</div>'
+        +'<div style="font-size:1.4rem;font-weight:800;color:'+targetColor(pW)+'">'+fmtL(totalWeighted)+'</div>'
+        +'<div style="font-size:.72rem;color:#B7770D;margin-top:3px">'+pW+'% of target &nbsp;·&nbsp; +'+fmtL(junWeighted)+' pipeline</div>'
+        +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
+          +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px;float:left"></div>'
+          +'<div style="width:'+Math.max(pW-pR,0)+'%;height:100%;background:#F39C12;border-radius:3px;float:left"></div>'
+        +'</div>'
+        +'<div style="font-size:.68rem;color:#B7770D;margin-top:6px">'
+          +(totalWeighted>=target
+            ? '<span style="color:#1E8449;font-weight:700">✅ Hits target</span>'
+            : 'Still needs '+fmtL(target-totalWeighted))
+        +'</div>'
+      +'</div>'
+
+      // Card 3: Best case (100%)
+      +'<div style="background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border:1px solid #AED6F1;border-radius:10px;padding:14px 16px">'
+        +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1A5276;margin-bottom:6px">🚀 Best Case (June @ 100%)</div>'
+        +'<div style="font-size:1.4rem;font-weight:800;color:'+targetColor(pBC)+'">'+fmtL(totalBestCase)+'</div>'
+        +'<div style="font-size:.72rem;color:#1A5276;margin-top:3px">'+pBC+'% of target &nbsp;·&nbsp; +'+fmtL(junBestCase)+' if all close</div>'
+        +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
+          +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px;float:left"></div>'
+          +'<div style="width:'+Math.max(pBC-pR,0)+'%;height:100%;background:#2E86C1;border-radius:3px;float:left"></div>'
+        +'</div>'
+        +'<div style="font-size:.68rem;color:#1A5276;margin-top:6px">'
+          +(totalBestCase>=target
+            ? '<span style="color:#1E8449;font-weight:700">✅ Hits target</span>'
+            : 'Still needs '+fmtL(target-totalBestCase)+' beyond June pipeline')
+        +'</div>'
+      +'</div>'
+
+    +'</div>'
+
+    // ── Gap note ────────────────────────────────────────────────
+    +'<div style="background:#F0F4F8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.78rem;color:#2C3E50">'
+      +'<strong>Gap to target remaining:</strong> '+fmtL(gap)
+      +' &nbsp;|&nbsp; <strong>June upside if all close:</strong> '+fmtL(junBestCase)
+      +' &nbsp;|&nbsp; <strong>Probability-adjusted:</strong> '+fmtL(junWeighted)
+      +' &nbsp;|&nbsp; <strong>Shortfall even at 100%:</strong> '
+      +(totalBestCase>=target
+        ? '<span style="color:#1E8449;font-weight:700">None — pipeline covers target</span>'
+        : '<span style="color:#C0392B;font-weight:700">'+fmtL(target-totalBestCase)+'</span>')
+    +'</div>'
+
+    // ── Per-deal table ───────────────────────────────────────────
+    +'<div style="font-size:.75rem;font-weight:700;color:var(--text2);margin-bottom:8px">June Pipeline — Deal by Deal</div>'
+    +'<div style="overflow-x:auto">'
+      +'<table><thead><tr>'
+        +'<th>Opportunity</th><th>Type</th><th>Best Case (₹)</th>'
+        +'<th>Probability</th><th>Weighted (₹)</th><th>Upside vs Weighted (₹)</th>'
+      +'</tr></thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'<tfoot><tr class="total-row">'
+        +'<td>TOTAL</td><td>—</td>'
+        +'<td style="font-weight:800">'+fmt(junBestCase)+'</td>'
+        +'<td>—</td>'
+        +'<td style="font-weight:800">'+fmt(junWeighted)+'</td>'
+        +'<td style="color:#E8A838;font-weight:800">'+fmt(junBestCase-junWeighted)+'</td>'
+      +'</tr></tfoot>'
+    +'</table></div>';
 }
 
 function renderActions(d) {
