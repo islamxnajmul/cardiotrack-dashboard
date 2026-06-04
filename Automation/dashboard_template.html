@@ -153,20 +153,40 @@
   #am-iframe{display:block;width:100%;height:calc(100vh - 110px);border:0}
 
   /* ── ORDER PIPELINE MONTH KPI SUMMARY ── */
-  .oph-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-  .oph-kpi-card{border-radius:8px;padding:12px 14px;text-align:center;border:1px solid transparent}
-  .oph-kpi-card .oph-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
-  .oph-kpi-card .oph-value{font-size:1.6rem;font-weight:800;line-height:1;margin:4px 0 3px}
-  .oph-kpi-card .oph-sub{font-size:.68rem}
+  /* ── ORDER PIPELINE HEALTH KPI ROW ── */
+  .oph-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+  @media(max-width:800px){.oph-kpi-row{grid-template-columns:1fr}}
+  .oph-kpi-card{border-radius:10px;padding:14px 16px;border:1px solid transparent}
+  .oph-kpi-card .oph-label{font-size:.65rem;font-weight:700;text-transform:uppercase;
+    letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .oph-kpi-card .oph-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+  .oph-kpi-card .oph-achieved{font-size:1.5rem;font-weight:800;line-height:1}
+  .oph-kpi-card .oph-needed{font-size:.75rem;font-weight:600;opacity:.75}
+  .oph-kpi-card .oph-gap{font-size:.72rem;font-weight:700;margin-top:4px}
+  .oph-kpi-card .oph-bar{height:7px;background:rgba(0,0,0,.1);border-radius:4px;
+    overflow:hidden;margin-top:8px}
+  .oph-kpi-card .oph-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+  .oph-kpi-card .oph-stats{display:flex;gap:12px;margin-top:8px;padding-top:8px;
+    border-top:1px solid rgba(0,0,0,.08)}
+  .oph-kpi-card .oph-stat{font-size:.68rem;font-weight:600}
+  /* Incoming — blue */
   .oph-kpi-card.oph-inc{background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border-color:#AED6F1}
-  .oph-kpi-card.oph-inc .oph-label,.oph-kpi-card.oph-inc .oph-sub{color:#1A5276}
-  .oph-kpi-card.oph-inc .oph-value{color:#1B4F72}
+  .oph-kpi-card.oph-inc .oph-label{color:#1A5276}
+  .oph-kpi-card.oph-inc .oph-achieved{color:#1B4F72}
+  .oph-kpi-card.oph-inc .oph-needed{color:#1A5276}
+  .oph-kpi-card.oph-inc .oph-bar-fill{background:linear-gradient(90deg,#2E86C1,#5DADE2)}
+  /* Closed — green */
   .oph-kpi-card.oph-cl{background:linear-gradient(135deg,#EAFAF1,#D5F5E3);border-color:#A9DFBF}
-  .oph-kpi-card.oph-cl .oph-label,.oph-kpi-card.oph-cl .oph-sub{color:#1E8449}
-  .oph-kpi-card.oph-cl .oph-value{color:#1E8449}
-  .oph-kpi-card.oph-conv{background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border-color:#F9E79F}
-  .oph-kpi-card.oph-conv .oph-label,.oph-kpi-card.oph-conv .oph-sub{color:#B7770D}
-  .oph-kpi-card.oph-conv .oph-value{color:#B7770D}
+  .oph-kpi-card.oph-cl .oph-label{color:#1E8449}
+  .oph-kpi-card.oph-cl .oph-achieved{color:#1E8449}
+  .oph-kpi-card.oph-cl .oph-needed{color:#1E8449}
+  .oph-kpi-card.oph-cl .oph-bar-fill{background:linear-gradient(90deg,#27AE60,#58D68D)}
+  /* Revenue — purple */
+  .oph-kpi-card.oph-rev{background:linear-gradient(135deg,#F4ECF7,#E8DAEF);border-color:#C39BD3}
+  .oph-kpi-card.oph-rev .oph-label{color:#6C3483}
+  .oph-kpi-card.oph-rev .oph-achieved{color:#6C3483}
+  .oph-kpi-card.oph-rev .oph-needed{color:#6C3483}
+  .oph-kpi-card.oph-rev .oph-bar-fill{background:linear-gradient(90deg,#8E44AD,#BB8FCE)}
 
   /* ── INSURER DETAILS VIEW ── */
   #view-insurer .main{padding:20px 24px;max-width:1600px;margin:0 auto}
@@ -1115,10 +1135,14 @@ function filterOrders(month) {
     renderOrdersChart(ordersData);
     renderOrdersTable(ordersData);
   }
+  // Always show the KPI row container (was hidden on Q2 before)
+  const kpiRow = document.getElementById('orders-kpi-row');
+  if (kpiRow) kpiRow.style.display = '';
 }
 
 function renderOrdersChart(d) {
   ordersData = d;
+  renderOrdersKPIRow(d);
   destroyChart('orders');
   const ctx = document.getElementById('ordersChart').getContext('2d');
   const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
@@ -1965,33 +1989,77 @@ function renderActions(d) {
 function renderOrdersKPIRow(d) {
   const container = document.getElementById('orders-kpi-row');
   if (!container) return;
-  const show = (ordersFilter !== 'Q2');
-  container.style.display = show ? '' : 'none';
-  if (!show) { container.innerHTML = ''; return; }
+  container.style.display = '';
 
   const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
-  const totalInc = sumValues(inc);
-  const totalCl  = sumValues(cl);
-  const conv = totalInc ? Math.round(totalCl / totalInc * 100) : 0;
+  const totalInc  = sumValues(inc);
+  const totalCl   = sumValues(cl);
+  const conv      = totalInc ? Math.round(totalCl / totalInc * 100) : 0;
 
-  container.innerHTML = `
-    <div class="oph-kpi-row">
-      <div class="oph-kpi-card oph-inc">
-        <div class="oph-label">📥 Total Incoming Orders</div>
-        <div class="oph-value">${totalInc.toLocaleString()}</div>
-        <div class="oph-sub">${ordersFilter}</div>
-      </div>
-      <div class="oph-kpi-card oph-cl">
-        <div class="oph-label">✅ Total Closed Orders</div>
-        <div class="oph-value">${totalCl.toLocaleString()}</div>
-        <div class="oph-sub">${ordersFilter}</div>
-      </div>
-      <div class="oph-kpi-card oph-conv">
-        <div class="oph-label">📊 Conversion Rate</div>
-        <div class="oph-value">${conv}%</div>
-        <div class="oph-sub">closed / incoming</div>
-      </div>
-    </div>`;
+  // Required order targets from monthly_targets (May & Jun only)
+  const targets = d.monthly_targets || {};
+  function sumReq(monthKey, field) {
+    const t = targets[monthKey] || {};
+    const byIns = t.by_insurer || {};
+    let tot = t[field] || 0;
+    if (!tot) tot = Object.values(byIns).reduce((s,r) => s + (r[field]||0), 0);
+    return tot;
+  }
+  let reqInc = 0, reqCl = 0;
+  if (ordersFilter === 'Q2') {
+    reqInc = sumReq('May 2026','incoming_required') + sumReq('Jun 2026','incoming_required');
+    reqCl  = sumReq('May 2026','closed_required')   + sumReq('Jun 2026','closed_required');
+  } else if (ordersFilter !== 'Apr 2026') {
+    reqInc = sumReq(ordersFilter,'incoming_required');
+    reqCl  = sumReq(ordersFilter,'closed_required');
+  }
+
+  // Revenue achieved & target
+  const may100w   = getMay100Weighted(d);
+  const monthWise = d.month_wise || [];
+  let revAchieved = 0, revTarget = 0;
+  if (ordersFilter === 'Q2') {
+    revAchieved = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + may100w;
+    revTarget   = d.kpis?.q2_target || 20000000;
+  } else {
+    const mLabel = ordersFilter === 'Apr 2026' ? 'April 2026'
+                 : ordersFilter === 'May 2026' ? 'May 2026'
+                 : 'June 2026';
+    const r = monthWise.find(m => m.month === mLabel) || {};
+    revAchieved = (r.achieved||0) + (ordersFilter === 'May 2026' ? may100w : 0);
+    revTarget   = r.target || 0;
+  }
+
+  // Build one card
+  function ophCard(cls, icon, label, achieved, required, isRev) {
+    const fmt2   = v => isRev ? fmtL(v) : v.toLocaleString('en-IN');
+    const pct    = required > 0 ? Math.min(Math.round(achieved/required*100), 100) : null;
+    const gap    = required > 0 ? Math.max(required - achieved, 0) : null;
+    const gCol   = pct===null?'#5D6D7E':pct>=90?'#1E8449':pct>=60?'#B7770D':'#C0392B';
+    const barW   = pct!==null ? pct : (achieved>0?100:0);
+    const gapTxt = gap!==null && gap>0 ? 'Need '+fmt2(gap)+' more'
+                 : gap===0             ? '✅ Target met' : '';
+    const pctTxt = pct!==null ? pct+'% achieved' : 'No target set';
+    const convTxt = !isRev ? '&nbsp;&nbsp;Conv: '+conv+'%' : '';
+    return '<div class="oph-kpi-card '+cls+'">'
+      +'<div class="oph-label">'+icon+' '+label+'</div>'
+      +'<div class="oph-row">'
+        +'<span class="oph-achieved">'+fmt2(achieved)+'</span>'
+        +(required>0
+          ? '<span class="oph-needed">of '+fmt2(required)+' needed</span>'
+          : '<span class="oph-needed">Actual</span>')
+      +'</div>'
+      +(gapTxt ? '<div class="oph-gap" style="color:'+gCol+'">'+gapTxt+'</div>' : '')
+      +'<div class="oph-bar"><div class="oph-bar-fill" style="width:'+barW+'%"></div></div>'
+      +'<div class="oph-stats"><span class="oph-stat">'+pctTxt+convTxt+'</span></div>'
+      +'</div>';
+  }
+
+  container.innerHTML = '<div class="oph-kpi-row">'
+    + ophCard('oph-inc','📥','Incoming Orders', totalInc, reqInc, false)
+    + ophCard('oph-cl', '✅','Closed Orders',   totalCl,  reqCl,  false)
+    + ophCard('oph-rev','💰','Revenue',          revAchieved, revTarget, true)
+    + '</div>';
 }
 
 // ─────────────────────────────────────────────────────────────────
