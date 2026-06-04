@@ -486,26 +486,6 @@
     </div>
   </div>
 
-  <!-- CUSTOMER REVENUE + PIE -->
-  <div class="grid-21">
-    <div class="card">
-      <div class="section-hdr">👥 Customer-Wise Revenue — April 2026 (Realized)</div>
-      <div style="overflow-x:auto">
-        <table id="apr-table">
-          <thead><tr>
-            <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th>
-            <th>Revenue (₹)</th><th>Avg/Order (₹)</th><th>Share %</th>
-          </tr></thead>
-          <tbody id="apr-tbody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">🥧 April Revenue Share</div>
-      <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
-    </div>
-  </div>
-
   <!-- INSURER-WISE CONVERSION ANALYSIS -->
   <div class="card" style="margin-bottom:20px" id="insurer-conv-card">
     <div class="section-hdr">📊 Insurer-wise Conversion Analysis — Apr &amp; May 2026</div>
@@ -1027,53 +1007,6 @@ function renderMonthChart(d) {
       scales:{
         y:{ticks:{callback:v=>fmtL(v)},grid:{color:'#EEF2F5'}},
         x:{grid:{display:false}}
-      }
-    }
-  });
-}
-
-function renderAprTable(d) {
-  const tbody = document.getElementById('apr-tbody');
-  const total = d.kpis.apr_revenue || 1;
-  let rows = '';
-  d.apr_customers.forEach(c => {
-    const share = (c.revenue / total * 100).toFixed(1);
-    rows += `<tr>
-      <td>${c.insurer}</td>
-      <td>${c.incoming.toLocaleString()}</td>
-      <td>${c.closed_cases.toLocaleString()}</td>
-      <td>${convBadge(c.conversion)}</td>
-      <td style="font-weight:600">${fmt(c.revenue)}</td>
-      <td>${Math.round(c.avg_order).toLocaleString()}</td>
-      <td><span class="badge badge-blue">${share}%</span></td>
-    </tr>`;
-  });
-  rows += `<tr class="total-row">
-    <td>TOTAL</td><td>—</td><td>${d.apr_customers.reduce((s,c)=>s+c.closed_cases,0).toLocaleString()}</td>
-    <td>—</td><td>${fmt(total)}</td><td>—</td><td>100%</td>
-  </tr>`;
-  tbody.innerHTML = rows;
-}
-
-function renderPieChart(d) {
-  destroyChart('pie');
-  const ctx = document.getElementById('pieChart').getContext('2d');
-  const colors = ['#2E86C1','#27AE60','#E8A838','#C0392B','#8E44AD','#1B7F79','#1A5276'];
-  charts['pie'] = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: d.apr_customers.map(c=>shortName(c.insurer)),
-      datasets:[{
-        data: d.apr_customers.map(c=>c.revenue),
-        backgroundColor: colors,
-        borderWidth: 2, borderColor:'#fff'
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{position:'right', labels:{font:{size:10},padding:8}},
-        tooltip:{callbacks:{label:c=>` ${fmt(c.raw)} (${(c.raw/d.kpis.apr_revenue*100).toFixed(1)}%)`}}
       }
     }
   });
@@ -2890,8 +2823,6 @@ async function loadData() {
     ['KPIs',            () => renderKPIs(data)],
     ['Trend chart',     () => renderTrendChart(data)],
     ['Month chart',     () => renderMonthChart(data)],
-    ['April customers', () => renderAprTable(data)],
-    ['Pie chart',       () => renderPieChart(data)],
     ['Order targets',   () => renderOrderTargets(data)],
     ['Orders chart',    () => renderOrdersChart(data)],
     ['Orders table',    () => renderOrdersTable(data)],
