@@ -3056,7 +3056,8 @@ async function loadData() {
     const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
     setText('last-sync', tsLabel);
     setText('footer-time', 'Generated: ' + tsLabel);
-    setText('subtitle', `Apr – Jun 2026  ·  Target: ₹2,00,00,000  ·  As of: ${data.meta?.as_of||''}`);
+    const todayStr = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Kolkata'});
+    setText('subtitle', `Apr – Jun 2026  ·  Target: ₹2,00,00,000  ·  As of: ${todayStr}`);
   } catch(e) {
     logDiag('warn', 'Header-timestamp update failed: ' + e.message);
   }
