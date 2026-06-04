@@ -1513,6 +1513,10 @@ function renderInsurerConversionAnalysis(d) {
   (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue || 0; });
   const q2RevMap = {};
   (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue || 0; });
+  // May revenue per insurer: use CSV breakdown when available (fresher source),
+  // otherwise fall back to Q2_billing - Apr_billing.
+  const mayRevCsvMap = d.may_revenue_csv_by_insurer || {};
+  const hasCsvMayRev = Object.keys(mayRevCsvMap).length > 0;
 
   // ── Order counts from orders_monthly ──
   const aprOrders = d.orders_monthly?.['Apr 2026'] || {};
@@ -1558,7 +1562,10 @@ function renderInsurerConversionAnalysis(d) {
 
     const aRev  = aprRevMap[ins] || 0;
     const q2Rev = q2RevMap[ins]  || 0;
-    const mRev  = Math.max(q2Rev - aRev, 0);
+    // Use CSV per-insurer May revenue when available (matches KPI card source)
+    const mRev  = hasCsvMayRev
+      ? (mayRevCsvMap[ins] || 0)
+      : Math.max(q2Rev - aRev, 0);
 
     rows.push({
       insurer: ins,
@@ -1785,7 +1792,9 @@ function renderActionableInsights(d) {
   q2InsSet.forEach(ins => {
     const aRev  = aprRevMap[ins] || 0;
     const q2Rev = q2RevMap[ins]  || 0;
-    const mRev  = q2Rev - aRev;
+    const mRev  = (d.may_revenue_csv_by_insurer || {})[ins] != null
+      ? (d.may_revenue_csv_by_insurer[ins] || 0)
+      : Math.max(q2Rev - aRev, 0);
     const aInc  = sumFor(aprOrders.incoming||{}, ins);
     const aCl   = sumFor(aprOrders.closed||{},   ins);
     const mInc  = sumFor(mayOrders.incoming||{}, ins);
