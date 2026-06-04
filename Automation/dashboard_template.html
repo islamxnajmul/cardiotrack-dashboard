@@ -1791,23 +1791,13 @@ function renderInsurerConversionAnalysis(d) {
         <td><span class="badge badge-amber">${r.mPend.toLocaleString()}</span></td>
       </tr>`;
     }).join('');
-    // Add a note row for the 100% pipeline
-    if (may100w > 0) {
-      mayRows += `<tr style="background:#FFFBEB">
-        <td style="font-style:italic;color:#B7770D">+ Confirmed Pipeline (Vortex ECG)</td>
-        <td>—</td><td>—</td><td>—</td>
-        <td style="font-weight:700;color:#B7770D">${fmt(may100w)}</td>
-        <td>—</td><td>—</td>
-      </tr>`;
-      totRev += may100w;
-    }
     mayRows += `<tr class="ica-total">
-      <td>TOTAL (incl. pipeline)</td>
+      <td>TOTAL</td>
       <td>${totInc.toLocaleString()}</td>
       <td>${totCl.toLocaleString()}</td>
       <td>${totInc ? Math.round(totCl/totInc*100)+'%' : '—'}</td>
       <td>${fmt(totRev)}</td>
-      <td>${totCl ? Math.round((totRev-may100w)/totCl).toLocaleString() : '—'}</td>
+      <td>${totCl ? Math.round(totRev/totCl).toLocaleString() : '—'}</td>
       <td>${totPend.toLocaleString()}</td>
     </tr>`;
     mayTbody.innerHTML = mayRows;
