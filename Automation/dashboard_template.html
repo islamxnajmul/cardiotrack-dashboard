@@ -1699,7 +1699,7 @@ function renderInsurerConversionAnalysis(d) {
     const totMInc = rows.reduce((s,r)=>s+r.mInc,0);
     const totMCl  = rows.reduce((s,r)=>s+r.mCl,0);
     const totMRevBase = rows.reduce((s,r)=>s+r.mRev,0);
-    const totMRev = totMRevBase + may100w;  // add confirmed pipeline to May total
+    const totMRev = totMRevBase;
     const totMPend= rows.reduce((s,r)=>s+r.mPend,0);
 
     let compareRows = rows.map(r => {
@@ -1737,7 +1737,7 @@ function renderInsurerConversionAnalysis(d) {
       <td>${totMInc.toLocaleString()}</td>
       <td>${totMCl.toLocaleString()}</td>
       <td>${totMCl && totMInc ? Math.round(totMCl/totMInc*100)+'%' : '—'}</td>
-      <td>${fmt(totMRev)}<span style="font-size:.62rem;opacity:.75;display:block">+₹${Math.round(may100w/1000)}K pipeline</span></td>
+      <td style="font-weight:600">${fmt(totMRev)}</td>
       <td>${totMCl ? Math.round(totMRevBase/totMCl).toLocaleString() : '—'}</td>
       <td>${totMPend.toLocaleString()}</td>
       <td>${deltaRevChip(totARev, totMRev)}</td>
