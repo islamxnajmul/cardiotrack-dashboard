@@ -884,23 +884,21 @@ function switchTab(id, groupId) {
 // ─────────────────────────────────────────────────────────────────
 function renderKPIs(d) {
   const k = d.kpis;
-  const may100w     = getMay100Weighted(d);
-  const mayAdj      = (k.may_revenue || 0) + may100w;
-  const q2Adj       = (k.apr_revenue || 0) + mayAdj;
-  const gapAdj      = Math.max((k.q2_target || 20000000) - q2Adj, 0);
-  const pctAdj      = k.q2_target ? Math.round(q2Adj / k.q2_target * 100 * 10) / 10 : 0;
+  const mayRev_ = k.may_revenue || 0;
+  const aprRev_ = k.apr_revenue || 0;
+  const q2Adj   = aprRev_ + mayRev_;
+  const gapAdj  = Math.max((k.q2_target || 20000000) - q2Adj, 0);
+  const pctAdj  = k.q2_target ? Math.round(q2Adj / k.q2_target * 100 * 10) / 10 : 0;
 
   document.getElementById('kpi-target').textContent = fmtL(k.q2_target);
-  document.getElementById('kpi-apr').textContent    = fmtL(k.apr_revenue);
-  document.getElementById('kpi-may').textContent    = fmtL(mayAdj);
+  document.getElementById('kpi-apr').textContent    = fmtL(aprRev_);
+  document.getElementById('kpi-may').textContent    = fmtL(mayRev_);
   document.getElementById('kpi-q2').textContent     = fmtL(q2Adj);
   document.getElementById('kpi-q2-pct').textContent = pctAdj + '% of target';
   document.getElementById('kpi-gap').textContent    = fmtL(gapAdj);
 
-  // Update KPI sublabels
   const maySubEl = document.querySelector('.kpi-may .sub');
-  if (maySubEl && may100w > 0)
-    maySubEl.textContent = 'MTD + ₹' + Math.round(may100w/1000) + 'K confirmed';
+  if (maySubEl) maySubEl.textContent = 'Month Actual';
 
   renderQ2Tracker(d);
 }
@@ -918,15 +916,9 @@ function renderKPIs(d) {
 function renderQ2Tracker(d) {
   const k        = d.kpis || {};
   const target   = k.q2_target || 20000000;
-  // Realized = Apr actual + May actual + May 100%-probability pipeline
-  const may100w  = getMay100Weighted(d);
-  const realized = (k.apr_revenue || 0) + (k.may_revenue || 0) + may100w;
-  // Weighted pipeline = existing + prospect (May + June), EXCLUDING already-counted 100% items
-  const pipeline = Math.max(
-    ((d.pipeline_by_type?.existing_weighted || 0) +
-     (d.pipeline_by_type?.prospect_weighted || 0)) - may100w,
-    0
-  );
+  const realized = (k.apr_revenue || 0) + (k.may_revenue || 0);
+  const pipeline = (d.pipeline_by_type?.existing_weighted || 0) +
+                   (d.pipeline_by_type?.prospect_weighted || 0);
   const gap      = Math.max(target - realized, 0);
   // Cap the visualised pipeline at the size of the remaining gap so the bar
   // never overflows past 100% of the target.
@@ -1115,12 +1107,7 @@ function _drawTrendChart(d, activeKey) {
 function renderMonthChart(d) {
   destroyChart('month');
   const ctx = document.getElementById('monthChart').getContext('2d');
-  const may100w = getMay100Weighted(d);
-  // Adjust May achieved by adding 100%-probability pipeline
-  const achievedAdj = d.month_wise.map(r => {
-    if (r.month === 'May 2026' && may100w > 0) return (r.achieved || 0) + may100w;
-    return r.achieved || 0;
-  });
+  const achievedAdj = d.month_wise.map(r => r.achieved || 0);
   const pctAdj = d.month_wise.map((r, i) =>
     r.target ? (achievedAdj[i] / r.target * 100) : 0
   );
@@ -1580,17 +1567,17 @@ function icaTab(id) {
 }
 
 function renderInsurerConversionAnalysis(d) {
-  const may100w = getMay100Weighted(d);
-
   // ── Revenue maps (canonical insurer names) ──
   const aprRevMap = {};
   (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue || 0; });
   const q2RevMap = {};
   (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue || 0; });
-  // May revenue per insurer: always use Q2_billing - Apr_billing
-  // (same source as the monthly trend chart — keeps them consistent)
-  const mayRevCsvMap = {};   // CSV map kept for reconciliation panel only
-  const hasCsvMayRev = false;
+  // Use CSV per-insurer May data when it matches d.kpis.may_revenue (same source)
+  const mayRevCsvMap  = d.may_revenue_csv_by_insurer || {};
+  const mayRevCsvTot  = d.may_revenue_csv_total || 0;
+  const mayKpiRev     = d.kpis?.may_revenue || 0;
+  const hasCsvMayRev  = mayRevCsvTot > 0 && mayKpiRev > 0
+    && Math.abs(mayRevCsvTot - mayKpiRev) / mayKpiRev < 0.01;
 
   // ── Order counts from orders_monthly ──
   const aprOrders = d.orders_monthly?.['Apr 2026'] || {};
@@ -1834,12 +1821,14 @@ function renderActionableInsights(d) {
   const container = document.getElementById('ai-grid-container');
   if (!container) return;
 
-  const may100w = getMay100Weighted(d);
   const k = d.kpis || {};
   const target    = k.q2_target    || 20000000;
   const aprRev    = k.apr_revenue  || 0;
-  const mayRev    = (k.may_revenue || 0) + may100w;
+  const mayRev    = k.may_revenue  || 0;
   const q2Adj     = aprRev + mayRev;
+  const mayRevCsvTot_ = d.may_revenue_csv_total || 0;
+  const hasCsvMayRev_ = mayRevCsvTot_ > 0 && mayRev > 0
+    && Math.abs(mayRevCsvTot_ - mayRev) / mayRev < 0.01;
   const gapAdj    = Math.max(target - q2Adj, 0);
   const aprTarget = 6000000, mayTarget = 6500000, junTarget = 7500000;
 
@@ -1866,8 +1855,9 @@ function renderActionableInsights(d) {
   q2InsSet.forEach(ins => {
     const aRev  = aprRevMap[ins] || 0;
     const q2Rev = q2RevMap[ins]  || 0;
-    // Use billing XLS May = Q2 - Apr (consistent with trend chart)
-    const mRev  = Math.max(q2Rev - aRev, 0);
+    // Use CSV per-insurer May when consistent with KPI, else billing Q2-Apr
+    const mRev  = hasCsvMayRev_ ? ((d.may_revenue_csv_by_insurer||{})[ins]||0)
+                                 : Math.max(q2Rev - aRev, 0);
     const aInc  = sumFor(aprOrders.incoming||{}, ins);
     const aCl   = sumFor(aprOrders.closed||{},   ins);
     const mInc  = sumFor(mayOrders.incoming||{}, ins);
@@ -2091,8 +2081,7 @@ function renderPipelineScenario(d) {
   const el = document.getElementById('pipe-scenario-content');
   if (!el) return;
 
-  const may100w   = getMay100Weighted(d);
-  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + may100w;
+  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0);
   const target    = d.kpis?.q2_target || 20000000;
 
   // Separate June pipeline items
@@ -2260,18 +2249,17 @@ function renderOrdersKPIRow(d) {
   }
 
   // Revenue achieved & target
-  const may100w   = getMay100Weighted(d);
   const monthWise = d.month_wise || [];
   let revAchieved = 0, revTarget = 0;
   if (ordersFilter === 'Q2') {
-    revAchieved = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + may100w;
+    revAchieved = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0);
     revTarget   = d.kpis?.q2_target || 20000000;
   } else {
     const mLabel = ordersFilter === 'Apr 2026' ? 'April 2026'
                  : ordersFilter === 'May 2026' ? 'May 2026'
                  : 'June 2026';
     const r = monthWise.find(m => m.month === mLabel) || {};
-    revAchieved = (r.achieved||0) + (ordersFilter === 'May 2026' ? may100w : 0);
+    revAchieved = r.achieved || 0;
     revTarget   = r.target || 0;
   }
 
@@ -2499,7 +2487,7 @@ function renderInsurerDetailsView(d) {
   // Grand totals for the summary KPI strip (use canonical maps to avoid double-counting)
   const grandQ2       = Object.values(canonQ2RevMap).reduce((s,v)=>s+v,0);
   const grandApr      = Object.values(canonAprRevMap).reduce((s,v)=>s+v,0);
-  const grandMay      = Math.max(grandQ2 - grandApr, 0);
+  const grandMay = d.kpis?.may_revenue || Math.max(grandQ2 - grandApr, 0);
   // For lifetime total: prefer actual billing amounts (from billing XLS) over
   // closed-case estimates; fall back to estimate for any insurer not in billing data.
   // Include both INSURER_DETAILS entries AND any "Other Historical" insurers.
