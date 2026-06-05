@@ -2271,7 +2271,7 @@ function renderPipelineScenario(d) {
       +'<div style="background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border:1px solid #F9E79F;border-radius:10px;padding:14px 16px">'
         +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#B7770D;margin-bottom:6px">📊 Realized + Weighted June</div>'
         +'<div style="font-size:1.4rem;font-weight:800;color:'+targetColor(pW)+'">'+fmtL(totalWeighted)+'</div>'
-        +'<div style="font-size:.72rem;color:#B7770D;margin-top:3px">'+pW+'% of target &nbsp;·&nbsp; +'+fmtL(junWeighted)+' pipeline</div>'
+        +'<div style="font-size:.72rem;color:#B7770D;margin-top:3px">'+pW+'% of target &nbsp;·&nbsp; Pipeline+₹50L existing</div>'
         +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
           +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px;float:left"></div>'
           +'<div style="width:'+Math.max(pW-pR,0)+'%;height:100%;background:#F39C12;border-radius:3px;float:left"></div>'
@@ -2287,7 +2287,7 @@ function renderPipelineScenario(d) {
       +'<div style="background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border:1px solid #AED6F1;border-radius:10px;padding:14px 16px">'
         +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1A5276;margin-bottom:6px">🚀 Best Case (June @ 100%)</div>'
         +'<div style="font-size:1.4rem;font-weight:800;color:'+targetColor(pBC)+'">'+fmtL(totalBestCase)+'</div>'
-        +'<div style="font-size:.72rem;color:#1A5276;margin-top:3px">'+pBC+'% of target &nbsp;·&nbsp; +'+fmtL(junBestCase)+' if all close</div>'
+        +'<div style="font-size:.72rem;color:#1A5276;margin-top:3px">'+pBC+'% of target &nbsp;·&nbsp; All deals+₹50L existing</div>'
         +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
           +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px;float:left"></div>'
           +'<div style="width:'+Math.max(pBC-pR,0)+'%;height:100%;background:#2E86C1;border-radius:3px;float:left"></div>'
@@ -2300,6 +2300,21 @@ function renderPipelineScenario(d) {
       +'</div>'
 
     +'</div>'
+
+    // ── Existing business assumption widget ─────────────────────────
+    +'<div style="background:linear-gradient(135deg,#E8F8F5,#D1F2EB);border:1px solid #A9DFBF;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px">'
+    +'<div style="font-size:1.6rem">🏢</div>'
+    +'<div style="flex:1">'
+      +'<div style="font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1E8449;margin-bottom:3px">Existing Business Assumption — June 2026</div>'
+      +'<div style="font-size:1.15rem;font-weight:800;color:#1B7F79">+₹50L</div>'
+      +'<div style="font-size:.72rem;color:#1A7A5E;margin-top:3px">Consistent with Apr & May run-rate · Added to Weighted and Best Case scenarios</div>'
+    +'</div>'
+    +'<div style="text-align:right;min-width:100px">'
+      +'<div style="font-size:.65rem;color:#1E8449;font-weight:700;text-transform:uppercase;margin-bottom:3px">June pipeline</div>'
+      +'<div style="font-size:.72rem;color:#B7770D">Wtd: '+fmtL(junWeighted)+'</div>'
+      +'<div style="font-size:.72rem;color:#2E86C1">Best: '+fmtL(junBestCase)+'</div>'
+    +'</div>'
+  +'</div>'
 
     // ── Gap note ────────────────────────────────────────────────
     +'<div style="background:#F0F4F8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.78rem;color:#2C3E50">'
