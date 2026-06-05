@@ -2221,8 +2221,11 @@ function renderPipelineScenario(d) {
   const junWeighted  = junPipe.reduce((s,p) => s + (p.weighted||0), 0);
   const junBestCase  = junPipe.reduce((s,p) => s + (p.delta||0),    0);
 
-  const totalWeighted = realized + junWeighted;
-  const totalBestCase = realized + junBestCase;
+  // ₹50L existing business assumption for June (consistent with Apr & May run-rate)
+  const JUN_EXISTING_BIZ = 5000000;
+
+  const totalWeighted = realized + JUN_EXISTING_BIZ + junWeighted;
+  const totalBestCase = realized + JUN_EXISTING_BIZ + junBestCase;
   const gap           = Math.max(target - realized, 0);
 
   // Pct of target
@@ -2271,7 +2274,7 @@ function renderPipelineScenario(d) {
       +'<div style="background:linear-gradient(135deg,#FEF9E7,#FDEBD0);border:1px solid #F9E79F;border-radius:10px;padding:14px 16px">'
         +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#B7770D;margin-bottom:6px">📊 Realized + Weighted June</div>'
         +'<div style="font-size:1.4rem;font-weight:800;color:'+targetColor(pW)+'">'+fmtL(totalWeighted)+'</div>'
-        +'<div style="font-size:.72rem;color:#B7770D;margin-top:3px">'+pW+'% of target &nbsp;·&nbsp; Pipeline+₹50L existing</div>'
+        +'<div style="font-size:.72rem;color:#B7770D;margin-top:3px">'+pW+'% · ₹50L existing + '+fmtL(junWeighted)+' pipeline</div>'
         +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
           +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px;float:left"></div>'
           +'<div style="width:'+Math.max(pW-pR,0)+'%;height:100%;background:#F39C12;border-radius:3px;float:left"></div>'
@@ -2287,7 +2290,7 @@ function renderPipelineScenario(d) {
       +'<div style="background:linear-gradient(135deg,#EBF5FB,#D6EAF8);border:1px solid #AED6F1;border-radius:10px;padding:14px 16px">'
         +'<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1A5276;margin-bottom:6px">🚀 Best Case (June @ 100%)</div>'
         +'<div style="font-size:1.4rem;font-weight:800;color:'+targetColor(pBC)+'">'+fmtL(totalBestCase)+'</div>'
-        +'<div style="font-size:.72rem;color:#1A5276;margin-top:3px">'+pBC+'% of target &nbsp;·&nbsp; All deals+₹50L existing</div>'
+        +'<div style="font-size:.72rem;color:#1A5276;margin-top:3px">'+pBC+'% · ₹50L existing + '+fmtL(junBestCase)+' if all close</div>'
         +'<div style="background:rgba(0,0,0,.08);height:6px;border-radius:3px;margin-top:8px;overflow:hidden">'
           +'<div style="width:'+pR+'%;height:100%;background:#27AE60;border-radius:3px;float:left"></div>'
           +'<div style="width:'+Math.max(pBC-pR,0)+'%;height:100%;background:#2E86C1;border-radius:3px;float:left"></div>'
@@ -2319,7 +2322,7 @@ function renderPipelineScenario(d) {
     // ── Gap note ────────────────────────────────────────────────
     +'<div style="background:#F0F4F8;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.78rem;color:#2C3E50">'
       +'<strong>Gap to target remaining:</strong> '+fmtL(gap)
-      +' &nbsp;|&nbsp; <strong>June upside if all close:</strong> '+fmtL(junBestCase)
+      +' &nbsp;|&nbsp; <strong>June upside if all close:</strong> '+fmtL(junBestCase+JUN_EXISTING_BIZ)
       +' &nbsp;|&nbsp; <strong>Probability-adjusted:</strong> '+fmtL(junWeighted)
       +' &nbsp;|&nbsp; <strong>Shortfall even at 100%:</strong> '
       +(totalBestCase>=target
