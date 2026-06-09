@@ -430,7 +430,7 @@
 <div class="main" id="main-content" style="display:none">
 
   <!-- KPI CARDS -->
-  <div class="grid-5">
+  <div class="grid-5" style="grid-template-columns:repeat(6,1fr)">
     <div class="kpi kpi-target">
       <div class="label">Q2 Target</div>
       <div class="value" id="kpi-target">—</div>
@@ -442,9 +442,9 @@
       <div class="sub">✅ 100% Realized</div>
     </div>
     <div class="kpi kpi-may">
-      <div class="label">May (To date)</div>
+      <div class="label">May Achieved</div>
       <div class="value" id="kpi-may">—</div>
-      <div class="sub">Month to Date</div>
+      <div class="sub">Month Final ✅</div>
     </div>
     <div class="kpi kpi-q2">
       <div class="label">Q2 So Far</div>
@@ -455,6 +455,11 @@
       <div class="label">Gap to Target</div>
       <div class="value" id="kpi-gap">—</div>
       <div class="sub">Remaining</div>
+    </div>
+    <div class="kpi" style="background:linear-gradient(135deg,#6C3483,#4A235A)">
+      <div class="label">June 2026 Revenue To-Date</div>
+      <div class="value" id="kpi-jun">₹0</div>
+      <div class="sub" id="kpi-jun-sub">Month in progress</div>
     </div>
   </div>
 
@@ -519,17 +524,18 @@
 
   <!-- INSURER-WISE CONVERSION ANALYSIS -->
   <div class="card" style="margin-bottom:20px" id="insurer-conv-card">
-    <div class="section-hdr">📊 Insurer-wise Conversion Analysis — Apr &amp; May 2026</div>
+    <div class="section-hdr">📊 Insurer-wise Conversion Analysis — Apr · May · Jun 2026</div>
     <p style="font-size:.72rem;color:var(--text2);margin-bottom:12px">
       Month-wise breakdown: Incoming Orders · Closed · Conversion % · Revenue · Avg/Order · Pending.
-      May revenue includes <strong>₹48K confirmed pipeline (100% probability)</strong> added to actual billing.
+      May revenue final. Jun 2026 shows pipeline targets (revenue to-date updates on next sync).
     </p>
 
     <!-- Tab switcher -->
     <div class="ica-tabs">
-      <button class="ica-tab active" onclick="icaTab('ica-compare')">📋 Side-by-Side (Apr vs May)</button>
+      <button class="ica-tab active" onclick="icaTab('ica-compare')">📋 Apr vs May</button>
       <button class="ica-tab" onclick="icaTab('ica-apr')">📅 April 2026</button>
       <button class="ica-tab" onclick="icaTab('ica-may')">📅 May 2026</button>
+      <button class="ica-tab" onclick="icaTab('ica-jun')">🟣 June 2026</button>
     </div>
 
     <div id="ica-compare" class="ica-panel active">
@@ -564,6 +570,57 @@
           <tbody id="ica-may-tbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <div id="ica-jun" class="ica-panel">
+      <div style="padding:10px 0 12px;font-size:.75rem;color:#6C3483;font-weight:600;background:#F5F3FF;border-radius:6px;padding:8px 12px;margin-bottom:12px">
+        🟣 June 2026 is in progress — revenue to-date: <span id="ica-jun-rev-banner">₹0 (data pending)</span>. Table shows insurer targets &amp; weighted pipeline from the Q2 Plan.
+      </div>
+      <div style="overflow-x:auto">
+        <table class="ica-table" id="ica-jun-table">
+          <thead><tr>
+            <th>Insurer</th>
+            <th>Incoming<br><span style="font-size:.62rem;font-weight:400;opacity:.8">actual</span></th>
+            <th>Closed<br><span style="font-size:.62rem;font-weight:400;opacity:.8">actual</span></th>
+            <th>Conv %</th>
+            <th>Revenue To-Date</th>
+            <th>Weighted Pipeline</th>
+            <th>Pending Pipeline</th>
+            <th>Jun Target</th>
+            <th>Target vs Achieved</th>
+          </tr></thead>
+          <tbody id="ica-jun-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- JUNE 2026 INSURER LEADERBOARD -->
+  <div class="card" style="margin-bottom:20px" id="jun-leaderboard-card">
+    <div class="section-hdr">🟣 June 2026 — Insurer Pipeline Leaderboard</div>
+    <p style="font-size:.72rem;color:var(--text2);margin-bottom:14px">
+      Sorted by weighted pipeline value. Revenue to-date updates on each sync. Targets from Q2 Plan sheet.
+    </p>
+    <!-- Rank cards row -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px" id="jun-rank-cards">
+      <!-- injected by renderJuneLeaderboard(d) -->
+    </div>
+    <!-- Full insurer metrics table -->
+    <div style="overflow-x:auto">
+      <table class="ica-table" id="jun-leaderboard-table">
+        <thead><tr>
+          <th>Insurer / Prospect</th>
+          <th>Type</th>
+          <th>Jun Target (₹)</th>
+          <th>Weighted Pipeline (₹)</th>
+          <th>Pending (₹)</th>
+          <th>Probability</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody id="jun-leaderboard-tbody">
+          <!-- injected -->
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -900,6 +957,16 @@ function renderKPIs(d) {
   document.getElementById('kpi-q2-pct').textContent = pctAdj + '% of target';
   document.getElementById('kpi-gap').textContent    = fmtL(gapAdj);
 
+  // June Revenue To-Date KPI
+  const junRev = d.kpis?.jun_revenue || 0;
+  const junRevEl  = document.getElementById('kpi-jun');
+  const junSubEl  = document.getElementById('kpi-jun-sub');
+  const junTarget = (d.month_wise || []).find(m => m.month === 'June 2026')?.target || 7500000;
+  if (junRevEl) junRevEl.textContent = junRev > 0 ? fmtL(junRev) : '₹0';
+  if (junSubEl) junSubEl.textContent = junRev > 0
+    ? Math.round(junRev / junTarget * 100) + '% of ' + fmtL(junTarget) + ' target'
+    : 'Target: ' + fmtL(junTarget);
+
   const maySubEl = document.querySelector('.kpi-may .sub');
   if (maySubEl) maySubEl.textContent = 'Month Actual';
 
@@ -1114,6 +1181,15 @@ function renderMonthChart(d) {
   const pctAdj = d.month_wise.map((r, i) =>
     r.target ? (achievedAdj[i] / r.target * 100) : 0
   );
+
+  // Weighted pipeline per month (Jun only, for the "in progress" bar)
+  const junPipe = (d.pipeline || []).filter(p =>
+    p.month === 'June' || p.name?.includes('- June') || p.name?.includes('-June'));
+  const junWtd = junPipe.reduce((s,p) => s + (p.weighted||0), 0);
+  const weightedData = d.month_wise.map(r =>
+    r.month === 'June 2026' ? junWtd : null
+  );
+
   charts['month'] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1124,12 +1200,18 @@ function renderMonthChart(d) {
         { label:'Achieved', data: achievedAdj,
           backgroundColor: pctAdj.map(p =>
             p>=75?'rgba(39,174,96,.8)':p>=40?'rgba(232,168,56,.8)':'rgba(192,57,43,.8)'),
-          borderRadius: 4 }
+          borderRadius: 4 },
+        { label:'Weighted Pipeline (Jun)', data: weightedData,
+          backgroundColor:'rgba(243,156,18,.55)', borderColor:'#F39C12', borderWidth:1.5,
+          borderRadius: 4, borderDash:[4,4] }
       ]
     },
     options:{
       responsive:true,
-      plugins:{ tooltip:{callbacks:{label:c=>'  '+fmt(c.raw)}} },
+      plugins:{
+        tooltip:{ callbacks:{label:c=> c.raw != null ? '  '+fmt(c.raw) : ''} },
+        legend:{ display:true, position:'bottom', labels:{font:{size:10}, boxWidth:12} }
+      },
       scales:{
         y:{ticks:{callback:v=>fmtL(v)},grid:{color:'#EEF2F5'}},
         x:{grid:{display:false}}
@@ -1697,7 +1779,7 @@ function renderPipeline(d) {
 // ─────────────────────────────────────────────────────────────────
 function icaTab(id) {
   document.querySelectorAll('.ica-tab').forEach((t,i) => {
-    const panels = ['ica-compare','ica-apr','ica-may'];
+    const panels = ['ica-compare','ica-apr','ica-may','ica-jun'];
     t.classList.toggle('active', panels[i] === id);
   });
   document.querySelectorAll('.ica-panel').forEach(p => {
@@ -1941,11 +2023,154 @@ function renderInsurerConversionAnalysis(d) {
     </tr>`;
     mayTbody.innerHTML = mayRows;
   }
+
+  // ── 4. June 2026 table (targets + pipeline, actuals when available) ──
+  const junTbody = document.getElementById('ica-jun-tbody');
+  if (junTbody) {
+    const junPipe = (d.pipeline || []).filter(p => p.month === 'June' || p.name?.includes('- June'));
+    const junOrders = d.orders_monthly?.['Jun 2026'] || {};
+    const junInc = junOrders.incoming || {};
+    const junCl  = junOrders.closed   || {};
+    const junRevTotal = d.kpis?.jun_revenue || 0;
+
+    // Banner
+    const bannerEl = document.getElementById('ica-jun-rev-banner');
+    if (bannerEl) bannerEl.textContent = junRevTotal > 0 ? fmtL(junRevTotal) + ' achieved' : '₹0 (data pending)';
+
+    // Existing-customer june pipeline entries only
+    const existingJun = junPipe.filter(p => p.type === 'Exisitng Customer');
+    let totWtd=0, totTarget=0, totJunInc=0, totJunCl=0, totAchieved=0;
+
+    const junRows = existingJun.map(p => {
+      const insurerName = p.name.replace(' - June','').replace(' - Jun','');
+      const inc  = sumValues(junInc)  > 0 ? (Object.entries(junInc).find(([k]) => k.includes(insurerName.split(' ')[0]))?.[1] || 0) : 0;
+      const cl   = sumValues(junCl)   > 0 ? (Object.entries(junCl).find(([k])  => k.includes(insurerName.split(' ')[0]))?.[1] || 0) : 0;
+      const conv = inc > 0 ? cl / inc : 0;
+      const wtd  = p.weighted || 0;
+      const tgt  = p.delta    || 0;
+      const ach  = 0; // jun_revenue_by_insurer when available
+      const pend = Math.max(tgt - ach, 0);
+      totWtd += wtd; totTarget += tgt; totJunInc += inc; totJunCl += cl; totAchieved += ach;
+      const achPct = tgt > 0 ? (ach / tgt * 100) : 0;
+      return `<tr>
+        <td style="font-weight:600">${insurerName}</td>
+        <td>${inc > 0 ? inc.toLocaleString() : '<span style="color:#94a3b8">—</span>'}</td>
+        <td>${cl  > 0 ? cl.toLocaleString()  : '<span style="color:#94a3b8">—</span>'}</td>
+        <td>${inc > 0 ? convBadgeICA(conv) : '<span style="color:#94a3b8">—</span>'}</td>
+        <td>${ach > 0 ? '<span style="color:#1E8449;font-weight:700">'+fmt(ach)+'</span>' : '<span style="color:#94a3b8;font-style:italic">Pending</span>'}</td>
+        <td style="font-weight:600;color:#B7770D">${fmt(wtd)}</td>
+        <td>${fmt(pend)}</td>
+        <td style="font-weight:700">${fmt(tgt)}</td>
+        <td><span class="badge ${achPct >= 100 ? 'badge-green' : achPct >= 50 ? 'badge-amber' : 'badge-red'}">${achPct > 0 ? achPct.toFixed(1)+'%' : 'Not started'}</span></td>
+      </tr>`;
+    }).join('');
+
+    const totalRow = `<tr class="ica-total">
+      <td>TOTAL (Existing)</td>
+      <td>${totJunInc > 0 ? totJunInc.toLocaleString() : '—'}</td>
+      <td>${totJunCl  > 0 ? totJunCl.toLocaleString()  : '—'}</td>
+      <td>—</td>
+      <td>${totAchieved > 0 ? fmt(totAchieved) : '₹0'}</td>
+      <td>${fmt(totWtd)}</td>
+      <td>${fmt(totTarget - totAchieved)}</td>
+      <td>${fmt(totTarget)}</td>
+      <td>—</td>
+    </tr>`;
+
+    junTbody.innerHTML = junRows + totalRow;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
 // ACTIONABLE INSIGHTS — Q2 FY2026
 // ─────────────────────────────────────────────────────────────────
+function renderJuneLeaderboard(d) {
+  const rankCards = document.getElementById('jun-rank-cards');
+  const tbody     = document.getElementById('jun-leaderboard-tbody');
+  if (!rankCards || !tbody) return;
+
+  const junPipe = (d.pipeline || []).filter(p =>
+    p.month === 'June' || p.name?.includes('- June') || p.name?.includes('-June'));
+
+  if (!junPipe.length) {
+    rankCards.innerHTML = '<div style="color:var(--text2);grid-column:1/-1;text-align:center;padding:12px">No June pipeline entries found.</div>';
+    return;
+  }
+
+  // Sort by weighted desc for table
+  const sorted = [...junPipe].sort((a,b) => (b.weighted||0) - (a.weighted||0));
+
+  // ── Rank cards ──
+  const topWtd   = [...junPipe].sort((a,b) => (b.weighted||0)-(a.weighted||0))[0];
+  const topTgt   = [...junPipe].sort((a,b) => (b.delta||0)-(a.delta||0))[0];
+  const topProb  = [...junPipe].sort((a,b) => (b.prob||0)-(a.prob||0))[0];
+
+  const shortName = n => n.replace(' - June','').replace(' -June','')
+                          .replace(' Life Insurance Company','')
+                          .replace(' Life Insurance','')
+                          .replace(' Insurance Company','');
+
+  rankCards.innerHTML = [
+    {
+      icon:'🏆', label:'Highest Weighted Pipeline',
+      name: shortName(topWtd?.name||'—'),
+      val: fmt(topWtd?.weighted||0),
+      sub: 'Target: ' + fmt(topWtd?.delta||0),
+      grad:'linear-gradient(135deg,#B7770D,#7D5A50)'
+    },
+    {
+      icon:'🎯', label:'Highest Target',
+      name: shortName(topTgt?.name||'—'),
+      val: fmt(topTgt?.delta||0),
+      sub: 'Weighted: ' + fmt(topTgt?.weighted||0),
+      grad:'linear-gradient(135deg,#1B7F79,#0E6655)'
+    },
+    {
+      icon:'⚡', label:'Highest Probability',
+      name: shortName(topProb?.name||'—'),
+      val: Math.round((topProb?.prob||0)*100) + '%',
+      sub: 'Weighted: ' + fmt(topProb?.weighted||0),
+      grad:'linear-gradient(135deg,#6C3483,#4A235A)'
+    }
+  ].map(c => `
+    <div style="background:${c.grad};color:#fff;border-radius:10px;padding:14px 16px">
+      <div style="font-size:.68rem;font-weight:600;opacity:.8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${c.icon} ${c.label}</div>
+      <div style="font-size:.95rem;font-weight:700;margin-bottom:2px">${c.name}</div>
+      <div style="font-size:1.15rem;font-weight:800">${c.val}</div>
+      <div style="font-size:.7rem;opacity:.8;margin-top:4px">${c.sub}</div>
+    </div>`).join('');
+
+  // ── Full table ──
+  let totTgt=0, totWtd=0, totPend=0;
+  const rows = sorted.map(p => {
+    const name = shortName(p.name||'—');
+    const isExisting = p.type === 'Exisitng Customer';
+    const tgt  = p.delta    || 0;
+    const wtd  = p.weighted || 0;
+    const prob = p.prob     || 0;
+    const pend = Math.max(tgt - 0, 0); // achieved is 0 until sync
+    totTgt += tgt; totWtd += wtd; totPend += pend;
+    const probColor = prob >= 0.8 ? '#1E8449' : prob >= 0.5 ? '#B7770D' : '#922B21';
+    return `<tr>
+      <td style="font-weight:600">${name}</td>
+      <td><span class="badge ${isExisting ? 'badge-green' : 'badge-amber'}">${isExisting ? 'Existing' : 'Prospect'}</span></td>
+      <td style="font-weight:600">${fmt(tgt)}</td>
+      <td style="font-weight:700;color:#B7770D">${fmt(wtd)}</td>
+      <td>${fmt(pend)}</td>
+      <td style="font-weight:700;color:${probColor}">${Math.round(prob*100)}%</td>
+      <td><span class="badge badge-amber">In Progress</span></td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows + `<tr class="ica-total">
+    <td colspan="2">TOTAL (${sorted.length} entries)</td>
+    <td>${fmt(totTgt)}</td>
+    <td>${fmt(totWtd)}</td>
+    <td>${fmt(totPend)}</td>
+    <td>—</td><td>—</td>
+  </tr>`;
+}
+
 function renderActionableInsights(d) {
   const container = document.getElementById('ai-grid-container');
   if (!container) return;
@@ -3282,6 +3507,7 @@ async function loadData() {
     ['Actionable insights',     () => renderActionableInsights(data)],
     ['Actions',                 () => renderActions(data)],
     ['Insurer details',         () => renderInsurerDetailsView(data)],
+    ['June leaderboard',        () => renderJuneLeaderboard(data)],
   ];
   const failures = [];
   for (const [label, fn] of renderSteps) {
