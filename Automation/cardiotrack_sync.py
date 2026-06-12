@@ -73,10 +73,15 @@ SCOPES = [
 # The real emails arrive with subject:  Check out the "<report name>" report
 # The Gmail search query matches the inner quoted string; we keep the exact
 # subject form here so we can also tighten matching after the API returns hits.
-EMAIL_MAP = {
+# CSV reports (Zoho sends these as .csv attachments)
+CSV_EMAIL_MAP = {
     'Incoming Order Count Insurer Wise': INCOMING_FILE,
     'Revenue Generated Insurer Wise':    REVENUE_FILE,
     'Closed Case Count Insurer Wise':    CLOSED_FILE,
+}
+
+# Excel/XLS reports (Zoho sends these as .xls / .xlsx attachments)
+XLS_EMAIL_MAP = {
     'Daily Insurer Billing Data':        BILLING_FILE,
     # Detailed category-level billing exports (two files due to Zoho row limit).
     # ⚠  Verify these subject strings match the actual Gmail "report name" in
@@ -84,6 +89,9 @@ EMAIL_MAP = {
     'Daily Insurer Billing':             DETAILED_BILLING_FILE1,
     'Daily Insurer Billing 2':           DETAILED_BILLING_FILE2,
 }
+
+# Combined map (used by dashboard to know all expected reports)
+EMAIL_MAP = {**CSV_EMAIL_MAP, **XLS_EMAIL_MAP}
 
 # Full subject prefix/suffix on incoming Gmail messages.
 SUBJECT_PREFIX = 'Check out the "'
@@ -293,6 +301,20 @@ def _looks_like_csv_part(part: dict) -> bool:
     return bool(body.get("attachmentId") or body.get("data"))
 
 
+def _looks_like_xls_part(part: dict) -> bool:
+    """Decide if a MIME part is an XLS/XLSX attachment worth downloading.
+
+    Billing reports from Zoho arrive as .xls or .xlsx files.
+    """
+    fname = (part.get("filename") or "").strip().lower()
+    if not fname:
+        return False
+    if not (fname.endswith(".xls") or fname.endswith(".xlsx")):
+        return False
+    body = part.get("body") or {}
+    return bool(body.get("attachmentId") or body.get("data"))
+
+
 def _get_header(message: dict, name: str) -> str:
     """Pull a header value (case-insensitive) from a Gmail message."""
     for h in message.get("payload", {}).get("headers", []):
@@ -413,6 +435,7 @@ def sync_gmail(force: bool = False) -> dict:
 
     for report_name, dest_file in EMAIL_MAP.items():
         expected_subject = _expected_subject(report_name)
+        is_xls_report    = report_name in XLS_EMAIL_MAP
 
         # Gmail's `subject:"…"` operator does substring matching, but the
         # exact subject contains literal double-quotes around the report name:
@@ -421,7 +444,9 @@ def sync_gmail(force: bool = False) -> dict:
         # quotes that Gmail's parser breaks on, so it returns AND-of-keywords
         # matches instead of the exact phrase. The cure: search for the
         # distinctive inner phrase only — then verify the full subject below.
-        query = f'subject:"{report_name}" has:attachment filename:csv'
+        # CSV reports use filename:csv; billing XLS reports use filename:xls.
+        file_filter = "filename:xls" if is_xls_report else "filename:csv"
+        query = f'subject:"{report_name}" has:attachment {file_filter}'
         log.info(f"Searching: {query}")
 
         result = service.users().messages().list(
@@ -467,18 +492,20 @@ def sync_gmail(force: bool = False) -> dict:
 
             # Walk the MIME tree and find a CSV part. Trust the filename — Gmail's
             # MIME-type tag is unreliable in the wild.
-            csv_parts = [p for p in _iter_parts(message.get("payload", {})) if _looks_like_csv_part(p)]
+            _part_fn   = _looks_like_xls_part if is_xls_report else _looks_like_csv_part
+            _part_type = "XLS" if is_xls_report else "CSV"
+            csv_parts  = [p for p in _iter_parts(message.get("payload", {})) if _part_fn(p)]
             if not csv_parts:
-                # List every part so the user can see WHY no CSV was found
+                # List every part so the user can see WHY no file was found
                 seen = [(p.get("filename") or "(no filename)", p.get("mimeType") or "")
                         for p in _iter_parts(message.get("payload", {}))]
-                log.info(f"  ✗ No CSV attachment on msg [{msg_id[:12]}…]  parts={seen}")
-                rejected_in_session.append((msg_id, subject, "no-csv-attachment"))
+                log.info(f"  ✗ No {_part_type} attachment on msg [{msg_id[:12]}…]  parts={seen}")
+                rejected_in_session.append((msg_id, subject, f"no-{_part_type.lower()}-attachment"))
                 # Don't blacklist — sender might re-send with a real attachment.
                 continue
 
-            # Pick the LAST CSV part. Multi-CSV emails are rare; when they exist
-            # the more recent/relevant one tends to be later in the body.
+            # Pick the LAST matching part. Multi-attachment emails are rare; when
+            # they exist the more recent/relevant one tends to be later in the body.
             part = csv_parts[-1]
             fname = part.get("filename", "")
 
