@@ -83,11 +83,19 @@ CSV_EMAIL_MAP = {
 # Excel/XLS reports (Zoho sends these as .xls / .xlsx attachments)
 XLS_EMAIL_MAP = {
     'Daily Insurer Billing Data':        BILLING_FILE,
-    # Detailed category-level billing exports (two files due to Zoho row limit).
-    # ⚠  Verify these subject strings match the actual Gmail "report name" in
-    #    quotes — e.g. subject: Check out the "Daily Insurer Billing" report
+    # Detailed category-level billing exports.
+    # ⚠  BOTH Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls are sent
+    #    in the SAME email thread with subject "Daily Insurer Billing" (two separate
+    #    messages, same subject).  Only DETAILED_BILLING_FILE1 is listed here so
+    #    the main sync loop downloads it normally.  DETAILED_BILLING_FILE2 is
+    #    handled by _sync_billing_file2() which scans the same thread by filename.
     'Daily Insurer Billing':             DETAILED_BILLING_FILE1,
-    'Daily Insurer Billing 2':           DETAILED_BILLING_FILE2,
+}
+
+# Attachment filename → destination for files that share a subject with another
+# report and can't be matched by subject alone.
+BILLING_EXTRA_FILES: dict = {
+    'daily_insurer_billing_2.xls': DETAILED_BILLING_FILE2,
 }
 
 # Combined map (used by dashboard to know all expected reports)
@@ -559,6 +567,61 @@ def sync_gmail(force: bool = False) -> dict:
                 )
                 for mid, subj, reason in rejected_in_session[:5]:
                     log.warning(f"    [{mid[:12]}…] {reason}  subject={subj!r}")
+
+    # ── Extra pass: files that share a subject with another report ───────────
+    # Daily_Insurer_Billing_2.xls arrives in the SAME "Daily Insurer Billing"
+    # email thread as Daily_Insurer_Billing.xls.  The main loop above can only
+    # pick one destination per subject, so we scan those same messages a second
+    # time and route by attachment filename.
+    if BILLING_EXTRA_FILES:
+        q_extra = 'subject:"Daily Insurer Billing" has:attachment filename:xls'
+        try:
+            extra_refs = service.users().messages().list(
+                userId="me", q=q_extra, maxResults=20
+            ).execute().get("messages", [])
+        except Exception as exc:
+            log.warning(f"  BILLING_EXTRA_FILES search failed: {exc}")
+            extra_refs = []
+
+        for extra_fname, extra_dest in BILLING_EXTRA_FILES.items():
+            found = False
+            for ref in extra_refs:
+                try:
+                    msg_e = service.users().messages().get(
+                        userId="me", id=ref["id"], format="full"
+                    ).execute()
+                except Exception:
+                    continue
+                for part in _iter_parts(msg_e.get("payload", {})):
+                    part_name = (part.get("filename") or "").strip().lower()
+                    if part_name == extra_fname:
+                        body = part.get("body") or {}
+                        att_id = body.get("attachmentId")
+                        if att_id:
+                            try:
+                                res = download_attachment(
+                                    service, ref["id"], att_id, extra_dest
+                                )
+                                if res:
+                                    _bytes, sha = res
+                                    label = extra_dest.name
+                                    if seen_hashes.get(sha) == label:
+                                        log.info(f"  = {label}: content unchanged")
+                                        status["unchanged"].append(label)
+                                    else:
+                                        seen_hashes[sha] = label
+                                        status["downloaded"].append(label)
+                                        status["new_files"] = True
+                                        log.info(f"  ✓ Downloaded {label} (billing multi-file)")
+                                    found = True
+                            except Exception as exc:
+                                log.warning(f"  {extra_dest.name} download failed: {exc}")
+                        break
+                if found:
+                    break
+            if not found:
+                log.warning(f"  {extra_dest.name}: not found in billing thread")
+                status["missing"].append(extra_dest.name)
 
     sync_data["processed_message_ids"] = list(processed)
     sync_data["attachment_hashes"]     = seen_hashes
