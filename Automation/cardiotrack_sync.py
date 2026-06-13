@@ -1619,12 +1619,20 @@ def build_dashboard_data() -> dict:
             "revenue": r,
         })
 
-    # ── Monthly trend (last 15 months) ───────────────────────────────────────
-    billing_order = [
-        "Mar 2025","Apr 2025","May 2025","Jun 2025","Jul 2025","Aug 2025",
-        "Sep 2025","Oct 2025","Nov 2025","Dec 2025",
-        "Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026"
-    ]
+    # ── Monthly trend (last 15 months, dynamic) ──────────────────────────────
+    from calendar import month_abbr
+    _now = datetime.now(timezone.utc)
+    _months = []
+    for i in range(14, -1, -1):
+        _m = _now.month - i
+        _y = _now.year
+        while _m <= 0:
+            _m += 12
+            _y -= 1
+        _months.append(f"{month_abbr[_m]} {_y}")
+    # Also include any months from the data not already in the window
+    # (keeps historical data if the window shifts)
+    billing_order = _months
     trend_labels  = billing_order
     trend_values  = [monthly_billing.get(m, 0) for m in billing_order]
 
