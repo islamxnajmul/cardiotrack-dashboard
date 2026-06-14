@@ -1678,25 +1678,59 @@ def build_dashboard_data() -> dict:
             _may_csv_by_ins[_ins] = _may_csv_by_ins.get(_ins, 0) + _amt
         elif _m == "Apr 2026":
             _apr_csv_by_ins[_ins] = _apr_csv_by_ins.get(_ins, 0) + _amt
+    _jun_csv_by_ins: dict = {}
+    for _r in _rev_csv:
+        _m   = (_r.get("month") or "").strip()
+        _ins = _canonical_insurer_name(_r.get("insurer", ""))
+        _amt = _r.get("amount", 0) or 0
+        if _m == "Jun 2026":
+            _jun_csv_by_ins[_ins] = _jun_csv_by_ins.get(_ins, 0) + _amt
     _may_csv_total = round(sum(_may_csv_by_ins.values()), 2)
     _apr_csv_total = round(sum(_apr_csv_by_ins.values()), 2)
+    _jun_csv_total = round(sum(_jun_csv_by_ins.values()), 2)
     _rev_csv_mtime_iso = (
         _dt.datetime.fromtimestamp(REVENUE_FILE.stat().st_mtime, tz=_dt.timezone.utc).isoformat()
         if REVENUE_FILE.exists() else None
     )
 
-    # NOTE: We intentionally do NOT override may_rev/apr_rev with CSV totals.
-    # The Revenue_Generated_Insurer_Wise.csv is a periodic snapshot that can
-    # lag the billing XLS by days (e.g. CSV from May 18 vs XLS from May 30).
-    # The XLS transaction-level data is always the authoritative source.
-    # The CSV totals are stored separately so the dashboard can show the gap.
+    # ── Reconcile XLS and CSV revenue totals ────────────────────────────────
+    # The Revenue_Generated_Insurer_Wise.csv often captures late billing
+    # entries (e.g. billing closed in May but added to Zoho after the XLS
+    # was last downloaded). When the CSV total is HIGHER than the XLS total
+    # for a given month, it means the CSV has more complete data → use CSV.
+    # When CSV is LOWER (stale partial snapshot), XLS wins.
     _billing_mtime = max(
         (f.stat().st_mtime if f.exists() else 0)
         for f in [DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2, BILLING_FILE]
     )
     _csv_mtime = REVENUE_FILE.stat().st_mtime if REVENUE_FILE.exists() else 0
-    log.info(f"  Revenue source: XLS billing (Apr ₹{apr_rev:,.0f}, May ₹{may_rev:,.0f}, Jun ₹{jun_rev:,.0f})")
-    log.info(f"  CSV snapshot:   Apr ₹{_apr_csv_total:,.0f}, May ₹{_may_csv_total:,.0f} "
+
+    if _apr_csv_total > apr_rev:
+        log.info(f"  ↻ CSV Apr ₹{_apr_csv_total:,.0f} > XLS ₹{apr_rev:,.0f} — using CSV")
+        apr_rev  = _apr_csv_total
+        q2_total = apr_rev + may_rev + jun_rev
+        monthly_billing['Apr 2026'] = apr_rev
+        if 'Apr 2026' in trend_labels:
+            trend_values[trend_labels.index('Apr 2026')] = apr_rev
+
+    if _may_csv_total > may_rev:
+        log.info(f"  ↻ CSV May ₹{_may_csv_total:,.0f} > XLS ₹{may_rev:,.0f} — using CSV")
+        may_rev  = _may_csv_total
+        q2_total = apr_rev + may_rev + jun_rev
+        monthly_billing['May 2026'] = may_rev
+        if 'May 2026' in trend_labels:
+            trend_values[trend_labels.index('May 2026')] = may_rev
+
+    # Jun: CSV is the only source until the billing XLS has June rows
+    if _jun_csv_total > jun_rev:
+        log.info(f"  ↻ CSV Jun ₹{_jun_csv_total:,.0f} > XLS ₹{jun_rev:,.0f} — using CSV")
+        jun_rev  = _jun_csv_total
+        q2_total = apr_rev + may_rev + jun_rev
+        monthly_billing['Jun 2026'] = jun_rev
+        if 'Jun 2026' in trend_labels:
+            trend_values[trend_labels.index('Jun 2026')] = jun_rev
+
+    log.info(f"  Final revenue:  Apr ₹{apr_rev:,.0f}  May ₹{may_rev:,.0f}  Jun ₹{jun_rev:,.0f}  "
              f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b') if _csv_mtime else 'N/A'}, "
              f"XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
 
@@ -1736,17 +1770,12 @@ def build_dashboard_data() -> dict:
         "apr_customers": apr_customers,
         "insurer_table": insurer_table,
         # CSV-based revenue per insurer (Gmail Revenue_Generated_Insurer_Wise.csv)
-        "may_revenue_csv_by_insurer": {k: round(v,2) for k,v in _may_csv_by_ins.items()},
         "apr_revenue_csv_by_insurer": {k: round(v,2) for k,v in _apr_csv_by_ins.items()},
-        "may_revenue_csv_total": _may_csv_total,
-        "apr_revenue_csv_total": _apr_csv_total,
-        "revenue_csv_mtime": _rev_csv_mtime_iso,
-        # CSV-based revenue (Gmail Revenue_Generated_Insurer_Wise.csv)
-        # Used by the dashboard to show billing-vs-CSV gap.
         "may_revenue_csv_by_insurer": {k: round(v,2) for k,v in _may_csv_by_ins.items()},
-        "apr_revenue_csv_by_insurer": {k: round(v,2) for k,v in _apr_csv_by_ins.items()},
-        "may_revenue_csv_total": _may_csv_total,
+        "jun_revenue_csv_by_insurer": {k: round(v,2) for k,v in _jun_csv_by_ins.items()},
         "apr_revenue_csv_total": _apr_csv_total,
+        "may_revenue_csv_total": _may_csv_total,
+        "jun_revenue_csv_total": _jun_csv_total,
         "revenue_csv_mtime": _rev_csv_mtime_iso,
         "pipeline": pipeline,
         "existing_pipeline_total": round(sum(p["weighted"] for p in existing_pipe)),
