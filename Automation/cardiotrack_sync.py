@@ -1685,34 +1685,26 @@ def build_dashboard_data() -> dict:
         if REVENUE_FILE.exists() else None
     )
 
-    # ── Override may_rev with CSV total when CSV is fresher than billing XLS ──
-    # The Revenue_Generated_Insurer_Wise.csv is emailed daily and represents
-    # the most complete picture of revenue closed in each month.
-    # When the CSV is more recent than the billing XLS (e.g. June 2 CSV vs
-    # May 30 billing XLS), use the CSV total as the authoritative May figure.
+    # NOTE: We intentionally do NOT override may_rev/apr_rev with CSV totals.
+    # The Revenue_Generated_Insurer_Wise.csv is a periodic snapshot that can
+    # lag the billing XLS by days (e.g. CSV from May 18 vs XLS from May 30).
+    # The XLS transaction-level data is always the authoritative source.
+    # The CSV totals are stored separately so the dashboard can show the gap.
     _billing_mtime = max(
         (f.stat().st_mtime if f.exists() else 0)
         for f in [DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2, BILLING_FILE]
     )
     _csv_mtime = REVENUE_FILE.stat().st_mtime if REVENUE_FILE.exists() else 0
-    if _may_csv_total > 0 and _csv_mtime > _billing_mtime:
-        log.info(f"  ↻ Using CSV May total ₹{_may_csv_total:,.0f} "
-                 f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b')} "
-                 f"> billing XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b')})")
-        may_rev  = _may_csv_total
-        q2_total = apr_rev + may_rev + jun_rev
-        # Keep monthly_billing and trend_values in sync with the override
-        # so the trend chart shows the same May figure as the KPI card
-        monthly_billing['May 2026'] = may_rev
-        if 'May 2026' in trend_labels:
-            idx = trend_labels.index('May 2026')
-            trend_values[idx] = may_rev
+    log.info(f"  Revenue source: XLS billing (Apr ₹{apr_rev:,.0f}, May ₹{may_rev:,.0f}, Jun ₹{jun_rev:,.0f})")
+    log.info(f"  CSV snapshot:   Apr ₹{_apr_csv_total:,.0f}, May ₹{_may_csv_total:,.0f} "
+             f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b') if _csv_mtime else 'N/A'}, "
+             f"XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
 
     return {
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "q2_target": Q2_TARGET,
-            "as_of": "14 May 2026",
+            "as_of": datetime.now(timezone.utc).strftime("%-d %b %Y"),
             "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
         },
         "kpis": {
