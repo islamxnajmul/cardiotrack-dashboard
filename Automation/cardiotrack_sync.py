@@ -1799,76 +1799,122 @@ def build_dashboard_data() -> dict:
              f"XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
 
     # ── Weekly insurer analysis ───────────────────────────────────────────────
+    # Source 1: Daily Insurer Billing XLS → revenue + closed-case count per date
+    # Source 2: Weekly CSV reports          → incoming order counts
+    # Cycle: Sunday → Saturday, starting 31 May 2026
+
+    import datetime as _dt2
+    from collections import defaultdict as _dd2
+
+    _WEEKLY_ANCHOR = _dt2.date(2026, 5, 31)   # first Sunday of the analysis window
+
+    def _billing_week_label(d: datetime) -> str | None:
+        """Return 'DD Mon – DD Mon YYYY' label for a Sun-Sat week, or None if before anchor."""
+        bd = d.date() if hasattr(d, 'date') else d
+        if bd < _WEEKLY_ANCHOR:
+            return None
+        delta    = (bd - _WEEKLY_ANCHOR).days
+        wk_num   = delta // 7
+        wk_start = _WEEKLY_ANCHOR + _dt2.timedelta(days=wk_num * 7)
+        wk_end   = wk_start + _dt2.timedelta(days=6)
+        if wk_start.year == wk_end.year:
+            return f"{wk_start.strftime('%d %b')} – {wk_end.strftime('%d %b %Y')}"
+        return f"{wk_start.strftime('%d %b %Y')} – {wk_end.strftime('%d %b %Y')}"
+
+    # Billing-derived maps  (week_label → insurer → {revenue, closed})
+    _wb_rev: dict = _dd2(lambda: _dd2(float))  # revenue
+    _wb_cl:  dict = _dd2(lambda: _dd2(int))    # closed-case count (each billing row = 1 closed case)
+    _wb_weeks_order: dict = {}                  # preserve insertion order
+
+    for _r in detailed_records:
+        _bd   = _r.get("date")
+        _ins  = _r.get("insurer", "")
+        _amt  = _r.get("total", 0) or 0
+        if _bd is None or not _ins:
+            continue
+        _wlbl = _billing_week_label(_bd)
+        if _wlbl is None:
+            continue
+        _wb_weeks_order[_wlbl] = True
+        _wb_rev[_wlbl][_ins]   += _amt
+        _wb_cl[_wlbl][_ins]    += 1
+
+    # Source 2: incoming order counts from weekly CSV reports
     _w_inc = read_weekly_file(WEEKLY_INCOMING_FILE, "Weekly Incoming")
-    _w_cl  = read_weekly_file(WEEKLY_CLOSED_FILE,   "Weekly Closed")
 
-    # Collect all weeks in order (preserve insertion order across both files)
-    _all_weeks_seen: dict = {}
-    for r in _w_inc + _w_cl:
-        w = r.get("week", "").strip()
-        if w:
-            _all_weeks_seen[w] = True
-    _weekly_labels = list(_all_weeks_seen.keys())
+    # Build a set of all week labels (CSV weeks may differ from billing weeks)
+    # The billing weeks are our primary labels; CSV weeks are merged in
+    _w_inc_map: dict = _dd2(lambda: _dd2(int))   # week_label → insurer → incoming
+    for _r in _w_inc:
+        _wlbl = (_r.get("week") or "").strip()
+        _ins  = _canonical_insurer_name(_r.get("insurer", ""))
+        if _wlbl and _ins:
+            _w_inc_map[_wlbl][_ins] += _r.get("count", 0)
+            _wb_weeks_order[_wlbl] = True   # include CSV weeks too
 
-    # Build per-insurer per-week aggregations
-    from collections import defaultdict
-    _wi_map: dict = defaultdict(lambda: defaultdict(int))  # week → insurer → incoming
-    _wc_map: dict = defaultdict(lambda: defaultdict(int))  # week → insurer → closed
+    # Final sorted week labels (chronological by insertion from billing, oldest first)
+    _weekly_labels = list(_wb_weeks_order.keys())
 
-    for r in _w_inc:
-        w = r.get("week", "").strip()
-        ins = _canonical_insurer_name(r.get("insurer", ""))
-        if w and ins:
-            _wi_map[w][ins] += r.get("count", 0)
-
-    for r in _w_cl:
-        w = r.get("week", "").strip()
-        ins = _canonical_insurer_name(r.get("insurer", ""))
-        if w and ins:
-            _wc_map[w][ins] += r.get("count", 0)
-
-    # All unique insurers across both files
+    # All unique insurers across billing + CSV
     _weekly_insurers = sorted(
-        set(ins for week_d in _wi_map.values() for ins in week_d) |
-        set(ins for week_d in _wc_map.values() for ins in week_d)
+        set(ins for wd in _wb_rev.values()    for ins in wd) |
+        set(ins for wd in _w_inc_map.values() for ins in wd)
     )
 
-    # Per-week summary (all insurers combined)
+    # Per-week totals (all-insurers combined)
     _weekly_totals = []
-    for w in _weekly_labels:
-        total_inc = sum(_wi_map[w].values())
-        total_cl  = sum(_wc_map[w].values())
+    for _wlbl in _weekly_labels:
+        _t_rev = round(sum(_wb_rev[_wlbl].values()),        2)
+        _t_cl  = sum(_wb_cl[_wlbl].values())
+        _t_inc = sum(_w_inc_map[_wlbl].values())
         _weekly_totals.append({
-            "week":       w,
-            "incoming":   total_inc,
-            "closed":     total_cl,
-            "pending":    total_inc - total_cl,
-            "conversion": round(total_cl / total_inc * 100, 1) if total_inc else 0,
+            "week":       _wlbl,
+            "revenue":    _t_rev,
+            "incoming":   _t_inc,
+            "closed":     _t_cl,
+            "pending":    max(_t_inc - _t_cl, 0),
+            "conversion": round(_t_cl / _t_inc * 100, 1) if _t_inc else 0,
         })
 
-    # Per-insurer across all weeks (for KPI summary cards)
+    # Per-insurer breakdown with per-week arrays
     _weekly_by_insurer = []
-    for ins in _weekly_insurers:
-        total_inc = sum(_wi_map[w].get(ins, 0) for w in _weekly_labels)
-        total_cl  = sum(_wc_map[w].get(ins, 0) for w in _weekly_labels)
+    for _ins in _weekly_insurers:
+        _ins_rev  = [round(_wb_rev[w].get(_ins, 0), 2) for w in _weekly_labels]
+        _ins_cl   = [_wb_cl[w].get(_ins, 0)            for w in _weekly_labels]
+        _ins_inc  = [_w_inc_map[w].get(_ins, 0)         for w in _weekly_labels]
+        _ins_pend = [max(_ins_inc[i] - _ins_cl[i], 0)  for i in range(len(_weekly_labels))]
+        _ins_conv = [
+            round(_ins_cl[i] / _ins_inc[i] * 100, 1) if _ins_inc[i] else 0
+            for i in range(len(_weekly_labels))
+        ]
+        t_inc  = sum(_ins_inc)
+        t_cl   = sum(_ins_cl)
+        t_rev  = round(sum(_ins_rev), 2)
         _weekly_by_insurer.append({
-            "insurer":    ins,
-            "incoming":   total_inc,
-            "closed":     total_cl,
-            "pending":    total_inc - total_cl,
-            "conversion": round(total_cl / total_inc * 100, 1) if total_inc else 0,
-            # Per-week breakdown for drill-down charts
-            "weekly_incoming": [_wi_map[w].get(ins, 0) for w in _weekly_labels],
-            "weekly_closed":   [_wc_map[w].get(ins, 0) for w in _weekly_labels],
+            "insurer":          _ins,
+            "total_incoming":   t_inc,
+            "total_closed":     t_cl,
+            "total_revenue":    t_rev,
+            "total_pending":    max(t_inc - t_cl, 0),
+            "total_conversion": round(t_cl / t_inc * 100, 1) if t_inc else 0,
+            "weekly_revenue":     _ins_rev,
+            "weekly_incoming":    _ins_inc,
+            "weekly_closed":      _ins_cl,
+            "weekly_pending":     _ins_pend,
+            "weekly_conversion":  _ins_conv,
         })
+
+    # Sort by total closed desc so most active insurers appear first in tabs
+    _weekly_by_insurer.sort(key=lambda x: x["total_closed"], reverse=True)
 
     weekly_insurer_data = {
         "labels":       _weekly_labels,
-        "insurers":     _weekly_insurers,
+        "insurers":     [r["insurer"] for r in _weekly_by_insurer],
         "totals":       _weekly_totals,
         "by_insurer":   _weekly_by_insurer,
     }
-    log.info(f"  Weekly data: {len(_weekly_labels)} weeks, {len(_weekly_insurers)} insurers")
+    log.info(f"  Weekly data: {len(_weekly_labels)} weeks, {len(_weekly_insurers)} insurers "
+             f"(billing rows ≥ {_WEEKLY_ANCHOR})")
 
     return {
         "meta": {
