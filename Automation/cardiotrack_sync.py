@@ -43,10 +43,12 @@ AUTO   = BASE / "Automation"
 QUARTER_TARGET_FILE = INPUT  / "Quarter Target.xlsx"
 # The 3 Gmail-downloaded reports are CSV (xlsx attachments had inconsistent
 # layouts — empty-month fill-down was being silently dropped on read).
-INCOMING_FILE       = INPUT  / "Incoming_Order_Count_Insurer_Wise.csv"
-REVENUE_FILE        = INPUT  / "Revenue_Generated_Insurer_Wise.csv"
-CLOSED_FILE         = INPUT  / "Closed_Case_Count_Insurer_Wise.csv"
-BILLING_FILE        = INPUT  / "Daily_Insurer_Billing_Data.xls"
+INCOMING_FILE        = INPUT  / "Incoming_Order_Count_Insurer_Wise.csv"
+REVENUE_FILE         = INPUT  / "Revenue_Generated_Insurer_Wise.csv"
+CLOSED_FILE          = INPUT  / "Closed_Case_Count_Insurer_Wise.csv"
+WEEKLY_CLOSED_FILE   = INPUT  / "Weekly_Closed_Cases_-_Insurer.csv"
+WEEKLY_INCOMING_FILE = INPUT  / "Weekly_Incoming_Cases_-_Insurer.csv"
+BILLING_FILE         = INPUT  / "Daily_Insurer_Billing_Data.xls"
 # Detailed transaction-level billing files (category breakdown: package, ancillary,
 # videography, service charges, home visit, interpretation).  Two files because the
 # Zoho report is split when row-count exceeds the export limit.
@@ -78,6 +80,8 @@ CSV_EMAIL_MAP = {
     'Incoming Order Count Insurer Wise': INCOMING_FILE,
     'Revenue Generated Insurer Wise':    REVENUE_FILE,
     'Closed Case Count Insurer Wise':    CLOSED_FILE,
+    'Weekly Closed Cases - Insurer':     WEEKLY_CLOSED_FILE,
+    'Weekly Incoming Cases - Insurer':   WEEKLY_INCOMING_FILE,
 }
 
 # Excel/XLS reports (Zoho sends these as .xls / .xlsx attachments)
@@ -1144,6 +1148,66 @@ def read_orders_file(path: Path, label: str) -> list:
     return records
 
 
+def _ffill_week(records: list) -> list:
+    """Forward-fill the 'week' column (same pattern as _ffill_month)."""
+    last_week = ""
+    out = []
+    for r in records:
+        w = (r.get("week") or "").strip()
+        if w:
+            last_week = w
+        elif last_week:
+            r["week"] = last_week
+        out.append(r)
+    return out
+
+
+def read_weekly_file(path: Path, label: str) -> list:
+    """Read Weekly Closed/Incoming Cases CSV → list of {week, insurer, count}.
+
+    Expected columns: Week/Period | Insurer Name | Count
+    Column 1 is forward-filled (same pattern as monthly CSVs).
+    """
+    if not path.exists():
+        log.warning(f"{label} file not found: {path.name}")
+        return []
+
+    rows = list(_read_csv_rows(path))
+    if not rows:
+        log.warning(f"{label} CSV is empty: {path.name}")
+        return []
+
+    header = [h.lower() for h in rows[0]]
+
+    def find(*keywords, default=None):
+        for i, h in enumerate(header):
+            if any(k in h for k in keywords):
+                return i
+        return default
+
+    WEEK_COL    = find("week", "period", "date", default=0)
+    INSURER_COL = find("insurer", default=1)
+    COUNT_COL   = find("count", default=2)
+
+    records = []
+    for row in rows[1:]:
+        if not any(c for c in row):
+            continue
+        if len(row) <= max(WEEK_COL, INSURER_COL, COUNT_COL):
+            continue
+        insurer = row[INSURER_COL]
+        if not insurer:
+            continue
+        records.append({
+            "week":    row[WEEK_COL],
+            "insurer": insurer,
+            "count":   safe_int(row[COUNT_COL]),
+        })
+    records = _ffill_week(records)
+    log.info(f"  {label}: {len(records)} rows read")
+    return records
+
+
 def read_revenue_file(path: Path) -> list:
     """Read Revenue_Generated_Insurer_Wise.csv → list of {month, insurer, amount}.
 
@@ -1734,6 +1798,78 @@ def build_dashboard_data() -> dict:
              f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b') if _csv_mtime else 'N/A'}, "
              f"XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
 
+    # ── Weekly insurer analysis ───────────────────────────────────────────────
+    _w_inc = read_weekly_file(WEEKLY_INCOMING_FILE, "Weekly Incoming")
+    _w_cl  = read_weekly_file(WEEKLY_CLOSED_FILE,   "Weekly Closed")
+
+    # Collect all weeks in order (preserve insertion order across both files)
+    _all_weeks_seen: dict = {}
+    for r in _w_inc + _w_cl:
+        w = r.get("week", "").strip()
+        if w:
+            _all_weeks_seen[w] = True
+    _weekly_labels = list(_all_weeks_seen.keys())
+
+    # Build per-insurer per-week aggregations
+    from collections import defaultdict
+    _wi_map: dict = defaultdict(lambda: defaultdict(int))  # week → insurer → incoming
+    _wc_map: dict = defaultdict(lambda: defaultdict(int))  # week → insurer → closed
+
+    for r in _w_inc:
+        w = r.get("week", "").strip()
+        ins = _canonical_insurer_name(r.get("insurer", ""))
+        if w and ins:
+            _wi_map[w][ins] += r.get("count", 0)
+
+    for r in _w_cl:
+        w = r.get("week", "").strip()
+        ins = _canonical_insurer_name(r.get("insurer", ""))
+        if w and ins:
+            _wc_map[w][ins] += r.get("count", 0)
+
+    # All unique insurers across both files
+    _weekly_insurers = sorted(
+        set(ins for week_d in _wi_map.values() for ins in week_d) |
+        set(ins for week_d in _wc_map.values() for ins in week_d)
+    )
+
+    # Per-week summary (all insurers combined)
+    _weekly_totals = []
+    for w in _weekly_labels:
+        total_inc = sum(_wi_map[w].values())
+        total_cl  = sum(_wc_map[w].values())
+        _weekly_totals.append({
+            "week":       w,
+            "incoming":   total_inc,
+            "closed":     total_cl,
+            "pending":    total_inc - total_cl,
+            "conversion": round(total_cl / total_inc * 100, 1) if total_inc else 0,
+        })
+
+    # Per-insurer across all weeks (for KPI summary cards)
+    _weekly_by_insurer = []
+    for ins in _weekly_insurers:
+        total_inc = sum(_wi_map[w].get(ins, 0) for w in _weekly_labels)
+        total_cl  = sum(_wc_map[w].get(ins, 0) for w in _weekly_labels)
+        _weekly_by_insurer.append({
+            "insurer":    ins,
+            "incoming":   total_inc,
+            "closed":     total_cl,
+            "pending":    total_inc - total_cl,
+            "conversion": round(total_cl / total_inc * 100, 1) if total_inc else 0,
+            # Per-week breakdown for drill-down charts
+            "weekly_incoming": [_wi_map[w].get(ins, 0) for w in _weekly_labels],
+            "weekly_closed":   [_wc_map[w].get(ins, 0) for w in _weekly_labels],
+        })
+
+    weekly_insurer_data = {
+        "labels":       _weekly_labels,
+        "insurers":     _weekly_insurers,
+        "totals":       _weekly_totals,
+        "by_insurer":   _weekly_by_insurer,
+    }
+    log.info(f"  Weekly data: {len(_weekly_labels)} weeks, {len(_weekly_insurers)} insurers")
+
     return {
         "meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -1811,6 +1947,9 @@ def build_dashboard_data() -> dict:
         # Sourced from Daily_Insurer_Billing*.xls (single source of truth).
         # Used by the Insurer Details tab "Overall Revenue Since Inception" column.
         "billing_lifetime_by_insurer": lt_by_ins,
+
+        # ── Weekly insurer analysis (from Weekly Closed/Incoming Cases CSVs) ──
+        "weekly_insurer_data": weekly_insurer_data,
 
         # ── Detailed category-level billing analysis ──────────────────────────
         # Already computed above from the same detailed_records — no double-read.

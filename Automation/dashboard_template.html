@@ -422,6 +422,9 @@
   <button class="view-tab" data-view="insurer" onclick="switchView('insurer')">
     <span class="vt-emoji">🤝</span> Insurer Details
   </button>
+  <button class="view-tab" data-view="weekly" onclick="switchView('weekly')">
+    <span class="vt-emoji">📅</span> Weekly Analysis
+  </button>
 </div>
 
 <!-- ───────────── SALES VIEW (existing dashboard) ───────────── -->
@@ -821,6 +824,117 @@
   </div>
 </div>
 
+<!-- ───────────── WEEKLY ANALYSIS VIEW ───────────── -->
+<div id="view-weekly" class="dash-view">
+  <div class="main" style="padding:20px 24px;max-width:1600px;margin:0 auto">
+
+    <!-- ── Filter bar ── -->
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:.8rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Insurer</label>
+        <select id="wa-insurer-filter" onchange="waApplyFilters()"
+          style="background:#1A2740;border:1px solid #2a3a52;color:#e0e8f0;padding:6px 10px;border-radius:6px;font-size:.82rem;min-width:200px">
+          <option value="ALL">All Insurers</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:.8rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Weeks</label>
+        <select id="wa-week-from" onchange="waApplyFilters()"
+          style="background:#1A2740;border:1px solid #2a3a52;color:#e0e8f0;padding:6px 10px;border-radius:6px;font-size:.82rem;min-width:160px">
+        </select>
+        <span style="color:#8a9ab0;font-size:.82rem">to</span>
+        <select id="wa-week-to" onchange="waApplyFilters()"
+          style="background:#1A2740;border:1px solid #2a3a52;color:#e0e8f0;padding:6px 10px;border-radius:6px;font-size:.82rem;min-width:160px">
+        </select>
+      </div>
+      <button onclick="waResetFilters()"
+        style="background:#2a3a52;border:none;color:#8a9ab0;padding:6px 14px;border-radius:6px;font-size:.8rem;cursor:pointer;margin-left:auto">
+        ↺ Reset
+      </button>
+    </div>
+
+    <!-- ── KPI cards ── -->
+    <div id="wa-kpi-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px"></div>
+
+    <!-- ── Charts row 1: Incoming vs Closed | Conversion % ── -->
+    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card" style="padding:16px">
+        <div style="font-size:.78rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+          📦 Incoming vs Closed — Week by Week
+        </div>
+        <div style="position:relative;height:280px"><canvas id="wa-chart-bar"></canvas></div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font-size:.78rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+          📈 Conversion % Trend
+        </div>
+        <div style="position:relative;height:280px"><canvas id="wa-chart-conv"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Charts row 2: Pending gap | Insurer stacked ── -->
+    <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;margin-bottom:24px">
+      <div class="card" style="padding:16px">
+        <div style="font-size:.78rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+          ⚠️ Pending Gap (Incoming − Closed)
+        </div>
+        <div style="position:relative;height:260px"><canvas id="wa-chart-gap"></canvas></div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font-size:.78rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+          🏢 Weekly Closed — Insurer Breakdown
+        </div>
+        <div style="position:relative;height:260px"><canvas id="wa-chart-stacked"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Best / Worst performer cards ── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+      <div class="card" style="padding:16px">
+        <div style="font-size:.78rem;color:#1B7F79;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+          🏆 Top Performers (by Closed Orders)
+        </div>
+        <div id="wa-top-performers"></div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div style="font-size:.78rem;color:#E8A838;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+          ⚡ Needs Attention (High Pending Gap)
+        </div>
+        <div id="wa-low-performers"></div>
+      </div>
+    </div>
+
+    <!-- ── Insurer table ── -->
+    <div class="card" style="padding:16px;margin-bottom:24px">
+      <div style="font-size:.78rem;color:#8a9ab0;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">
+        📋 Insurer Summary Table
+      </div>
+      <div style="overflow-x:auto">
+        <table id="wa-insurer-table" style="width:100%;border-collapse:collapse;font-size:.82rem">
+          <thead>
+            <tr style="border-bottom:1px solid #2a3a52">
+              <th style="text-align:left;padding:8px 10px;color:#8a9ab0;font-weight:600;cursor:pointer" onclick="waSortTable('insurer')">Insurer ↕</th>
+              <th style="text-align:right;padding:8px 10px;color:#8a9ab0;font-weight:600;cursor:pointer" onclick="waSortTable('incoming')">Incoming ↕</th>
+              <th style="text-align:right;padding:8px 10px;color:#8a9ab0;font-weight:600;cursor:pointer" onclick="waSortTable('closed')">Closed ↕</th>
+              <th style="text-align:right;padding:8px 10px;color:#8a9ab0;font-weight:600;cursor:pointer" onclick="waSortTable('pending')">Pending ↕</th>
+              <th style="text-align:right;padding:8px 10px;color:#8a9ab0;font-weight:600;cursor:pointer" onclick="waSortTable('conversion')">Conv % ↕</th>
+            </tr>
+          </thead>
+          <tbody id="wa-insurer-tbody"></tbody>
+          <tfoot id="wa-insurer-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div id="wa-no-data" style="display:none;text-align:center;padding:60px 20px;color:#8a9ab0">
+      <div style="font-size:2.5rem;margin-bottom:12px">📅</div>
+      <div style="font-size:1rem;font-weight:600;margin-bottom:6px">Weekly data not yet available</div>
+      <div style="font-size:.82rem">The "Weekly Closed Cases - Insurer" and "Weekly Incoming Cases - Insurer" Gmail reports will populate this tab automatically once received.</div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /#view-weekly -->
+
 <script>
 // ─────────────────────────────────────────────────────────────────
 // TOP-LEVEL VIEW SWITCHER (Sales ↔ Account Managers)
@@ -850,6 +964,7 @@ function switchView(name) {
   const fromHash = (location.hash || '').replace(/^#/,'');
   if (fromHash === 'am') switchView('am');
   if (fromHash === 'insurer') switchView('insurer');
+  if (fromHash === 'weekly') switchView('weekly');
 })();
 
 // ─────────────────────────────────────────────────────────────────
@@ -2679,6 +2794,337 @@ function _daysUntilExpiry(dateStr) {
   return Math.round((expiry - today) / (24 * 60 * 60 * 1000));
 }
 
+// ─────────────────────────────────────────────────────────────────
+// WEEKLY ANALYSIS VIEW
+// ─────────────────────────────────────────────────────────────────
+
+// Module-level state for the weekly view
+const _wa = {
+  data:       null,   // raw weekly_insurer_data from JSON
+  filtered:   null,   // after applying insurer + week range filters
+  sortCol:    'closed',
+  sortDir:    -1,     // -1 = desc, 1 = asc
+};
+
+const _WA_PALETTE = [
+  '#1B7F79','#2196F3','#FF9800','#9C27B0','#E91E63',
+  '#00BCD4','#8BC34A','#FF5722','#3F51B5','#FFC107',
+  '#4CAF50','#607D8B','#F44336','#009688','#795548',
+];
+
+function renderWeeklyView(d) {
+  const wd = d?.weekly_insurer_data;
+  const noData = document.getElementById('wa-no-data');
+
+  if (!wd || !wd.labels || wd.labels.length === 0) {
+    if (noData) noData.style.display = 'block';
+    return;
+  }
+  if (noData) noData.style.display = 'none';
+
+  _wa.data = wd;
+
+  // Populate insurer dropdown
+  const insFlt = document.getElementById('wa-insurer-filter');
+  if (insFlt) {
+    insFlt.innerHTML = '<option value="ALL">All Insurers</option>' +
+      (wd.insurers || []).map(n => `<option value="${n}">${n}</option>`).join('');
+  }
+
+  // Populate week range dropdowns
+  const weekFrom = document.getElementById('wa-week-from');
+  const weekTo   = document.getElementById('wa-week-to');
+  if (weekFrom && weekTo) {
+    const opts = wd.labels.map((w, i) => `<option value="${i}">${w}</option>`).join('');
+    weekFrom.innerHTML = opts;
+    weekTo.innerHTML   = opts;
+    weekTo.selectedIndex = wd.labels.length - 1;
+  }
+
+  waApplyFilters();
+}
+
+function waApplyFilters() {
+  const wd = _wa.data;
+  if (!wd) return;
+
+  const selIns   = document.getElementById('wa-insurer-filter')?.value || 'ALL';
+  const fromIdx  = parseInt(document.getElementById('wa-week-from')?.value ?? 0);
+  const toIdx    = parseInt(document.getElementById('wa-week-to')?.value ?? wd.labels.length - 1);
+
+  const labels = wd.labels.slice(fromIdx, toIdx + 1);
+
+  let totals;
+  if (selIns === 'ALL') {
+    totals = wd.totals.slice(fromIdx, toIdx + 1);
+  } else {
+    // Build per-week totals for selected insurer
+    const ins = wd.by_insurer.find(r => r.insurer === selIns);
+    totals = labels.map((w, i) => {
+      const inc = ins ? (ins.weekly_incoming[fromIdx + i] || 0) : 0;
+      const cl  = ins ? (ins.weekly_closed[fromIdx + i]   || 0) : 0;
+      return { week: w, incoming: inc, closed: cl, pending: inc - cl,
+               conversion: inc ? Math.round(cl / inc * 1000) / 10 : 0 };
+    });
+  }
+
+  // Filter insurer breakdown for stacked chart
+  const byIns = (selIns === 'ALL')
+    ? wd.by_insurer
+    : wd.by_insurer.filter(r => r.insurer === selIns);
+
+  _wa.filtered = { labels, totals, byIns, selIns, fromIdx, toIdx };
+
+  waRenderKPIs(totals, byIns);
+  waRenderBarChart(labels, totals);
+  waRenderConvChart(labels, totals);
+  waRenderGapChart(labels, totals);
+  waRenderStackedChart(labels, byIns, fromIdx);
+  waRenderPerformers(byIns, fromIdx, toIdx, wd);
+  waRenderTable(byIns, fromIdx, toIdx, wd);
+}
+
+function waResetFilters() {
+  const wd = _wa.data;
+  if (!wd) return;
+  const insFlt  = document.getElementById('wa-insurer-filter');
+  const weekTo  = document.getElementById('wa-week-to');
+  const weekFrom = document.getElementById('wa-week-from');
+  if (insFlt)  insFlt.value = 'ALL';
+  if (weekFrom) weekFrom.selectedIndex = 0;
+  if (weekTo)   weekTo.selectedIndex = wd.labels.length - 1;
+  waApplyFilters();
+}
+
+function waRenderKPIs(totals, byIns) {
+  const totalInc  = totals.reduce((s, r) => s + r.incoming, 0);
+  const totalCl   = totals.reduce((s, r) => s + r.closed,   0);
+  const totalPend = totalInc - totalCl;
+  const convPct   = totalInc ? Math.round(totalCl / totalInc * 1000) / 10 : 0;
+  const weeks     = totals.length;
+
+  const kpis = [
+    { label: 'Total Incoming',  value: totalInc,  color: '#2196F3', icon: '📥' },
+    { label: 'Total Closed',    value: totalCl,   color: '#1B7F79', icon: '✅' },
+    { label: 'Pending Gap',     value: totalPend, color: totalPend > 0 ? '#E8A838' : '#4CAF50', icon: '⚠️' },
+    { label: 'Conversion %',    value: convPct + '%', color: convPct >= 70 ? '#4CAF50' : convPct >= 50 ? '#E8A838' : '#F44336', icon: '📊' },
+    { label: 'Weeks Analysed',  value: weeks,     color: '#9C27B0', icon: '📅' },
+  ];
+
+  const row = document.getElementById('wa-kpi-row');
+  if (!row) return;
+  row.innerHTML = kpis.map(k => `
+    <div class="card" style="padding:14px 16px;text-align:center">
+      <div style="font-size:1.4rem">${k.icon}</div>
+      <div style="font-size:1.5rem;font-weight:700;color:${k.color};margin:4px 0">${typeof k.value === 'number' ? k.value.toLocaleString('en-IN') : k.value}</div>
+      <div style="font-size:.72rem;color:#8a9ab0;text-transform:uppercase;letter-spacing:.04em">${k.label}</div>
+    </div>`).join('');
+}
+
+function waRenderBarChart(labels, totals) {
+  destroyChart('wa-chart-bar');
+  const ctx = document.getElementById('wa-chart-bar');
+  if (!ctx) return;
+  charts['wa-chart-bar'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Incoming', data: totals.map(r => r.incoming), backgroundColor: 'rgba(33,150,243,.7)', borderRadius: 3 },
+        { label: 'Closed',   data: totals.map(r => r.closed),   backgroundColor: 'rgba(27,127,121,.85)', borderRadius: 3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#c8d8e8', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#8a9ab0', maxRotation: 45 }, grid: { color: '#1e2d40' } },
+        y: { ticks: { color: '#8a9ab0' }, grid: { color: '#1e2d40' }, beginAtZero: true },
+      }
+    }
+  });
+}
+
+function waRenderConvChart(labels, totals) {
+  destroyChart('wa-chart-conv');
+  const ctx = document.getElementById('wa-chart-conv');
+  if (!ctx) return;
+  charts['wa-chart-conv'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Conversion %',
+        data: totals.map(r => r.conversion),
+        borderColor: '#4CAF50', backgroundColor: 'rgba(76,175,80,.12)',
+        pointBackgroundColor: '#4CAF50', tension: 0.3, fill: true,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8a9ab0', maxRotation: 45 }, grid: { color: '#1e2d40' } },
+        y: { ticks: { color: '#8a9ab0', callback: v => v + '%' }, grid: { color: '#1e2d40' }, min: 0, max: 100 },
+      }
+    }
+  });
+}
+
+function waRenderGapChart(labels, totals) {
+  destroyChart('wa-chart-gap');
+  const ctx = document.getElementById('wa-chart-gap');
+  if (!ctx) return;
+  charts['wa-chart-gap'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Pending Gap',
+        data: totals.map(r => r.pending),
+        backgroundColor: totals.map(r => r.pending > 0 ? 'rgba(232,168,56,.8)' : 'rgba(76,175,80,.8)'),
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8a9ab0', maxRotation: 45 }, grid: { color: '#1e2d40' } },
+        y: { ticks: { color: '#8a9ab0' }, grid: { color: '#1e2d40' } },
+      }
+    }
+  });
+}
+
+function waRenderStackedChart(labels, byIns, fromIdx) {
+  destroyChart('wa-chart-stacked');
+  const ctx = document.getElementById('wa-chart-stacked');
+  if (!ctx) return;
+
+  // Only show top 8 insurers by total closed (keep chart readable)
+  const sorted = [...byIns].sort((a, b) => {
+    const aTotal = labels.reduce((s, _, i) => s + (a.weekly_closed[fromIdx + i] || 0), 0);
+    const bTotal = labels.reduce((s, _, i) => s + (b.weekly_closed[fromIdx + i] || 0), 0);
+    return bTotal - aTotal;
+  }).slice(0, 8);
+
+  charts['wa-chart-stacked'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: sorted.map((ins, i) => ({
+        label: ins.insurer,
+        data: labels.map((_, li) => ins.weekly_closed[fromIdx + li] || 0),
+        backgroundColor: _WA_PALETTE[i % _WA_PALETTE.length],
+        borderRadius: 2,
+        stack: 'stack',
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#c8d8e8', font: { size: 10 }, boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#8a9ab0', maxRotation: 45 }, grid: { color: '#1e2d40' } },
+        y: { stacked: true, ticks: { color: '#8a9ab0' }, grid: { color: '#1e2d40' }, beginAtZero: true },
+      }
+    }
+  });
+}
+
+function waRenderPerformers(byIns, fromIdx, toIdx, wd) {
+  const sliceLen = toIdx - fromIdx + 1;
+  const ranked = byIns.map(ins => {
+    const inc = (ins.weekly_incoming || []).slice(fromIdx, toIdx + 1).reduce((s, v) => s + v, 0);
+    const cl  = (ins.weekly_closed   || []).slice(fromIdx, toIdx + 1).reduce((s, v) => s + v, 0);
+    return { insurer: ins.insurer, incoming: inc, closed: cl,
+             pending: inc - cl, conversion: inc ? Math.round(cl / inc * 1000) / 10 : 0 };
+  }).filter(r => r.incoming > 0 || r.closed > 0);
+
+  const byClose   = [...ranked].sort((a, b) => b.closed - a.closed).slice(0, 5);
+  const byPending = [...ranked].sort((a, b) => b.pending - a.pending).slice(0, 5);
+
+  const renderCard = (r, rank, colorFn) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1e2d40">
+      <div style="font-size:.9rem;font-weight:700;color:${colorFn(rank)};min-width:22px">#${rank + 1}</div>
+      <div style="flex:1;font-size:.8rem;color:#c8d8e8;font-weight:500">${r.insurer}</div>
+      <div style="font-size:.78rem;color:#8a9ab0;text-align:right">
+        <span style="color:#1B7F79;font-weight:600">${r.closed}</span> closed
+        · <span style="color:${r.conversion >= 70 ? '#4CAF50' : '#E8A838'}">${r.conversion}%</span>
+      </div>
+    </div>`;
+
+  const topEl = document.getElementById('wa-top-performers');
+  const lowEl = document.getElementById('wa-low-performers');
+  if (topEl) topEl.innerHTML = byClose.map((r, i) => renderCard(r, i, i => ['#FFD700','#C0C0C0','#CD7F32','#8a9ab0','#8a9ab0'][i])).join('');
+  if (lowEl) lowEl.innerHTML = byPending.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1e2d40">
+      <div style="font-size:.9rem;font-weight:700;color:#E8A838;min-width:22px">#${i + 1}</div>
+      <div style="flex:1;font-size:.8rem;color:#c8d8e8;font-weight:500">${r.insurer}</div>
+      <div style="font-size:.78rem;color:#8a9ab0;text-align:right">
+        <span style="color:#E8A838;font-weight:600">${r.pending}</span> pending
+        · ${r.incoming} in / ${r.closed} cl
+      </div>
+    </div>`).join('');
+}
+
+let _waSortCol = 'closed', _waSortDir = -1;
+
+function waSortTable(col) {
+  if (_waSortCol === col) _waSortDir *= -1;
+  else { _waSortCol = col; _waSortDir = -1; }
+  const f = _wa.filtered;
+  if (f) waRenderTable(f.byIns, f.fromIdx, f.toIdx, _wa.data);
+}
+
+function waRenderTable(byIns, fromIdx, toIdx, wd) {
+  const tbody = document.getElementById('wa-insurer-tbody');
+  const tfoot = document.getElementById('wa-insurer-tfoot');
+  if (!tbody) return;
+
+  const rows = byIns.map(ins => {
+    const inc = (ins.weekly_incoming || []).slice(fromIdx, toIdx + 1).reduce((s, v) => s + v, 0);
+    const cl  = (ins.weekly_closed   || []).slice(fromIdx, toIdx + 1).reduce((s, v) => s + v, 0);
+    return { insurer: ins.insurer, incoming: inc, closed: cl,
+             pending: inc - cl, conversion: inc ? Math.round(cl / inc * 1000) / 10 : 0 };
+  }).filter(r => r.incoming > 0 || r.closed > 0);
+
+  rows.sort((a, b) => {
+    const av = a[_waSortCol], bv = b[_waSortCol];
+    if (typeof av === 'string') return _waSortDir * av.localeCompare(bv);
+    return _waSortDir * (av - bv);
+  });
+
+  const convColor = v => v >= 70 ? '#4CAF50' : v >= 50 ? '#E8A838' : '#F44336';
+
+  tbody.innerHTML = rows.map(r => `
+    <tr style="border-bottom:1px solid #1a2740" onmouseover="this.style.background='#1a2740'" onmouseout="this.style.background=''">
+      <td style="padding:8px 10px;color:#c8d8e8">${r.insurer}</td>
+      <td style="padding:8px 10px;text-align:right;color:#2196F3;font-weight:600">${r.incoming.toLocaleString('en-IN')}</td>
+      <td style="padding:8px 10px;text-align:right;color:#1B7F79;font-weight:600">${r.closed.toLocaleString('en-IN')}</td>
+      <td style="padding:8px 10px;text-align:right;color:${r.pending > 0 ? '#E8A838' : '#4CAF50'};font-weight:600">${r.pending.toLocaleString('en-IN')}</td>
+      <td style="padding:8px 10px;text-align:right;color:${convColor(r.conversion)};font-weight:700">${r.conversion}%</td>
+    </tr>`).join('');
+
+  // Totals row
+  const totInc  = rows.reduce((s, r) => s + r.incoming, 0);
+  const totCl   = rows.reduce((s, r) => s + r.closed, 0);
+  const totPend = totInc - totCl;
+  const totConv = totInc ? Math.round(totCl / totInc * 1000) / 10 : 0;
+  tfoot.innerHTML = `
+    <tr style="border-top:2px solid #2a3a52;font-weight:700">
+      <td style="padding:8px 10px;color:#e0e8f0">Total</td>
+      <td style="padding:8px 10px;text-align:right;color:#2196F3">${totInc.toLocaleString('en-IN')}</td>
+      <td style="padding:8px 10px;text-align:right;color:#1B7F79">${totCl.toLocaleString('en-IN')}</td>
+      <td style="padding:8px 10px;text-align:right;color:${totPend > 0 ? '#E8A838' : '#4CAF50'}">${totPend.toLocaleString('en-IN')}</td>
+      <td style="padding:8px 10px;text-align:right;color:${convColor(totConv)}">${totConv}%</td>
+    </tr>`;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// INSURER DETAILS VIEW
+// ─────────────────────────────────────────────────────────────────
+
 function renderInsurerDetailsView(d) {
   const container = document.getElementById('insurer-details-content');
   if (!container) return;
@@ -3472,6 +3918,7 @@ async function loadData() {
     ['Actions',                 () => renderActions(data)],
     ['Insurer details',         () => renderInsurerDetailsView(data)],
     ['June leaderboard',        () => renderJuneLeaderboard(data)],
+    ['Weekly analysis',         () => renderWeeklyView(data)],
   ];
   const failures = [];
   for (const [label, fn] of renderSteps) {
