@@ -134,6 +134,20 @@ def load_sync_log() -> dict:
     data.setdefault("processed_message_ids", [])
     data.setdefault("attachment_hashes", {})    # sha256 → report_name
     data.setdefault("last_sync", None)
+
+    # Seed the weekly billing cache from the committed JSON if the cache is
+    # empty or missing.  This ensures historical months (e.g. May ABSLI/Bajaj
+    # Life) survive the Gmail billing file rolling to a new month.
+    if not data.get("weekly_billing_cache"):
+        _seed_path = AUTO / "weekly_billing_seed.json"
+        if _seed_path.exists():
+            try:
+                _seed = json.loads(_seed_path.read_text())
+                data["weekly_billing_cache"] = _seed
+                log.info("  Seeded weekly_billing_cache from weekly_billing_seed.json")
+            except Exception as _e:
+                log.warning(f"  Could not load weekly_billing_seed.json: {_e}")
+
     return data
 
 
