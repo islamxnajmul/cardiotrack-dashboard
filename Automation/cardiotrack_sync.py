@@ -1537,7 +1537,7 @@ def _revenue_kpis_from_detailed(records: list) -> dict:
     }
 
 
-def build_dashboard_data() -> dict:
+def build_dashboard_data(sync_data: dict | None = None) -> dict:
     """Combine all sources into one JSON-serialisable dict."""
     log.info("Building dashboard data…")
     qt  = read_quarter_target()
@@ -1841,6 +1841,25 @@ def build_dashboard_data() -> dict:
         _wb_rev[_wlbl][_ins]   += _amt
         _wb_cl[_wlbl][_ins]    += 1
 
+    # ── Historical billing cache (preserves data when Gmail file rolls to new month) ──
+    # Problem: the daily "Daily Insurer Billing" XLS from Gmail may only contain the
+    # current month's transactions.  When a new month starts, past months' closed
+    # counts / revenue disappear for insurers like ABSLI / Bajaj Life that don't
+    # bill in June.  We fix this by persisting every week's data in sync_log.json
+    # and merging it back in on subsequent runs.
+    _billing_cache: dict = {}
+    if sync_data:
+        _billing_cache = sync_data.get("weekly_billing_cache", {})
+
+    # Merge: for any week+insurer pair where current billing has 0 data but the
+    # cache has non-zero data, use the cached values.
+    for _cwlbl, _cins_data in _billing_cache.items():
+        for _cins, _cvals in _cins_data.items():
+            if _wb_rev[_cwlbl][_cins] == 0 and _wb_cl[_cwlbl][_cins] == 0:
+                _wb_rev[_cwlbl][_cins] = _cvals.get("revenue", 0)
+                _wb_cl[_cwlbl][_cins]  = _cvals.get("closed", 0)
+                _wb_weeks_order[_cwlbl] = True   # ensure week stays in labels
+
     # Source 2: incoming order counts from weekly CSV reports
     _w_inc = read_weekly_file(WEEKLY_INCOMING_FILE, "Weekly Incoming")
 
@@ -1854,8 +1873,27 @@ def build_dashboard_data() -> dict:
             _w_inc_map[_wlbl][_ins] += _r.get("count", 0)
             _wb_weeks_order[_wlbl] = True   # include CSV weeks too
 
-    # Final sorted week labels (chronological by insertion from billing, oldest first)
-    _weekly_labels = list(_wb_weeks_order.keys())
+    # Sort week labels chronologically (oldest first).
+    # Billing XLS rows may be newest-first, and CSV weeks use "W21 2026" format;
+    # sort billing-style labels ("DD Mon – DD Mon YYYY") by their start date, 
+    # then append ISO-week labels at the end.
+    def _wlbl_sort_key(lbl: str):
+        import re as _re2, datetime as _dt3
+        _mon_map = {v[:3].lower(): k for k, v in enumerate(
+            ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], 1)}
+        # "DD Mon – DD Mon YYYY" style (billing weeks)
+        m = _re2.match(r"(\d+)\s+(\w+)\s+–\s+(\d+)\s+(\w+)\s+(\d{4})", lbl)
+        if m:
+            yr = int(m.group(5)); mo = _mon_map.get(m.group(2)[:3].lower(), 0); dy = int(m.group(1))
+            return (yr, mo, dy)
+        # "W21 2026" style (ISO week from CSV) — convert to Mon of that week
+        m2 = _re2.match(r"W(\d+)\s+(\d{4})", lbl)
+        if m2:
+            d = _dt3.datetime.strptime(f"{m2.group(2)}-W{int(m2.group(1)):02d}-1", "%G-W%V-%u").date()
+            return (d.year, d.month, d.day)
+        return (9999, 0, 0)
+
+    _weekly_labels = sorted(_wb_weeks_order.keys(), key=_wlbl_sort_key)
 
     # All unique insurers across billing + CSV
     _weekly_insurers = sorted(
@@ -1908,6 +1946,20 @@ def build_dashboard_data() -> dict:
 
     # Sort by total closed desc so most active insurers appear first in tabs
     _weekly_by_insurer.sort(key=lambda x: x["total_closed"], reverse=True)
+
+    # Persist updated weekly billing data back to sync_log cache
+    _new_billing_cache: dict = {}
+    for _wlbl in _wb_rev:
+        _wk_data: dict = {}
+        for _ins in _wb_rev[_wlbl]:
+            _r = _wb_rev[_wlbl][_ins]
+            _c = _wb_cl[_wlbl][_ins]
+            if _r > 0 or _c > 0:
+                _wk_data[_ins] = {"revenue": _r, "closed": _c}
+        if _wk_data:
+            _new_billing_cache[_wlbl] = _wk_data
+    if sync_data is not None:
+        sync_data["weekly_billing_cache"] = _new_billing_cache
 
     weekly_insurer_data = {
         "labels":       _weekly_labels,
@@ -2308,7 +2360,8 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
         raise RuntimeError("openpyxl not installed — run: pip3 install openpyxl")
 
     log.info("Step 2: Processing Excel data…")
-    data = build_dashboard_data()
+    _run_sync_log = load_sync_log()   # load here so weekly billing cache is available
+    data = build_dashboard_data(sync_data=_run_sync_log)
 
     # Embed the Gmail status in the dashboard data so the UI can surface it.
     if gmail_status is not None:
@@ -2357,6 +2410,9 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
     OUTPUT.mkdir(parents=True, exist_ok=True)
     DATA_JSON.write_text(json.dumps(data, indent=2, ensure_ascii=False))
     log.info(f"  ✓ {DATA_JSON.name}")
+    # Persist updated billing cache (weekly_billing_cache) back to sync_log
+    save_sync_log(_run_sync_log)
+    log.info("  ✓ sync_log.json updated (weekly billing cache persisted)")
 
     log.info("Step 4: Rebuilding HTML dashboard…")
     rebuild_html(data)
