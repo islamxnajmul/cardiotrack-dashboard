@@ -1806,7 +1806,9 @@ def build_dashboard_data() -> dict:
     import datetime as _dt2
     from collections import defaultdict as _dd2
 
-    _WEEKLY_ANCHOR = _dt2.date(2026, 5, 31)   # first Sunday of the analysis window
+    _WEEKLY_ANCHOR = _dt2.date(2026, 5, 25)   # Sunday 25 May — one week before May 31 so the
+                                               # May 25-30 billing cycle is included (ABSLI,
+                                               # Bajaj Life etc. last billed on May 30)
 
     def _billing_week_label(d: datetime) -> str | None:
         """Return 'DD Mon – DD Mon YYYY' label for a Sun-Sat week, or None if before anchor."""
