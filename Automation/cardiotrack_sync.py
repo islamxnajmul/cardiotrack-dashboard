@@ -1854,6 +1854,16 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
             monthly_billing[_mo] = round(_csv_tot, 2)
             if _mo in trend_labels:
                 trend_values[trend_labels.index(_mo)] = round(_csv_tot, 2)
+            # Also push CSV per-insurer breakdown into monthly_by_insurer so that
+            # sum(by_insurer[month].values()) == monthly_billing[month].
+            # Without this, the combined "All" trend line and the per-insurer drill-down
+            # come from different sources and diverge (e.g. ICICI Lombard looks wrong).
+            _csv_ins_map = _csv_by_ins_mo.get(_mo, {})
+            if _csv_ins_map and bk:
+                _mo_ins = bk.setdefault("monthly_by_insurer", {}).setdefault(_mo, {})
+                for _cins, _camt in _csv_ins_map.items():
+                    if _mo_ins.get(_cins, 0) < _camt:
+                        _mo_ins[_cins] = round(_camt, 2)
             _csv_months_updated += 1
     log.info(f"  CSV merge: {_csv_months_updated} months updated from CSV "
              f"({len(_csv_monthly)} months in CSV, "
