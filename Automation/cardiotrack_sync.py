@@ -148,6 +148,19 @@ def load_sync_log() -> dict:
             except Exception as _e:
                 log.warning(f"  Could not load weekly_billing_seed.json: {_e}")
 
+    # Same for monthly billing — each billing XLS covers only one insurer group
+    # (file 1 = ABSLI/Bajaj Life, file 2 = ICICI Lombard/HDFC etc.). When the
+    # June Gmail file has 0 rows for file-1 insurers, those months disappear.
+    if not data.get("monthly_billing_cache"):
+        _mseed_path = AUTO / "monthly_billing_seed.json"
+        if _mseed_path.exists():
+            try:
+                _mseed = json.loads(_mseed_path.read_text())
+                data["monthly_billing_cache"] = _mseed
+                log.info("  Seeded monthly_billing_cache from monthly_billing_seed.json")
+            except Exception as _e:
+                log.warning(f"  Could not load monthly_billing_seed.json: {_e}")
+
     return data
 
 
@@ -1565,6 +1578,51 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
     detailed_records = read_detailed_billing_files()
     if detailed_records:
         bk = _revenue_kpis_from_detailed(detailed_records)
+
+        # ── Monthly billing cache: merge historical data that the current XLS
+        # may be missing (e.g. file-1 insurers like ABSLI/Bajaj Life when the
+        # June download has 0 rows for them in prior months). ─────────────────
+        _mb_cache: dict = {}
+        if sync_data:
+            _mb_cache = sync_data.get("monthly_billing_cache", {})
+
+        _mb_cur = bk["monthly_billing"]           # {month: total} from XLS
+        _mb_ins = bk["monthly_by_insurer"]        # {month: {ins: amt}} from XLS
+
+        for _cmo, _cdata in _mb_cache.items():
+            _cached_total  = _cdata.get("total", 0)
+            _cached_by_ins = _cdata.get("by_insurer", {})
+            _cur_total     = _mb_cur.get(_cmo, 0)
+
+            if _cached_total > _cur_total:
+                # Current XLS is missing some insurers for this month — add them in
+                if _cmo not in _mb_ins:
+                    _mb_ins[_cmo] = {}
+                for _cins, _camt in _cached_by_ins.items():
+                    if _mb_ins[_cmo].get(_cins, 0) < _camt:
+                        _mb_ins[_cmo][_cins] = _camt
+                # Recalculate month total from merged by_insurer map
+                _mb_cur[_cmo] = round(sum(_mb_ins[_cmo].values()), 2)
+
+        # Rebuild bk values from merged maps
+        bk["monthly_billing"]    = _mb_cur
+        bk["monthly_by_insurer"] = _mb_ins
+
+        # Persist updated monthly cache (only if richer than what was cached)
+        _new_mb_cache = {}
+        for _mo, _ins_map in _mb_ins.items():
+            _tot = round(sum(_ins_map.values()), 2)
+            if _tot > 0:
+                _new_mb_cache[_mo] = {"total": _tot,
+                                      "by_insurer": {k: round(v,2) for k,v in _ins_map.items() if v>0}}
+        # Keep months from cache that are not in current data at all
+        for _cmo, _cdata in _mb_cache.items():
+            if _cmo not in _new_mb_cache and _cdata.get("total",0) > 0:
+                _new_mb_cache[_cmo] = _cdata
+        if sync_data is not None:
+            sync_data["monthly_billing_cache"] = _new_mb_cache
+        # ─────────────────────────────────────────────────────────────────────
+
         apr_rev         = bk["apr_rev"]
         may_rev         = bk["may_rev"]
         jun_rev         = bk["jun_rev"]
