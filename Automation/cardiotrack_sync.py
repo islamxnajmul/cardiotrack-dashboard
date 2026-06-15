@@ -1849,13 +1849,23 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         if 'Apr 2026' in trend_labels:
             trend_values[trend_labels.index('Apr 2026')] = apr_rev
 
-    if _may_csv_total > may_rev:
-        log.info(f"  ↻ CSV May ₹{_may_csv_total:,.0f} > XLS ₹{may_rev:,.0f} — using CSV")
+    # For May: compare CSV against the HIGHER of (XLS may_rev, cache-merged value).
+    # The cache-merged value can be larger than raw XLS may_rev when GitHub Actions
+    # downloads a June billing file that has few May rows (ABSLI/Bajaj haven't billed
+    # in June yet), making may_rev ≈ 0.  Without this guard the partial CSV (23.7L)
+    # would overwrite the correct cache value (44.4L).
+    _may_effective = max(may_rev, monthly_billing.get('May 2026', 0))
+    if _may_csv_total > _may_effective:
+        log.info(f"  ↻ CSV May ₹{_may_csv_total:,.0f} > effective ₹{_may_effective:,.0f} — using CSV")
         may_rev  = _may_csv_total
         q2_total = apr_rev + may_rev + jun_rev
         monthly_billing['May 2026'] = may_rev
         if 'May 2026' in trend_labels:
             trend_values[trend_labels.index('May 2026')] = may_rev
+    else:
+        # Keep the higher value (cache or XLS) already in monthly_billing
+        may_rev = _may_effective
+        q2_total = apr_rev + may_rev + jun_rev
 
     # Jun: CSV is the only source until the billing XLS has June rows
     if _jun_csv_total > jun_rev:
