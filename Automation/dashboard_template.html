@@ -1569,14 +1569,14 @@ function renderOrdersTable(d) {
 let _ordersTrendData   = null;
 let _ordersTrendActive = 'All';
 
-const TREND_MONTHS = [
-  'Mar 2025','Apr 2025','May 2025','Jun 2025','Jul 2025','Aug 2025',
-  'Sep 2025','Oct 2025','Nov 2025','Dec 2025',
-  'Jan 2026','Feb 2026','Mar 2026','Apr 2026','May 2026'
-];
+// Derived from orders_monthly_totals so the window auto-advances each month.
+// Populated in renderOrdersTrendChart() — do not use before that call.
+let TREND_MONTHS = [];
 
 function renderOrdersTrendChart(d) {
   _ordersTrendData = d;
+  // Derive month window from the data so it auto-advances each month.
+  TREND_MONTHS = (d.orders_monthly_totals || []).map(r => r.month);
   _buildOrdersTrendFilters(d);
   _drawOrdersTrendChart(d, _ordersTrendActive);
 }

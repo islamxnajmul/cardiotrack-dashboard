@@ -1731,14 +1731,8 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
             "closed":   cl_monthly.get(m, {}),
         }
 
-    # Flat list for the monthly-trend bar/line chart — last 15 months
-    orders_monthly_totals = []
-    for m in all_order_months:
-        orders_monthly_totals.append({
-            "month":    m,
-            "incoming": sum(inc_monthly.get(m, {}).values()),
-            "closed":   sum(cl_monthly.get(m, {}).values()),
-        })
+    # orders_monthly_totals is built below after billing_order is defined,
+    # so the chart window always matches the revenue trend (same 15 months).
 
     # All known insurers — union of order files + billing data so no insurer is missed
     all_insurers = sorted(set(list(inc_by_insurer) + list(cl_by_insurer) + list(rev_by_insurer)))
@@ -1771,6 +1765,18 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
     billing_order = _months
     trend_labels  = billing_order
     trend_values  = [monthly_billing.get(m, 0) for m in billing_order]
+
+    # Flat list for the monthly-trend bar/line chart — always the same 15-month
+    # calendar window as the revenue trend.  Months with no order data show 0 so
+    # Jun 2026 (and future months) appear as soon as the window includes them.
+    orders_monthly_totals = [
+        {
+            "month":    m,
+            "incoming": sum(inc_monthly.get(m, {}).values()),
+            "closed":   sum(cl_monthly.get(m,  {}).values()),
+        }
+        for m in billing_order
+    ]
 
     # ── Apr customer breakdown (from billing Apr data) ───────────────────────
     # Build from Apr billing per-insurer; cross-reference order counts for
@@ -2109,7 +2115,7 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         },
         # Per-month breakdown — drives the new month-filter tabs in the dashboard.
         "orders_monthly":         orders_monthly,
-        "orders_monthly_totals":  orders_monthly_totals[-15:],   # keep last 15 months for chart
+        "orders_monthly_totals":  orders_monthly_totals,          # exactly 15 months, matches revenue trend window
         # Required-to-hit-target numbers from the Plan sheet's May/June sections
         "monthly_targets":        qt.get("monthly_targets", {}),
         # Sheet2-driven action items consumed by renderActions()
