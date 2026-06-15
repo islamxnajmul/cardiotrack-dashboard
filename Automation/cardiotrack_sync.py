@@ -1800,27 +1800,37 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         for r in insurer_table if r["revenue"] > 0
     ]
 
-    # ── CSV-based per-insurer revenue (Gmail Revenue_Generated_Insurer_Wise.csv) ──
-    # Read separately so we can show the billing-vs-CSV gap in the dashboard.
+    # ── CSV-based revenue (Gmail Revenue_Generated_Insurer_Wise.csv) ────────────
+    # The CSV covers ALL historical months and is refreshed from Gmail every run.
+    # It is used as the PRIMARY source for the monthly revenue trend: for every
+    # month in the CSV, take max(CSV, XLS/cache) so no data is lost from either
+    # source.  This eliminates the XLS month-gap problem (Gmail billing files
+    # sometimes only contain the current month's rows).
     import datetime as _dt
     _rev_csv = read_revenue_file(REVENUE_FILE)
+
+    # Build per-month and per-insurer totals from CSV for ALL months
+    _csv_monthly:    dict = {}   # {month: total}
+    _csv_by_ins_mo:  dict = {}   # {month: {insurer: total}}
     _may_csv_by_ins: dict = {}
     _apr_csv_by_ins: dict = {}
-    for _r in _rev_csv:
-        _m   = (_r.get("month") or "").strip()
-        _ins = _canonical_insurer_name(_r.get("insurer", ""))
-        _amt = _r.get("amount", 0) or 0
-        if _m == "May 2026":
-            _may_csv_by_ins[_ins] = _may_csv_by_ins.get(_ins, 0) + _amt
-        elif _m == "Apr 2026":
-            _apr_csv_by_ins[_ins] = _apr_csv_by_ins.get(_ins, 0) + _amt
     _jun_csv_by_ins: dict = {}
     for _r in _rev_csv:
         _m   = (_r.get("month") or "").strip()
         _ins = _canonical_insurer_name(_r.get("insurer", ""))
         _amt = _r.get("amount", 0) or 0
-        if _m == "Jun 2026":
+        if not _m or not _ins:
+            continue
+        _csv_monthly[_m] = _csv_monthly.get(_m, 0) + _amt
+        _csv_by_ins_mo.setdefault(_m, {})
+        _csv_by_ins_mo[_m][_ins] = _csv_by_ins_mo[_m].get(_ins, 0) + _amt
+        if _m == "Apr 2026":
+            _apr_csv_by_ins[_ins] = _apr_csv_by_ins.get(_ins, 0) + _amt
+        elif _m == "May 2026":
+            _may_csv_by_ins[_ins] = _may_csv_by_ins.get(_ins, 0) + _amt
+        elif _m == "Jun 2026":
             _jun_csv_by_ins[_ins] = _jun_csv_by_ins.get(_ins, 0) + _amt
+
     _may_csv_total = round(sum(_may_csv_by_ins.values()), 2)
     _apr_csv_total = round(sum(_apr_csv_by_ins.values()), 2)
     _jun_csv_total = round(sum(_jun_csv_by_ins.values()), 2)
@@ -1829,52 +1839,31 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         if REVENUE_FILE.exists() else None
     )
 
-    # ── Reconcile XLS and CSV revenue totals ────────────────────────────────
-    # The Revenue_Generated_Insurer_Wise.csv often captures late billing
-    # entries (e.g. billing closed in May but added to Zoho after the XLS
-    # was last downloaded). When the CSV total is HIGHER than the XLS total
-    # for a given month, it means the CSV has more complete data → use CSV.
-    # When CSV is LOWER (stale partial snapshot), XLS wins.
+    # ── Merge CSV into monthly_billing for ALL months (CSV-first strategy) ──────
+    # For each month: keep whichever source has the higher total so no data is lost.
     _billing_mtime = max(
         (f.stat().st_mtime if f.exists() else 0)
         for f in [DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2, BILLING_FILE]
     )
     _csv_mtime = REVENUE_FILE.stat().st_mtime if REVENUE_FILE.exists() else 0
 
-    if _apr_csv_total > apr_rev:
-        log.info(f"  ↻ CSV Apr ₹{_apr_csv_total:,.0f} > XLS ₹{apr_rev:,.0f} — using CSV")
-        apr_rev  = _apr_csv_total
-        q2_total = apr_rev + may_rev + jun_rev
-        monthly_billing['Apr 2026'] = apr_rev
-        if 'Apr 2026' in trend_labels:
-            trend_values[trend_labels.index('Apr 2026')] = apr_rev
+    _csv_months_updated = 0
+    for _mo, _csv_tot in _csv_monthly.items():
+        _cur = monthly_billing.get(_mo, 0)
+        if _csv_tot > _cur:
+            monthly_billing[_mo] = round(_csv_tot, 2)
+            if _mo in trend_labels:
+                trend_values[trend_labels.index(_mo)] = round(_csv_tot, 2)
+            _csv_months_updated += 1
+    log.info(f"  CSV merge: {_csv_months_updated} months updated from CSV "
+             f"({len(_csv_monthly)} months in CSV, "
+             f"{len(monthly_billing)} months total)")
 
-    # For May: compare CSV against the HIGHER of (XLS may_rev, cache-merged value).
-    # The cache-merged value can be larger than raw XLS may_rev when GitHub Actions
-    # downloads a June billing file that has few May rows (ABSLI/Bajaj haven't billed
-    # in June yet), making may_rev ≈ 0.  Without this guard the partial CSV (23.7L)
-    # would overwrite the correct cache value (44.4L).
-    _may_effective = max(may_rev, monthly_billing.get('May 2026', 0))
-    if _may_csv_total > _may_effective:
-        log.info(f"  ↻ CSV May ₹{_may_csv_total:,.0f} > effective ₹{_may_effective:,.0f} — using CSV")
-        may_rev  = _may_csv_total
-        q2_total = apr_rev + may_rev + jun_rev
-        monthly_billing['May 2026'] = may_rev
-        if 'May 2026' in trend_labels:
-            trend_values[trend_labels.index('May 2026')] = may_rev
-    else:
-        # Keep the higher value (cache or XLS) already in monthly_billing
-        may_rev = _may_effective
-        q2_total = apr_rev + may_rev + jun_rev
-
-    # Jun: CSV is the only source until the billing XLS has June rows
-    if _jun_csv_total > jun_rev:
-        log.info(f"  ↻ CSV Jun ₹{_jun_csv_total:,.0f} > XLS ₹{jun_rev:,.0f} — using CSV")
-        jun_rev  = _jun_csv_total
-        q2_total = apr_rev + may_rev + jun_rev
-        monthly_billing['Jun 2026'] = jun_rev
-        if 'Jun 2026' in trend_labels:
-            trend_values[trend_labels.index('Jun 2026')] = jun_rev
+    # Refresh Q2 scalars from the now-merged monthly_billing dict
+    apr_rev  = monthly_billing.get('Apr 2026', apr_rev)
+    may_rev  = monthly_billing.get('May 2026', may_rev)
+    jun_rev  = monthly_billing.get('Jun 2026', jun_rev)
+    q2_total = apr_rev + may_rev + jun_rev
 
     log.info(f"  Final revenue:  Apr ₹{apr_rev:,.0f}  May ₹{may_rev:,.0f}  Jun ₹{jun_rev:,.0f}  "
              f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b') if _csv_mtime else 'N/A'}, "
