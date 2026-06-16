@@ -1,16 +1,11 @@
 {
   "meta": {
-    "generated_at": "2026-06-04T09:00:08.099699+00:00",
+    "generated_at": "2026-06-16T10:18:18.417262+00:00",
     "q2_target": 20000000,
-    "as_of": "14 May 2026",
+    "as_of": "16 Jun 2026",
     "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
     "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
     "files": {
-      "revenue_csv": {
-        "name": "Revenue_Generated_Insurer_Wise.csv",
-        "mtime": "2026-05-18T03:24:35.162853+00:00",
-        "size": 18244
-      },
       "incoming_csv": {
         "name": "Incoming_Order_Count_Insurer_Wise.csv",
         "mtime": "2026-05-18T03:24:33.853640+00:00",
@@ -35,11 +30,11 @@
   },
   "kpis": {
     "q2_target": 20000000,
-    "apr_revenue": 4942401.0,
+    "apr_revenue": 4943699.03,
     "may_revenue": 4435947.2,
     "jun_revenue": 0,
-    "q2_achieved": 9378348.2,
-    "gap": 10621651.8,
+    "q2_achieved": 9379646.23,
+    "gap": 10620353.77,
     "achievement_pct": 46.9,
     "baseline_est": 15000000,
     "delta_required": 5000000,
@@ -47,7 +42,6 @@
   },
   "monthly_trend": {
     "labels": [
-      "Mar 2025",
       "Apr 2025",
       "May 2025",
       "Jun 2025",
@@ -61,14 +55,14 @@
       "Feb 2026",
       "Mar 2026",
       "Apr 2026",
-      "May 2026"
+      "May 2026",
+      "Jun 2026"
     ],
     "values": [
-      6866300.0,
       3841302.0,
-      3387996.0,
+      3394896.0,
       3364570.0,
-      4672253.0,
+      4674553.0,
       5235077.0,
       4933024.88,
       4203597.4,
@@ -76,21 +70,12 @@
       6331598.0,
       5995662.5,
       5880660.5,
-      6493647.0,
-      4942401.0,
-      4435947.2
+      6494808.0,
+      4943699.03,
+      4435947.2,
+      0
     ],
     "by_insurer": {
-      "Mar 2025": {
-        "Bajaj Life": 3630500.0,
-        "Aditya Birla Sun Life Insurance": 838007.0,
-        "Canara HSBC Life Insurance": 169134.0,
-        "ICICI Lombard": 1470430.0,
-        "HDFC Life": 590430.0,
-        "TATA AIG Health Insurance": 17871.0,
-        "Ageas Federal Life Insurance": 147869.0,
-        "Star Union Daichi Life Insurance": 2059.0
-      },
       "Apr 2025": {
         "Bajaj Life": 1588883.0,
         "Canara HSBC Life Insurance": 34965.0,
@@ -107,7 +92,8 @@
         "Canara HSBC Life Insurance": 2028.0,
         "HDFC Life": 395065.0,
         "ICICI Lombard": 321435.0,
-        "Ageas Federal Life Insurance": 53686.0
+        "Ageas Federal Life Insurance": 53686.0,
+        "Cardiotrack Corporate Services": 6900.0
       },
       "Jun 2025": {
         "Aditya Birla Sun Life Insurance": 877996.0,
@@ -128,7 +114,8 @@
         "HDFC Life": 533450.0,
         "Star Union Daichi Life Insurance": 119020.0,
         "Pramerica Life Insurance": 14528.0,
-        "TATA AIG Health Insurance": 3818.0
+        "TATA AIG Health Insurance": 3818.0,
+        "Cardiotrack Corporate Services": 2300.0
       },
       "Aug 2025": {
         "Bajaj Life": 2457927.0,
@@ -199,7 +186,8 @@
         "Canara HSBC Life Insurance": 1330.0,
         "ICICI Lombard": 1522270.0,
         "Star Union Daichi Life Insurance": 346988.0,
-        "Ageas Federal Life Insurance": 173052.0
+        "Ageas Federal Life Insurance": 173052.0,
+        "Cardiotrack Home Services": 1161.0
       },
       "Apr 2026": {
         "Aditya Birla Sun Life Insurance": 1617039.0,
@@ -207,7 +195,8 @@
         "ICICI Lombard": 1307400.0,
         "Ageas Federal Life Insurance": 148821.0,
         "Star Union Daichi Life Insurance": 202364.0,
-        "Pramerica Life Insurance": 25843.0
+        "Pramerica Life Insurance": 25843.0,
+        "Cardiotrack Home Services": 1298.03
       },
       "May 2026": {
         "Bajaj Life": 1506413.0,
@@ -216,14 +205,15 @@
         "Ageas Federal Life Insurance": 233395.0,
         "ICICI Lombard": 1096165.0,
         "Pramerica Life Insurance": 94878.2
-      }
+      },
+      "Jun 2026": {}
     }
   },
   "month_wise": [
     {
       "month": "April 2026",
       "target": 6000000,
-      "achieved": 4942401.0,
+      "achieved": 4943699.03,
       "pct": 82.4
     },
     {
@@ -347,26 +337,6 @@
       "revenue": 0
     }
   ],
-  "may_revenue_csv_by_insurer": {
-    "Aditya Birla Sun Life Insurance": 757321.0,
-    "Ageas Federal Life Insurance": 111426.0,
-    "Bajaj Life": 855088.0,
-    "ICICI Lombard": 575030.0,
-    "Pramerica Life Insurance": 475.0,
-    "Star Union Daichi Life Insurance": 70244.0
-  },
-  "apr_revenue_csv_by_insurer": {
-    "Aditya Birla Sun Life Insurance": 1617039.0,
-    "Ageas Federal Life Insurance": 148821.0,
-    "Bajaj Life": 1640934.0,
-    "Cardiotrack Home Services": 1298.03,
-    "ICICI Lombard": 1307400.0,
-    "Pramerica Life Insurance": 25843.0,
-    "Star Union Daichi Life Insurance": 210887.0
-  },
-  "may_revenue_csv_total": 2369584.0,
-  "apr_revenue_csv_total": 4952222.03,
-  "revenue_csv_mtime": "2026-05-18T03:24:35.162853+00:00",
   "pipeline": [
     {
       "name": "Aditya Birla Sun Life Insurance - May",
@@ -1833,11 +1803,6 @@
   },
   "orders_monthly_totals": [
     {
-      "month": "Mar 2025",
-      "incoming": 3897,
-      "closed": 2569
-    },
-    {
       "month": "Apr 2025",
       "incoming": 2359,
       "closed": 1514
@@ -1906,6 +1871,11 @@
       "month": "May 2026",
       "incoming": 1953,
       "closed": 873
+    },
+    {
+      "month": "Jun 2026",
+      "incoming": 0,
+      "closed": 0
     }
   ],
   "monthly_targets": {
@@ -2189,8 +2159,171 @@
     "Acko Health Insurance Limited": 7439.0,
     "MD India LIC": 119500.0
   },
+  "weekly_insurer_data": {
+    "labels": [
+      "25 May – 31 May 2026"
+    ],
+    "insurers": [
+      "Bajaj Life",
+      "Aditya Birla Sun Life Insurance",
+      "ICICI Lombard",
+      "Pramerica Life Insurance",
+      "Ageas Federal Life Insurance",
+      "Star Union Daichi Life Insurance"
+    ],
+    "totals": [
+      {
+        "week": "25 May – 31 May 2026",
+        "revenue": 926393.2,
+        "incoming": 0,
+        "closed": 455,
+        "pending": 0,
+        "conversion": 0
+      }
+    ],
+    "by_insurer": [
+      {
+        "insurer": "Bajaj Life",
+        "total_incoming": 0,
+        "total_closed": 130,
+        "total_revenue": 272376.0,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          272376.0
+        ],
+        "weekly_incoming": [
+          0
+        ],
+        "weekly_closed": [
+          130
+        ],
+        "weekly_pending": [
+          0
+        ],
+        "weekly_conversion": [
+          0
+        ]
+      },
+      {
+        "insurer": "Aditya Birla Sun Life Insurance",
+        "total_incoming": 0,
+        "total_closed": 122,
+        "total_revenue": 257900.0,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          257900.0
+        ],
+        "weekly_incoming": [
+          0
+        ],
+        "weekly_closed": [
+          122
+        ],
+        "weekly_pending": [
+          0
+        ],
+        "weekly_conversion": [
+          0
+        ]
+      },
+      {
+        "insurer": "ICICI Lombard",
+        "total_incoming": 0,
+        "total_closed": 113,
+        "total_revenue": 232730.0,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          232730.0
+        ],
+        "weekly_incoming": [
+          0
+        ],
+        "weekly_closed": [
+          113
+        ],
+        "weekly_pending": [
+          0
+        ],
+        "weekly_conversion": [
+          0
+        ]
+      },
+      {
+        "insurer": "Pramerica Life Insurance",
+        "total_incoming": 0,
+        "total_closed": 49,
+        "total_revenue": 62357.2,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          62357.2
+        ],
+        "weekly_incoming": [
+          0
+        ],
+        "weekly_closed": [
+          49
+        ],
+        "weekly_pending": [
+          0
+        ],
+        "weekly_conversion": [
+          0
+        ]
+      },
+      {
+        "insurer": "Ageas Federal Life Insurance",
+        "total_incoming": 0,
+        "total_closed": 25,
+        "total_revenue": 65938.0,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          65938.0
+        ],
+        "weekly_incoming": [
+          0
+        ],
+        "weekly_closed": [
+          25
+        ],
+        "weekly_pending": [
+          0
+        ],
+        "weekly_conversion": [
+          0
+        ]
+      },
+      {
+        "insurer": "Star Union Daichi Life Insurance",
+        "total_incoming": 0,
+        "total_closed": 16,
+        "total_revenue": 35092.0,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          35092.0
+        ],
+        "weekly_incoming": [
+          0
+        ],
+        "weekly_closed": [
+          16
+        ],
+        "weekly_pending": [
+          0
+        ],
+        "weekly_conversion": [
+          0
+        ]
+      }
+    ]
+  },
   "billing_analysis": {
-    "generated_at": "2026-06-04T09:00:08.070718+00:00",
+    "generated_at": "2026-06-16T10:18:18.372647+00:00",
     "total_rows": 95774,
     "date_from": "Mar 2022",
     "date_to": "May 2026",
