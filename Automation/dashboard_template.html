@@ -346,30 +346,6 @@
   .ica-delta-dn{color:#C0392B;font-weight:700}
   .ica-delta-neu{color:#7F8C8D}
 
-  /* ── BILLING vs CSV RECONCILIATION ── */
-  .recon-wrap{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border:1px solid #F59E0B;
-    border-radius:10px;padding:14px 16px;margin-top:16px}
-  .recon-hdr{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
-    color:#92400E;margin-bottom:10px;display:flex;align-items:center;gap:7px}
-  .recon-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-  .recon-kpi{background:#fff;border-radius:8px;padding:10px 12px;text-align:center;
-    border:1px solid #FDE68A}
-  .recon-kpi .rk-lbl{font-size:.62rem;font-weight:700;text-transform:uppercase;
-    letter-spacing:.5px;color:#92400E;margin-bottom:3px}
-  .recon-kpi .rk-val{font-size:1.1rem;font-weight:800;color:#B45309}
-  .recon-kpi .rk-sub{font-size:.65rem;color:#92400E;margin-top:2px}
-  .recon-table{width:100%;border-collapse:collapse;font-size:.75rem}
-  .recon-table th{background:#92400E;color:#fff;padding:7px 9px;text-align:right;
-    font-size:.67rem;font-weight:700;letter-spacing:.3px}
-  .recon-table th:first-child{text-align:left}
-  .recon-table td{padding:6px 9px;border-bottom:1px solid #FDE68A;text-align:right;color:#2C3E50}
-  .recon-table td:first-child{text-align:left;font-weight:600}
-  .recon-table tr:hover td{background:#FFFBF0}
-  .recon-table tr.recon-total td{background:#92400E!important;color:#fff;font-weight:700}
-  .recon-pct{display:inline-block;width:60px;height:5px;border-radius:3px;
-    background:#FDE68A;vertical-align:middle;margin-left:6px;overflow:hidden}
-  .recon-pct-fill{height:100%;background:#F59E0B;border-radius:3px}
-
   /* ── ACTIONABLE INSIGHTS ── */
   .ai-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:0}
   @media(max-width:900px){.ai-grid{grid-template-columns:1fr}}
@@ -610,45 +586,6 @@
         </tr></thead>
         <tbody id="jun-leaderboard-tbody"></tbody>
       </table>
-    </div>
-  </div>
-
-  <!-- BILLING vs CSV RECONCILIATION PANEL -->
-  <div class="recon-wrap" id="recon-panel" style="display:none">
-    <div class="recon-hdr">⚠️ Data Freshness Gap — Billing XLS vs Gmail CSV (May 2026)</div>
-    <div class="recon-kpi-row">
-      <div class="recon-kpi">
-        <div class="rk-lbl">Billing XLS Revenue</div>
-        <div class="rk-val" id="recon-billing">—</div>
-        <div class="rk-sub" id="recon-billing-dt">from Daily_Insurer_Billing*.xls</div>
-      </div>
-      <div class="recon-kpi">
-        <div class="rk-lbl">Gmail CSV Revenue</div>
-        <div class="rk-val" id="recon-csv">—</div>
-        <div class="rk-sub" id="recon-csv-dt">from Revenue_Generated_Insurer_Wise.csv</div>
-      </div>
-      <div class="recon-kpi" style="background:#FEF2F2;border-color:#FECACA">
-        <div class="rk-lbl" style="color:#991B1B">Gap (not in CSV yet)</div>
-        <div class="rk-val" id="recon-gap" style="color:#DC2626">—</div>
-        <div class="rk-sub" id="recon-gap-days" style="color:#991B1B">days of data missing</div>
-      </div>
-    </div>
-    <div style="overflow-x:auto">
-      <table class="recon-table">
-        <thead><tr>
-          <th>Insurer</th>
-          <th>Billing XLS (₹)</th>
-          <th>Gmail CSV (₹)</th>
-          <th>Gap (₹)</th>
-          <th>CSV Coverage</th>
-        </tr></thead>
-        <tbody id="recon-tbody"></tbody>
-      </table>
-    </div>
-    <div style="font-size:.72rem;color:#92400E;margin-top:10px;line-height:1.6">
-      💡 <strong>Why the gap?</strong> The Gmail CSV (<code>Revenue_Generated_Insurer_Wise.csv</code>)
-      uses <em>order closure date</em> while the Billing XLS uses <em>billing date</em>.
-      Run <strong>↻ Sync All</strong> after the next Gmail report arrives to close this gap.
     </div>
   </div>
 
@@ -1780,12 +1717,8 @@ function renderInsurerConversionAnalysis(d) {
   (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue || 0; });
   const q2RevMap = {};
   (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue || 0; });
-  // Use CSV per-insurer May data when it matches d.kpis.may_revenue (same source)
-  const mayRevCsvMap  = d.may_revenue_csv_by_insurer || {};
-  const mayRevCsvTot  = d.may_revenue_csv_total || 0;
-  const mayKpiRev     = d.kpis?.may_revenue || 0;
-  const hasCsvMayRev  = mayRevCsvTot > 0 && mayKpiRev > 0
-    && Math.abs(mayRevCsvTot - mayKpiRev) / mayKpiRev < 0.01;
+  // Per-insurer May revenue from XLS monthly_trend breakdown
+  const mayRevXlsMap = (d.monthly_trend?.by_insurer || {})['May 2026'] || {};
 
   // ── Order counts from orders_monthly ──
   const aprOrders = d.orders_monthly?.['Apr 2026'] || {};
@@ -1831,9 +1764,9 @@ function renderInsurerConversionAnalysis(d) {
 
     const aRev  = aprRevMap[ins] || 0;
     const q2Rev = q2RevMap[ins]  || 0;
-    // Use CSV per-insurer May revenue when available (matches KPI card source)
-    const mRev  = hasCsvMayRev
-      ? (mayRevCsvMap[ins] || 0)
+    // May per-insurer revenue from XLS; fall back to Q2-Apr difference
+    const mRev  = mayRevXlsMap[ins] > 0
+      ? mayRevXlsMap[ins]
       : Math.max(q2Rev - aRev, 0);
 
     rows.push({
@@ -2145,10 +2078,9 @@ function renderActionableInsights(d) {
   const aprRev    = k.apr_revenue  || 0;
   const mayRev    = k.may_revenue  || 0;
   const q2Adj     = aprRev + mayRev;
-  const mayRevCsvTot_ = d.may_revenue_csv_total || 0;
-  const hasCsvMayRev_ = mayRevCsvTot_ > 0 && mayRev > 0
-    && Math.abs(mayRevCsvTot_ - mayRev) / mayRev < 0.01;
   const gapAdj    = Math.max(target - q2Adj, 0);
+  // Per-insurer May revenue from XLS monthly_trend breakdown
+  const mayRevXlsMap_ = (d.monthly_trend?.by_insurer || {})['May 2026'] || {};
   const aprTarget = 6000000, mayTarget = 6500000, junTarget = 7500000;
 
   // Revenue maps
@@ -2174,9 +2106,10 @@ function renderActionableInsights(d) {
   q2InsSet.forEach(ins => {
     const aRev  = aprRevMap[ins] || 0;
     const q2Rev = q2RevMap[ins]  || 0;
-    // Use CSV per-insurer May when consistent with KPI, else billing Q2-Apr
-    const mRev  = hasCsvMayRev_ ? ((d.may_revenue_csv_by_insurer||{})[ins]||0)
-                                 : Math.max(q2Rev - aRev, 0);
+    // May per-insurer revenue from XLS; fall back to Q2-Apr difference
+    const mRev  = mayRevXlsMap_[ins] > 0
+      ? mayRevXlsMap_[ins]
+      : Math.max(q2Rev - aRev, 0);
     const aInc  = sumFor(aprOrders.incoming||{}, ins);
     const aCl   = sumFor(aprOrders.closed||{},   ins);
     const mInc  = sumFor(mayOrders.incoming||{}, ins);
@@ -2305,91 +2238,6 @@ function renderActionableInsights(d) {
       </div>
     </div>
   `;
-}
-
-// ─────────────────────────────────────────────────────────────────
-// BILLING vs CSV RECONCILIATION PANEL
-// ─────────────────────────────────────────────────────────────────
-function renderReconPanel(d) {
-  const panel = document.getElementById('recon-panel');
-  if (!panel) return;
-
-  const csvMap     = d.may_revenue_csv_by_insurer || {};
-  const csvTotal   = d.may_revenue_csv_total || 0;
-  const csvMtime   = d.revenue_csv_mtime || null;
-  const billingMtime = d.meta?.files?.billing_csv?.mtime || null;
-
-  // billing May = Q2 - Apr from insurer_table / apr_customers
-  const aprRevMap = {};
-  (d.apr_customers || []).forEach(r => { aprRevMap[r.insurer] = r.revenue || 0; });
-  const q2RevMap  = {};
-  (d.insurer_table || []).forEach(r => { q2RevMap[r.insurer] = r.revenue || 0; });
-  const billingMap = {};
-  Object.keys(q2RevMap).forEach(ins => {
-    if (!ins.includes('Test') && !ins.includes('Cardiotrack'))
-      billingMap[ins] = (q2RevMap[ins] || 0) - (aprRevMap[ins] || 0);
-  });
-  const billingTotal = Object.values(billingMap).reduce((s,v)=>s+v,0);
-  const gap = billingTotal - csvTotal;
-
-  // Only show panel if there is a meaningful gap (>1% of billing total)
-  if (gap < billingTotal * 0.01) { panel.style.display = 'none'; return; }
-  panel.style.display = '';
-
-  // Format dates for display
-  const fmtDate = iso => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric', timeZone:'Asia/Kolkata'});
-  };
-  const daysBetween = (a, b) => {
-    if (!a || !b) return null;
-    return Math.round(Math.abs(new Date(b) - new Date(a)) / 86400000);
-  };
-
-  const set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  set('recon-billing',    fmtL(billingTotal));
-  set('recon-csv',        fmtL(csvTotal));
-  set('recon-gap',        fmtL(gap));
-  set('recon-billing-dt', billingMtime ? 'Updated ' + fmtDate(billingMtime) : 'Billing XLS');
-  set('recon-csv-dt',     csvMtime     ? 'Updated ' + fmtDate(csvMtime)     : 'Gmail CSV');
-
-  const days = daysBetween(csvMtime, billingMtime);
-  set('recon-gap-days', days ? days + ' days of data missing from CSV' : 'data gap detected');
-
-  // Per-insurer table
-  const allIns = new Set([...Object.keys(billingMap), ...Object.keys(csvMap)]);
-  const rows = [];
-  allIns.forEach(ins => {
-    const b = billingMap[ins] || 0;
-    const c = csvMap[ins] || 0;
-    if (b === 0 && c === 0) return;
-    rows.push({ ins, b, c, gap: b - c });
-  });
-  rows.sort((a,b) => b.gap - a.gap);
-
-  const tbody = document.getElementById('recon-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = rows.map(r => {
-    const covPct = r.b > 0 ? Math.min(Math.round(r.c / r.b * 100), 100) : 0;
-    const barColor = covPct >= 80 ? '#10B981' : covPct >= 50 ? '#F59E0B' : '#EF4444';
-    return `<tr>
-      <td>${r.ins.replace(' Life Insurance','').replace(' Sun Life Insurance','')}</td>
-      <td>${fmt(r.b)}</td>
-      <td>${fmt(r.c)}</td>
-      <td style="color:${r.gap>0?'#DC2626':'#059669'};font-weight:700">${fmt(r.gap)}</td>
-      <td>
-        <span style="font-size:.75rem;font-weight:700;color:${barColor}">${covPct}%</span>
-        <span class="recon-pct"><span class="recon-pct-fill" style="width:${covPct}%;background:${barColor}"></span></span>
-      </td>
-    </tr>`;
-  }).join('') + `<tr class="recon-total">
-    <td>TOTAL</td>
-    <td>${fmt(billingTotal)}</td>
-    <td>${fmt(csvTotal)}</td>
-    <td>${fmt(gap)}</td>
-    <td>${Math.round(csvTotal/billingTotal*100)}% covered</td>
-  </tr>`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -3472,7 +3320,6 @@ async function loadData() {
     ['Orders trend',    () => renderOrdersTrendChart(data)],
     ['Pipeline',                () => renderPipeline(data)],
     ['Insurer conversion',      () => renderInsurerConversionAnalysis(data)],
-    ['Revenue reconciliation',  () => renderReconPanel(data)],
     ['Actionable insights',     () => renderActionableInsights(data)],
     ['Actions',                 () => renderActions(data)],
     ['Insurer details',         () => renderInsurerDetailsView(data)],
@@ -3971,37 +3818,6 @@ function showToast(message, type='info') {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// CSV FRESHNESS — proactive stale-data warning
-// ─────────────────────────────────────────────────────────────────
-// On every load, ask the server how old each CSV file is. If the Revenue
-// CSV is more than 12 hours old, show a banner with a "Sync now" button
-// so the user notices BEFORE wondering why numbers look stale.
-async function checkCsvFreshness() {
-  if (!SERVER_AVAILABLE) return;
-  try {
-    const r = await fetch('/api/csv_status', {cache:'no-store'});
-    if (!r.ok) return;
-    const s = await r.json();
-    const rev = s.files?.revenue;
-    if (!rev || rev.missing) return;
-    const ageH = rev.age_hours;
-    if (ageH < 12) return;  // fresh enough — no banner
-
-    const may = s.totals_by_month_2026?.['May 2026'];
-    const ageLabel = ageH > 48 ? `${Math.round(ageH/24)} day(s)` : `${Math.round(ageH)} hours`;
-    const banner = `
-      <div id="csvFreshBanner" style="background:linear-gradient(90deg,#E8A838,#D68A1F);color:#0D1B2A;padding:9px 18px;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:12px;justify-content:center">
-        <span style="font-size:1rem">⏱</span>
-        <span>Revenue CSV is <strong>${ageLabel} old</strong>${may?` &nbsp;·&nbsp; May 2026 in file: ₹${(may/100000).toFixed(1)}L`:''} &nbsp;·&nbsp; click <strong>✉ Sync Gmail</strong> to refresh.</span>
-        <button onclick="syncFromGmail()" style="margin-left:8px;background:#0D1B2A;color:#fff;border:none;padding:5px 12px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">Sync now</button>
-        <button onclick="document.getElementById('csvFreshBanner').remove()" style="background:rgba(13,27,42,.1);color:#0D1B2A;border:none;padding:5px 10px;border-radius:4px;font-size:.75rem;font-weight:700;cursor:pointer">Dismiss</button>
-      </div>`;
-    // Append below any existing banners (e.g. Gmail-not-configured red banner)
-    document.body.insertAdjacentHTML('afterbegin', banner);
-  } catch(_){}
-}
-
-// ─────────────────────────────────────────────────────────────────
 // GMAIL CONFIG STATUS BANNER
 // ─────────────────────────────────────────────────────────────────
 async function checkGmailAuthStatus() {
@@ -4084,8 +3900,7 @@ function setButtonsBusy(busy, label) {
 detectServer()
   .then(loadData)
   .then(maybeShowStaleBanner)
-  .then(checkGmailAuthStatus)
-  .then(checkCsvFreshness);
+  .then(checkGmailAuthStatus);
 </script>
 </body>
 </html>

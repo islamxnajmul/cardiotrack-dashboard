@@ -76,9 +76,10 @@ SCOPES = [
 # The Gmail search query matches the inner quoted string; we keep the exact
 # subject form here so we can also tighten matching after the API returns hits.
 # CSV reports (Zoho sends these as .csv attachments)
+# Note: Revenue_Generated_Insurer_Wise.csv is intentionally excluded — all
+# revenue data is sourced exclusively from Daily_Insurer_Billing*.xls.
 CSV_EMAIL_MAP = {
     'Incoming Order Count Insurer Wise': INCOMING_FILE,
-    'Revenue Generated Insurer Wise':    REVENUE_FILE,
     'Closed Case Count Insurer Wise':    CLOSED_FILE,
     'Weekly Closed Cases - Insurer':     WEEKLY_CLOSED_FILE,
     'Weekly Incoming Cases - Insurer':   WEEKLY_INCOMING_FILE,
@@ -1806,84 +1807,23 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         for r in insurer_table if r["revenue"] > 0
     ]
 
-    # ── CSV-based revenue (Gmail Revenue_Generated_Insurer_Wise.csv) ────────────
-    # The CSV covers ALL historical months and is refreshed from Gmail every run.
-    # It is used as the PRIMARY source for the monthly revenue trend: for every
-    # month in the CSV, take max(CSV, XLS/cache) so no data is lost from either
-    # source.  This eliminates the XLS month-gap problem (Gmail billing files
-    # sometimes only contain the current month's rows).
+    # ── All revenue is now sourced exclusively from Daily_Insurer_Billing*.xls ──
+    # monthly_billing and monthly_by_insurer are already fully populated above
+    # via _revenue_kpis_from_detailed() + the cache merge.  No CSV override needed.
     import datetime as _dt
-    _rev_csv = read_revenue_file(REVENUE_FILE)
-
-    # Build per-month and per-insurer totals from CSV for ALL months
-    _csv_monthly:    dict = {}   # {month: total}
-    _csv_by_ins_mo:  dict = {}   # {month: {insurer: total}}
-    _may_csv_by_ins: dict = {}
-    _apr_csv_by_ins: dict = {}
-    _jun_csv_by_ins: dict = {}
-    for _r in _rev_csv:
-        _m   = (_r.get("month") or "").strip()
-        _ins = _canonical_insurer_name(_r.get("insurer", ""))
-        _amt = _r.get("amount", 0) or 0
-        if not _m or not _ins:
-            continue
-        _csv_monthly[_m] = _csv_monthly.get(_m, 0) + _amt
-        _csv_by_ins_mo.setdefault(_m, {})
-        _csv_by_ins_mo[_m][_ins] = _csv_by_ins_mo[_m].get(_ins, 0) + _amt
-        if _m == "Apr 2026":
-            _apr_csv_by_ins[_ins] = _apr_csv_by_ins.get(_ins, 0) + _amt
-        elif _m == "May 2026":
-            _may_csv_by_ins[_ins] = _may_csv_by_ins.get(_ins, 0) + _amt
-        elif _m == "Jun 2026":
-            _jun_csv_by_ins[_ins] = _jun_csv_by_ins.get(_ins, 0) + _amt
-
-    _may_csv_total = round(sum(_may_csv_by_ins.values()), 2)
-    _apr_csv_total = round(sum(_apr_csv_by_ins.values()), 2)
-    _jun_csv_total = round(sum(_jun_csv_by_ins.values()), 2)
-    _rev_csv_mtime_iso = (
-        _dt.datetime.fromtimestamp(REVENUE_FILE.stat().st_mtime, tz=_dt.timezone.utc).isoformat()
-        if REVENUE_FILE.exists() else None
-    )
-
-    # ── Merge CSV into monthly_billing for ALL months (CSV-first strategy) ──────
-    # For each month: keep whichever source has the higher total so no data is lost.
     _billing_mtime = max(
         (f.stat().st_mtime if f.exists() else 0)
         for f in [DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2, BILLING_FILE]
     )
-    _csv_mtime = REVENUE_FILE.stat().st_mtime if REVENUE_FILE.exists() else 0
 
-    _csv_months_updated = 0
-    for _mo, _csv_tot in _csv_monthly.items():
-        _cur = monthly_billing.get(_mo, 0)
-        if _csv_tot > _cur:
-            monthly_billing[_mo] = round(_csv_tot, 2)
-            if _mo in trend_labels:
-                trend_values[trend_labels.index(_mo)] = round(_csv_tot, 2)
-            # Also push CSV per-insurer breakdown into monthly_by_insurer so that
-            # sum(by_insurer[month].values()) == monthly_billing[month].
-            # Without this, the combined "All" trend line and the per-insurer drill-down
-            # come from different sources and diverge (e.g. ICICI Lombard looks wrong).
-            _csv_ins_map = _csv_by_ins_mo.get(_mo, {})
-            if _csv_ins_map and bk:
-                _mo_ins = bk.setdefault("monthly_by_insurer", {}).setdefault(_mo, {})
-                for _cins, _camt in _csv_ins_map.items():
-                    if _mo_ins.get(_cins, 0) < _camt:
-                        _mo_ins[_cins] = round(_camt, 2)
-            _csv_months_updated += 1
-    log.info(f"  CSV merge: {_csv_months_updated} months updated from CSV "
-             f"({len(_csv_monthly)} months in CSV, "
-             f"{len(monthly_billing)} months total)")
-
-    # Refresh Q2 scalars from the now-merged monthly_billing dict
+    # Refresh Q2 scalars from the final monthly_billing dict (populated by XLS + cache)
     apr_rev  = monthly_billing.get('Apr 2026', apr_rev)
     may_rev  = monthly_billing.get('May 2026', may_rev)
     jun_rev  = monthly_billing.get('Jun 2026', jun_rev)
     q2_total = apr_rev + may_rev + jun_rev
 
-    log.info(f"  Final revenue:  Apr ₹{apr_rev:,.0f}  May ₹{may_rev:,.0f}  Jun ₹{jun_rev:,.0f}  "
-             f"(CSV {_dt.datetime.fromtimestamp(_csv_mtime).strftime('%d %b') if _csv_mtime else 'N/A'}, "
-             f"XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
+    log.info(f"  Final revenue (XLS only):  Apr ₹{apr_rev:,.0f}  May ₹{may_rev:,.0f}  Jun ₹{jun_rev:,.0f}  "
+             f"(XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
 
     # ── Weekly insurer analysis ───────────────────────────────────────────────
     # Source 1: Daily Insurer Billing XLS → revenue + closed-case count per date
@@ -2092,14 +2032,6 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         ],
         "apr_customers": apr_customers,
         "insurer_table": insurer_table,
-        # CSV-based revenue per insurer (Gmail Revenue_Generated_Insurer_Wise.csv)
-        "apr_revenue_csv_by_insurer": {k: round(v,2) for k,v in _apr_csv_by_ins.items()},
-        "may_revenue_csv_by_insurer": {k: round(v,2) for k,v in _may_csv_by_ins.items()},
-        "jun_revenue_csv_by_insurer": {k: round(v,2) for k,v in _jun_csv_by_ins.items()},
-        "apr_revenue_csv_total": _apr_csv_total,
-        "may_revenue_csv_total": _may_csv_total,
-        "jun_revenue_csv_total": _jun_csv_total,
-        "revenue_csv_mtime": _rev_csv_mtime_iso,
         "pipeline": pipeline,
         "existing_pipeline_total": round(sum(p["weighted"] for p in existing_pipe)),
         "prospect_pipeline_total": round(sum(p["weighted"] for p in prospect_pipe)),
@@ -2479,8 +2411,7 @@ def run_sync(skip_gmail: bool = False, require_gmail: bool = False,
     # from a CSV last refreshed at <time>" — answers the question
     # "is the displayed number actually fresh?"
     meta_files = {}
-    for label, path in (("revenue_csv",          REVENUE_FILE),
-                        ("incoming_csv",         INCOMING_FILE),
+    for label, path in (("incoming_csv",         INCOMING_FILE),
                         ("closed_csv",           CLOSED_FILE),
                         ("billing_csv",          BILLING_FILE),
                         ("quarter_target_xlsx",  QUARTER_TARGET_FILE)):
