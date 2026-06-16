@@ -1591,17 +1591,22 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
         _mb_ins = bk["monthly_by_insurer"]        # {month: {ins: amt}} from XLS
 
         for _cmo, _cdata in _mb_cache.items():
-            _cached_total  = _cdata.get("total", 0)
             _cached_by_ins = _cdata.get("by_insurer", {})
-            _cur_total     = _mb_cur.get(_cmo, 0)
 
-            if _cached_total > _cur_total:
-                # Current XLS is missing some insurers for this month — add them in
-                if _cmo not in _mb_ins:
-                    _mb_ins[_cmo] = {}
-                for _cins, _camt in _cached_by_ins.items():
-                    if _mb_ins[_cmo].get(_cins, 0) < _camt:
-                        _mb_ins[_cmo][_cins] = _camt
+            # Only fill in insurers where the current XLS has NO data (value == 0
+            # or insurer entirely absent from this download).  This lets the XLS
+            # always win for months it covers while still backfilling insurers
+            # that are missing from the current file split (e.g. ABSLI/Bajaj when
+            # only file-2 was downloaded). It also prevents stale or CSV-inflated
+            # cache values from overriding fresh XLS figures.
+            if _cmo not in _mb_ins:
+                _mb_ins[_cmo] = {}
+            _filled = False
+            for _cins, _camt in _cached_by_ins.items():
+                if _mb_ins[_cmo].get(_cins, 0) == 0 and _camt > 0:
+                    _mb_ins[_cmo][_cins] = _camt
+                    _filled = True
+            if _filled:
                 # Recalculate month total from merged by_insurer map
                 _mb_cur[_cmo] = round(sum(_mb_ins[_cmo].values()), 2)
 
