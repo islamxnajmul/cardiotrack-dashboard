@@ -1726,6 +1726,39 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
     inc_monthly = by_month_by_insurer(inc, "count")
     cl_monthly  = by_month_by_insurer(cl,  "count")
 
+    # ── Supplement CSV order counts with billing-XLS-derived counts ──────────
+    # The Zoho order-count CSVs are sent periodically and may lag behind the
+    # current month (e.g. Jun 2026 not in May-18 CSV).  The billing XLS is
+    # updated daily by GA, so we use it to fill in any months that the CSVs
+    # don't cover.  CSV always wins (more accurate) when it has data.
+    if detailed_records:
+        _billed_orders = _orders_from_billing(detailed_records)
+        for _m, _ins_map in _billed_orders["incoming"].items():
+            if _m not in inc_monthly:
+                inc_monthly[_m] = _ins_map
+                log.info(f"  Incoming orders for {_m}: filled from billing XLS ({sum(_ins_map.values())} orders)")
+        for _m, _ins_map in _billed_orders["closed"].items():
+            if _m not in cl_monthly:
+                cl_monthly[_m] = _ins_map
+                log.info(f"  Closed orders for {_m}: filled from billing XLS ({sum(_ins_map.values())} orders)")
+
+        # Also refresh Q2 inc/cl aggregates to include the newly-filled months
+        inc_q2_extra = [{"month": _m, "insurer": _ins, "count": _cnt}
+                        for _m, _ins_map in _billed_orders["incoming"].items()
+                        if _m in Q2_MONTHS and _m not in {r["month"] for r in inc_q2}
+                        for _ins, _cnt in _ins_map.items()]
+        cl_q2_extra  = [{"month": _m, "insurer": _ins, "count": _cnt}
+                        for _m, _ins_map in _billed_orders["closed"].items()
+                        if _m in Q2_MONTHS and _m not in {r["month"] for r in cl_q2}
+                        for _ins, _cnt in _ins_map.items()]
+        if inc_q2_extra:
+            inc_q2 += inc_q2_extra
+            inc_by_insurer = group_by_insurer(inc_q2, "count")
+        if cl_q2_extra:
+            cl_q2  += cl_q2_extra
+            cl_by_insurer  = group_by_insurer(cl_q2,  "count")
+    # ─────────────────────────────────────────────────────────────────────────
+
     # All months present in either incoming or closed
     all_order_months = sorted(set(inc_monthly) | set(cl_monthly),
                               key=lambda m: _month_sort_key(m))
@@ -2112,6 +2145,7 @@ def read_detailed_billing_files() -> list:
     Column indices (0-based):
         0  ID (Zoho record ID — used for cross-file deduplication)
         1  Insurer Name
+        7  Order Entry Date  → entry_month (for incoming order counts)
         9  Order Closure Date
        12  Billing Rate for Core Package   → pkg
        13  Insurer Approved Amount         → anc
@@ -2180,21 +2214,26 @@ def read_detailed_billing_files() -> list:
             if not isinstance(date_val, datetime):
                 continue
 
+            # Order Entry Date (col 7) — optional, may be None for some rows
+            entry_val = row[7] if len(row) > 7 else None
+            entry_month = entry_val.strftime("%b %Y") if isinstance(entry_val, datetime) else None
+
             def _sf(v):
                 try: return float(v) if v not in (None, '') else 0.0
                 except: return 0.0
 
             records.append({
-                "insurer":   ins,
-                "date":      date_val,
-                "month":     date_val.strftime("%b %Y"),
-                "pkg":       _sf(row[12]),
-                "anc":       _sf(row[13]),
-                "video":     _sf(row[14]),
-                "svc":       _sf(row[15]),
-                "hv":        _sf(row[17]),
-                "interp":    _sf(row[18]),
-                "total":     _sf(row[19]),
+                "insurer":     ins,
+                "date":        date_val,
+                "month":       date_val.strftime("%b %Y"),
+                "entry_month": entry_month,   # month of order entry (for incoming counts)
+                "pkg":         _sf(row[12]),
+                "anc":         _sf(row[13]),
+                "video":       _sf(row[14]),
+                "svc":         _sf(row[15]),
+                "hv":          _sf(row[17]),
+                "interp":      _sf(row[18]),
+                "total":       _sf(row[19]),
             })
 
         if file_dupes:
@@ -2205,6 +2244,45 @@ def read_detailed_billing_files() -> list:
     log.info(f"  Detailed billing: {len(records)} rows from {n_files} files"
              + (f" ({total_dupes} cross-file duplicates removed)" if total_dupes else ""))
     return records
+
+
+def _orders_from_billing(records: list) -> dict:
+    """Derive per-month, per-insurer order counts from detailed billing records.
+
+    Returns:
+        {
+          "incoming": { "Jun 2026": {"ICICI Lombard": 12, …}, … },
+          "closed":   { "Jun 2026": {"ICICI Lombard": 10, …}, … },
+        }
+
+    Incoming counts are grouped by Order Entry Date (entry_month).
+    Closed counts are grouped by Order Closure Date (month).
+    Both are derived from the same billing XLS rows so they reflect only
+    BILLED orders — not pending ones.  This is a good proxy for months
+    where the Zoho order-count CSV reports haven't arrived yet (e.g. the
+    current in-progress month).
+    """
+    incoming: dict = {}
+    closed:   dict = {}
+
+    for r in records:
+        ins = r["insurer"]
+        # Closed: index by closure month
+        m = r.get("month")
+        if m:
+            closed.setdefault(m, {})
+            closed[m][ins] = closed[m].get(ins, 0) + 1
+
+        # Incoming: index by entry month
+        em = r.get("entry_month")
+        if em:
+            incoming.setdefault(em, {})
+            incoming[em][ins] = incoming[em].get(ins, 0) + 1
+
+    n_inc = sum(sum(v.values()) for v in incoming.values())
+    n_cl  = sum(sum(v.values()) for v in closed.values())
+    log.info(f"  Orders from billing XLS: {n_inc} incoming-month rows, {n_cl} closed-month rows")
+    return {"incoming": incoming, "closed": closed}
 
 
 def build_billing_analysis(records: list) -> dict:
