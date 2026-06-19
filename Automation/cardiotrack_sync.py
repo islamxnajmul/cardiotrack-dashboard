@@ -2110,6 +2110,7 @@ def read_detailed_billing_files() -> list:
     six revenue category amounts.
 
     Column indices (0-based):
+        0  ID (Zoho record ID — used for cross-file deduplication)
         1  Insurer Name
         9  Order Closure Date
        12  Billing Rate for Core Package   → pkg
@@ -2119,10 +2120,17 @@ def read_detailed_billing_files() -> list:
        17  Home Visit Charges              → hv
        18  Interpretation Charges          → interp
        19  Total Amount to be Billed       → total
+
+    Deduplication: Gmail sometimes sends updated XLS files where certain insurers
+    (e.g. ICICI Lombard) appear in BOTH File 1 and File 2.  We dedup by Zoho record
+    ID (col 0) so each billing row is counted exactly once regardless of which file
+    it came from.
     """
     import io as _io
     from collections import defaultdict as _dd
 
+    seen_ids: set = set()   # Zoho record IDs seen so far — dedup across both files
+    total_dupes = 0
     records: list = []
     for path in (DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2):
         if not path.exists():
@@ -2142,9 +2150,19 @@ def read_detailed_billing_files() -> list:
         if len(all_rows) < 2:
             continue
 
+        file_dupes = 0
         for row in all_rows[1:]:
             if not row or len(row) < 20:
                 continue
+
+            # ── Cross-file deduplication by Zoho record ID (col 0) ──────────
+            row_id = str(row[0]).strip() if row[0] is not None else ""
+            if row_id:
+                if row_id in seen_ids:
+                    file_dupes += 1
+                    continue
+                seen_ids.add(row_id)
+
             ins_raw = row[1]
             date_val = row[9]
             if ins_raw is None or date_val is None:
@@ -2179,8 +2197,13 @@ def read_detailed_billing_files() -> list:
                 "total":     _sf(row[19]),
             })
 
-    log.info(f"  Detailed billing: {len(records)} rows from "
-             f"{sum(1 for p in (DETAILED_BILLING_FILE1,DETAILED_BILLING_FILE2) if p.exists())} files")
+        if file_dupes:
+            log.info(f"    {path.name}: skipped {file_dupes} duplicate row(s) already seen in earlier file")
+        total_dupes += file_dupes
+
+    n_files = sum(1 for p in (DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2) if p.exists())
+    log.info(f"  Detailed billing: {len(records)} rows from {n_files} files"
+             + (f" ({total_dupes} cross-file duplicates removed)" if total_dupes else ""))
     return records
 
 
