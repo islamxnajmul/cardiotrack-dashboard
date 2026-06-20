@@ -1629,13 +1629,21 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
             sync_data["monthly_billing_cache"] = _new_mb_cache
         # ─────────────────────────────────────────────────────────────────────
 
-        apr_rev         = bk["apr_rev"]
-        may_rev         = bk["may_rev"]
-        jun_rev         = bk["jun_rev"]
-        q2_total        = bk["q2_total"]
+        # Use the cache-merged monthly_by_insurer maps so that insurers whose
+        # data lives in a different XLS file (e.g. Bajaj/ABSLI in File 1 when
+        # only File 2 was updated) are still reflected correctly.
+        apr_rev         = round(sum(_mb_ins.get("Apr 2026", {}).values()), 2) or bk["apr_rev"]
+        may_rev         = round(sum(_mb_ins.get("May 2026", {}).values()), 2) or bk["may_rev"]
+        jun_rev         = round(sum(_mb_ins.get("Jun 2026", {}).values()), 2) or bk["jun_rev"]
+        q2_total        = apr_rev + may_rev + jun_rev
         monthly_billing = bk["monthly_billing"]
-        rev_by_insurer  = bk["q2_by_insurer"]      # Q2 per-insurer (replaces CSV)
-        apr_rev_by_ins  = bk["apr_by_insurer"]      # Apr per-insurer
+        # Q2 per-insurer: sum Apr+May+Jun from the merged monthly map
+        rev_by_insurer  = {}
+        for _qm in ("Apr 2026", "May 2026", "Jun 2026"):
+            for _ins, _amt in _mb_ins.get(_qm, {}).items():
+                rev_by_insurer[_ins] = rev_by_insurer.get(_ins, 0) + _amt
+        rev_by_insurer  = {k: round(v, 2) for k, v in rev_by_insurer.items()} or bk["q2_by_insurer"]
+        apr_rev_by_ins  = {k: round(v, 2) for k, v in _mb_ins.get("Apr 2026", {}).items()} or bk["apr_by_insurer"]
         lt_by_ins       = bk["all_time_by_insurer"] # all-time per-insurer
         billing_analysis_data = build_billing_analysis(detailed_records)
         # YoY source: convert to the format _compute_yoy expects
