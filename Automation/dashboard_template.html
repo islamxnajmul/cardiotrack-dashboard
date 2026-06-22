@@ -843,7 +843,8 @@ function _canonicalName(n) {
       n === 'Acko Health -  Insurance Limited' ||
       n === 'Acko General')                                 return 'Acko Health Insurance';
   if (n === 'Bajaj Life Insurance Company' ||
-      n === 'Bajaj Allianz Life Insurance Company')         return 'Bajaj Life';
+      n === 'Bajaj Allianz Life Insurance Company' ||
+      n === 'Bajaj Life' || n === 'Bajaj Company')          return 'Bajaj';
   if (n === 'Tata AIA Life')                                return 'TATA AIA Life Insurance Company';
   if (n === 'SBI Life')                                     return 'SBI LIfe Insurance Company';
   if (n === 'TAIG Health Insurance Company Ltd.' ||
@@ -1098,7 +1099,12 @@ function _drawRevTrendChart(d, activeKey, topIns) {
         legend: { display: activeKey === 'All', position: 'bottom',
           labels: { boxWidth: 12, font: { size: 11 } } },
         tooltip: { callbacks: {
-          label: c => '  ' + (c.dataset.label||'') + ': ' + fmtL(c.raw)
+          label: c => '  ' + (c.dataset.label||'') + ': ' + fmtL(c.raw),
+          footer: items => {
+            if (activeKey !== 'All' || !items.length) return '';
+            const total = items.reduce((s, c) => s + (c.raw || 0), 0);
+            return 'Total: ' + fmtL(total);
+          }
         }}
       },
       scales: {
@@ -1275,7 +1281,15 @@ function renderOrdersChart(d) {
   Object.entries(_rawOrders.closed   || {}).forEach(([k,v]) => { const c = _canonicalName(k); cl[c]  = (cl[c]||0)  + v; });
 
   const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
-  const targetMap   = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+  const _rawTargetMap = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+  // Normalize target insurer names through _canonicalName so "Bajaj Company" → "Bajaj"
+  const targetMap = {};
+  Object.entries(_rawTargetMap).forEach(([k, v]) => {
+    const c = _canonicalName(k);
+    if (!targetMap[c]) targetMap[c] = {incoming_required: 0, closed_required: 0};
+    targetMap[c].incoming_required += v.incoming_required || 0;
+    targetMap[c].closed_required   += v.closed_required   || 0;
+  });
 
   // Build label set as the union of insurers when targets exist (so insurers
   // with non-zero required and zero actual still appear on the chart).
@@ -1357,7 +1371,15 @@ function renderOrdersTable(d) {
   // Targets exist only for May/June and only when one of those tabs is active.
   // For All Q2 / April we stick with the simpler 5-column actuals view.
   const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
-  const targetMap   = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+  const _rawTargetMapT = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+  // Normalize target insurer names through _canonicalName so "Bajaj Company" → "Bajaj"
+  const targetMap = {};
+  Object.entries(_rawTargetMapT).forEach(([k, v]) => {
+    const c = _canonicalName(k);
+    if (!targetMap[c]) targetMap[c] = {incoming_required: 0, closed_required: 0};
+    targetMap[c].incoming_required += v.incoming_required || 0;
+    targetMap[c].closed_required   += v.closed_required   || 0;
+  });
 
   // Build the union of insurers from BOTH the actuals AND the targets — so an
   // insurer with a June target but 0 actuals (e.g. nothing billed yet) still
@@ -1543,8 +1565,9 @@ function _buildOrdersTrendFilters(d) {
 
 // Canonical insurer name for orders trend chart
   function _odrCanon(n) {
-    if (n === 'Bajaj Life Insurance Company' || n === 'Bajaj Allianz Life Insurance Company')
-      return 'Bajaj Life';
+    if (n === 'Bajaj Life Insurance Company' || n === 'Bajaj Allianz Life Insurance Company'
+        || n === 'Bajaj Life' || n === 'Bajaj Company')
+      return 'Bajaj';
     if (n === 'Acko Health - Insurance Limited' || n === 'Acko Health -  Insurance Limited')
       return 'Acko Health Insurance';
     if (n === 'TATA AIG Health Insurance Company Ltd.' || n === 'TAIG Health Insurance Company Ltd.')
@@ -1820,7 +1843,8 @@ function renderInsurerConversionAnalysis(d) {
   // Canonical name mapper (mirrors the one in renderInsurerDetailsView)
   function canon(n) {
     if (n === 'Bajaj Life Insurance Company' ||
-        n === 'Bajaj Allianz Life Insurance Company') return 'Bajaj Life';
+        n === 'Bajaj Allianz Life Insurance Company' ||
+        n === 'Bajaj Life' || n === 'Bajaj Company') return 'Bajaj';
     if (n === 'TATA AIG Health Insurance Company Ltd.' ||
         n === 'TAIG Health Insurance Company Ltd.')   return 'TATA AIG Health Insurance';
     return n;
@@ -2181,7 +2205,8 @@ function renderActionableInsights(d) {
   // Order counts
   function canon(n) {
     if (n === 'Bajaj Life Insurance Company' ||
-        n === 'Bajaj Allianz Life Insurance Company') return 'Bajaj Life';
+        n === 'Bajaj Allianz Life Insurance Company' ||
+        n === 'Bajaj Life' || n === 'Bajaj Company') return 'Bajaj';
     return n;
   }
   const aprOrders = d.orders_monthly?.['Apr 2026'] || {};

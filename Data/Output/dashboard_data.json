@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-06-22T05:35:49.505226+00:00",
+    "generated_at": "2026-06-22T06:11:22.429576+00:00",
     "q2_target": 20000000,
     "as_of": "22 Jun 2026",
     "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
@@ -77,7 +77,7 @@
     ],
     "by_insurer": {
       "Apr 2025": {
-        "Bajaj Life": 1588883.0,
+        "Bajaj": 1588883.0,
         "Canara HSBC": 34965.0,
         "Aditya Birla Sun Life Insurance": 535857.0,
         "ICICI Lombard": 1082106.0,
@@ -88,7 +88,7 @@
         "Canara HSBC Life Insurance": 34965.0
       },
       "May 2025": {
-        "Bajaj Life": 1852468.0,
+        "Bajaj": 1852468.0,
         "Aditya Birla Sun Life Insurance": 763314.0,
         "Canara HSBC": 2028.0,
         "HDFC Life": 395065.0,
@@ -99,7 +99,7 @@
       },
       "Jun 2025": {
         "Aditya Birla Sun Life Insurance": 877996.0,
-        "Bajaj Life": 1254978.0,
+        "Bajaj": 1254978.0,
         "Canara HSBC": 4874.0,
         "ICICI Lombard": 629199.0,
         "HDFC Life": 467345.0,
@@ -109,7 +109,7 @@
         "Canara HSBC Life Insurance": 4874.0
       },
       "Jul 2025": {
-        "Bajaj Life": 2113697.0,
+        "Bajaj": 2113697.0,
         "Aditya Birla Sun Life Insurance": 1087573.0,
         "Canara HSBC": 22620.0,
         "ICICI Lombard": 614755.0,
@@ -122,7 +122,7 @@
         "Cardiotrack Corporate Services": 2300.0
       },
       "Aug 2025": {
-        "Bajaj Life": 2457927.0,
+        "Bajaj": 2457927.0,
         "Aditya Birla Sun Life Insurance": 1589768.0,
         "Canara HSBC": 140577.0,
         "ICICI Lombard": 494855.0,
@@ -134,7 +134,7 @@
       },
       "Sep 2025": {
         "Canara HSBC": 201226.0,
-        "Bajaj Life": 2186900.0,
+        "Bajaj": 2186900.0,
         "Aditya Birla Sun Life Insurance": 1347580.88,
         "HDFC Life": 663570.0,
         "Ageas Federal Life Insurance": 129121.0,
@@ -144,7 +144,7 @@
       },
       "Oct 2025": {
         "Aditya Birla Sun Life Insurance": 1074843.4,
-        "Bajaj Life": 2002276.0,
+        "Bajaj": 2002276.0,
         "Canara HSBC": 193224.0,
         "HDFC Life": 605280.0,
         "Ageas Federal Life Insurance": 100806.0,
@@ -153,7 +153,7 @@
         "Canara HSBC Life Insurance": 193224.0
       },
       "Nov 2025": {
-        "Bajaj Life": 2378636.0,
+        "Bajaj": 2378636.0,
         "Canara HSBC": 229285.0,
         "Aditya Birla Sun Life Insurance": 1866648.0,
         "ICICI Lombard": 306541.0,
@@ -164,7 +164,7 @@
         "Canara HSBC Life Insurance": 229285.0
       },
       "Dec 2025": {
-        "Bajaj Life": 2335387.0,
+        "Bajaj": 2335387.0,
         "Aditya Birla Sun Life Insurance": 2849160.0,
         "Canara HSBC": 372236.0,
         "Star Union Daichi Life Insurance": 176509.0,
@@ -174,7 +174,7 @@
         "Canara HSBC Life Insurance": 372236.0
       },
       "Jan 2026": {
-        "Bajaj Life": 2045303.5,
+        "Bajaj": 2045303.5,
         "Aditya Birla Sun Life Insurance": 2507437.0,
         "Canara HSBC": 241116.0,
         "ICICI Lombard": 928316.0,
@@ -184,7 +184,7 @@
       },
       "Feb 2026": {
         "Aditya Birla Sun Life Insurance": 2210351.0,
-        "Bajaj Life": 1742589.5,
+        "Bajaj": 1742589.5,
         "Canara HSBC": 7939.0,
         "Star Union Daichi Life Insurance": 300775.0,
         "ICICI Lombard": 1489280.0,
@@ -192,7 +192,7 @@
         "Canara HSBC Life Insurance": 7939.0
       },
       "Mar 2026": {
-        "Bajaj Life": 1935404.0,
+        "Bajaj": 1935404.0,
         "Aditya Birla Sun Life Insurance": 2514603.0,
         "Canara HSBC": 1330.0,
         "ICICI Lombard": 1522270.0,
@@ -203,7 +203,7 @@
       },
       "Apr 2026": {
         "Aditya Birla Sun Life Insurance": 1617039.0,
-        "Bajaj Life": 1640934.0,
+        "Bajaj": 1640934.0,
         "ICICI Lombard": 1307400.0,
         "Ageas Federal Life Insurance": 148821.0,
         "Star Union Daichi Life Insurance": 190295.0,
@@ -211,7 +211,7 @@
         "Cardiotrack Home Services": 1298.03
       },
       "May 2026": {
-        "Bajaj Life": 1589083.0,
+        "Bajaj": 1589083.0,
         "Aditya Birla Sun Life Insurance": 1407985.0,
         "ICICI Lombard": 1166945.0,
         "Pramerica Life Insurance": 103605.4,
@@ -219,7 +219,7 @@
         "Star Union Daichi Life Insurance": 133584.0
       },
       "Jun 2026": {
-        "Bajaj Life": 1102083.38,
+        "Bajaj": 1102083.38,
         "Aditya Birla Sun Life Insurance": 1067189.0,
         "Canara HSBC": 8998.0,
         "Star Union Daichi Life Insurance": 98115.0,
@@ -251,7 +251,7 @@
   ],
   "apr_customers": [
     {
-      "insurer": "Bajaj Life",
+      "insurer": "Bajaj",
       "revenue": 1640934.0,
       "closed_cases": 2016,
       "incoming": 2554,
@@ -323,7 +323,7 @@
       "revenue": 604810.0
     },
     {
-      "insurer": "Bajaj Life",
+      "insurer": "Bajaj",
       "incoming": 2554,
       "closed": 2016,
       "conversion": 0.7894,
@@ -661,7 +661,7 @@
     "incoming_by_insurer": {
       "Aditya Birla Sun Life Insurance": 4553,
       "Ageas Federal Life Insurance": 393,
-      "Bajaj Life": 2554,
+      "Bajaj": 2554,
       "Cardiotrack Home Services": 2,
       "ICICI Lombard": 2044,
       "Pramerica Life Insurance": 1000,
@@ -672,7 +672,7 @@
     "closed_by_insurer": {
       "Aditya Birla Sun Life Insurance": 2024,
       "Ageas Federal Life Insurance": 221,
-      "Bajaj Life": 2016,
+      "Bajaj": 2016,
       "Cardiotrack Home Services": 2,
       "ICICI Lombard": 1503,
       "Pramerica Life Insurance": 272,
@@ -1020,7 +1020,7 @@
     },
     "Jul 2023": {
       "incoming": {
-        "Bajaj Life": 196,
+        "Bajaj": 196,
         "Aditya Birla Sun Life Insurance": 35,
         "Canara HSBC": 2,
         "Pramerica Life Insurance": 48,
@@ -1030,7 +1030,7 @@
         "SBI LIfe Insurance Company": 53
       },
       "closed": {
-        "Bajaj Life": 224,
+        "Bajaj": 224,
         "Aditya Birla Sun Life Insurance": 37,
         "Canara HSBC": 2,
         "ICICI Lombard": 1953,
@@ -1072,7 +1072,7 @@
       "incoming": {
         "Canara HSBC": 12,
         "Aditya Birla Sun Life Insurance": 61,
-        "Bajaj Life": 40,
+        "Bajaj": 40,
         "ICICI Lombard": 2720,
         "HDFC Life": 59,
         "SBI LIfe Insurance Company": 165,
@@ -1139,7 +1139,7 @@
     "Dec 2023": {
       "incoming": {
         "Canara HSBC": 146,
-        "Bajaj Life": 41,
+        "Bajaj": 41,
         "Aditya Birla Sun Life Insurance": 49,
         "ICICI Lombard": 1495,
         "Pramerica Life Insurance": 40,
@@ -1192,7 +1192,7 @@
     "Feb 2024": {
       "incoming": {
         "Canara HSBC": 152,
-        "Bajaj Life": 81,
+        "Bajaj": 81,
         "Aditya Birla Sun Life Insurance": 51,
         "ICICI Lombard": 1894,
         "HDFC Life": 71,
@@ -2034,7 +2034,7 @@
           "incoming_required": 182,
           "closed_required": 102
         },
-        "Bajaj Life Insurance Company": {
+        "Bajaj": {
           "incoming_required": 1131,
           "closed_required": 971
         },
@@ -2068,7 +2068,7 @@
           "incoming_required": 182,
           "closed_required": 102
         },
-        "Bajaj Life Insurance Company": {
+        "Bajaj": {
           "incoming_required": 1241,
           "closed_required": 1067
         },
@@ -2161,7 +2161,7 @@
     "overall_growth_pct": 26.9,
     "by_insurer": [
       {
-        "insurer": "Bajaj Life",
+        "insurer": "Bajaj",
         "cy_revenue": 4332100.38,
         "py_revenue": 4696329.0,
         "abs_growth": -364228.62,
@@ -2269,7 +2269,7 @@
         "contribution_pct": 0.0
       },
       {
-        "insurer": "Bajaj Life",
+        "insurer": "Bajaj",
         "cy_revenue": 4332100.38,
         "py_revenue": 4696329.0,
         "abs_growth": -364228.62,
@@ -2287,7 +2287,7 @@
     ]
   },
   "billing_lifetime_by_insurer": {
-    "Bajaj Life": 42603835.76,
+    "Bajaj": 42603835.76,
     "Aditya Birla Sun Life Insurance": 31635375.28,
     "Canara HSBC": 4410414.73,
     "Star Union Daichi Life Insurance": 2030735.68,
@@ -2315,6 +2315,7 @@
       "15 Jun – 21 Jun 2026"
     ],
     "insurers": [
+      "Bajaj",
       "Bajaj Life",
       "Aditya Birla Sun Life Insurance",
       "ICICI Lombard",
@@ -2358,40 +2359,40 @@
       },
       {
         "week": "25 May – 31 May 2026",
-        "revenue": 1147411.4,
+        "revenue": 1502457.4,
         "incoming": 0,
-        "closed": 558,
+        "closed": 726,
         "pending": 0,
         "conversion": 0
       },
       {
         "week": "01 Jun – 07 Jun 2026",
-        "revenue": 1166818.6,
+        "revenue": 1525367.6,
         "incoming": 0,
-        "closed": 553,
+        "closed": 722,
         "pending": 0,
         "conversion": 0
       },
       {
         "week": "08 Jun – 14 Jun 2026",
-        "revenue": 1442337.2,
+        "revenue": 1854840.2,
         "incoming": 0,
-        "closed": 674,
+        "closed": 870,
         "pending": 0,
         "conversion": 0
       },
       {
         "week": "15 Jun – 21 Jun 2026",
-        "revenue": 1264187.38,
+        "revenue": 1595218.76,
         "incoming": 0,
-        "closed": 570,
+        "closed": 722,
         "pending": 0,
         "conversion": 0
       }
     ],
     "by_insurer": [
       {
-        "insurer": "Bajaj Life",
+        "insurer": "Bajaj",
         "total_incoming": 656,
         "total_closed": 685,
         "total_revenue": 1457129.38,
@@ -2442,6 +2443,64 @@
           0.0,
           0.0,
           0.0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "insurer": "Bajaj Life",
+        "total_incoming": 0,
+        "total_closed": 685,
+        "total_revenue": 1457129.38,
+        "total_pending": 0,
+        "total_conversion": 0,
+        "weekly_revenue": [
+          0,
+          0,
+          0,
+          0,
+          355046.0,
+          358549.0,
+          412503.0,
+          331031.38
+        ],
+        "weekly_incoming": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "weekly_closed": [
+          0,
+          0,
+          0,
+          0,
+          168,
+          169,
+          196,
+          152
+        ],
+        "weekly_pending": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "weekly_conversion": [
+          0,
+          0,
+          0,
+          0,
           0,
           0,
           0,
@@ -2799,7 +2858,7 @@
     ]
   },
   "billing_analysis": {
-    "generated_at": "2026-06-22T05:35:49.357434+00:00",
+    "generated_at": "2026-06-22T06:11:22.292124+00:00",
     "total_rows": 97673,
     "date_from": "Mar 2022",
     "date_to": "Jun 2026",
@@ -2870,7 +2929,7 @@
         "active_q2": true
       },
       {
-        "insurer": "Bajaj Life",
+        "insurer": "Bajaj",
         "rank": 2,
         "all": {
           "pkg": 34955668.38,

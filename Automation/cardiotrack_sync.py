@@ -887,9 +887,11 @@ def _parse_monthly_targets(rows: list) -> dict:
                 cl_val  = safe_float(row[closed_col]) if (closed_col is not None and closed_col < len(row)) else 0
                 # Skip rows where both required values are 0 — they're noise
                 if inc_val > 0 or cl_val > 0:
-                    per_insurer[name] = {
-                        "incoming_required": int(round(inc_val)),
-                        "closed_required":   int(round(cl_val)),
+                    canon_name = _canonical_insurer_name(name)
+                    existing = per_insurer.get(canon_name, {"incoming_required": 0, "closed_required": 0})
+                    per_insurer[canon_name] = {
+                        "incoming_required": existing["incoming_required"] + int(round(inc_val)),
+                        "closed_required":   existing["closed_required"]   + int(round(cl_val)),
                     }
                     inc_total += inc_val
                     cl_total  += cl_val
@@ -1333,7 +1335,8 @@ def _canonical_insurer_name(n: str) -> str:
     if n in ('Acko Health - Insurance Limited',
              'Acko Health -  Insurance Limited', 'Acko General'): return 'Acko Health Insurance'
     if n in ('Bajaj Life Insurance Company',
-             'Bajaj Allianz Life Insurance Company'):             return 'Bajaj Life'
+             'Bajaj Allianz Life Insurance Company',
+             'Bajaj Life', 'Bajaj Company'):                      return 'Bajaj'
     if n == 'Tata AIA Life':                                      return 'TATA AIA Life Insurance Company'
     if n == 'SBI Life':                                           return 'SBI LIfe Insurance Company'
     if n in ('TAIG Health Insurance Company Ltd.',
