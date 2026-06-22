@@ -831,6 +831,32 @@ function convBadge(c) {
   return `<span class="badge badge-red">${pp}%</span>`;
 }
 
+// ─────────────────────────────────────────────────────────────────
+// GLOBAL canonical insurer name normaliser
+// Mirrors _canonical_insurer_name() in cardiotrack_sync.py.
+// Defined here (global scope) so all render functions can use it.
+// ─────────────────────────────────────────────────────────────────
+function _canonicalName(n) {
+  if (!n) return n;
+  if (n === 'Acko Life')                                    return 'Acko Life Insurance';
+  if (n === 'Acko Health - Insurance Limited' ||
+      n === 'Acko Health -  Insurance Limited' ||
+      n === 'Acko General')                                 return 'Acko Health Insurance';
+  if (n === 'Bajaj Life Insurance Company' ||
+      n === 'Bajaj Allianz Life Insurance Company')         return 'Bajaj Life';
+  if (n === 'Tata AIA Life')                                return 'TATA AIA Life Insurance Company';
+  if (n === 'SBI Life')                                     return 'SBI LIfe Insurance Company';
+  if (n === 'TAIG Health Insurance Company Ltd.' ||
+      n === 'TATA AIG Health Insurance Company Ltd.' ||
+      n === 'TATA AIG General Insurance')                   return 'TATA AIG Health Insurance';
+  if (n.includes('Canara HSBC'))                            return 'Canara HSBC';
+  if (n === 'A8228Mph f7Rq7v0X')                            return 'HDFC Life';
+  if (n === 'M7P4hW7Z Z9xz93cY')                            return 'Star Union Daichi Life Insurance';
+  if (n === 'nA5N724T IpSA357U')                            return 'TATA AIA Life Insurance Company';
+  if (n === '5MyHaB07 3VrA426d')                            return 'SBI LIfe Insurance Company';
+  return n;
+}
+
 function statusBadge(s) {
   const map = {
     'Confirmed':'green','On Track':'green','Realized':'green',
@@ -2624,35 +2650,7 @@ function renderInsurerDetailsView(d) {
   // Noise patterns to skip in the "other historical" section
   const _isNoise = n => /^(Test|HDFC Life Purge|MD India|Cardiotrack (Home|Corporate)|TATA AIA Life.*Purge|[A-Z0-9]{8}\s|Acko Health\s{2})/.test(n);
 
-  // Canonical name map — normalise all known insurer name variants to a single key.
-  // This runs before ANY revenue/order aggregation so merged accounts are counted once.
-  const _canonicalName = n => {
-    // Acko Life variants → "Acko Life Insurance"
-    if (n === 'Acko Life')                                    return 'Acko Life Insurance';
-    // Acko Health variants (incl. double-space from Oct 2024 data) → "Acko Health Insurance"
-    if (n === 'Acko Health - Insurance Limited' ||
-        n === 'Acko Health -  Insurance Limited' ||
-        n === 'Acko General')                                 return 'Acko Health Insurance';
-    // Bajaj Allianz (pre-Oct 2025) + Bajaj Life Insurance Company (Oct 2025 →) → "Bajaj Life"
-    if (n === 'Bajaj Life Insurance Company' ||
-        n === 'Bajaj Allianz Life Insurance Company')         return 'Bajaj Life';
-    // TATA AIA variants → "TATA AIA Life Insurance Company"
-    if (n === 'Tata AIA Life')                                return 'TATA AIA Life Insurance Company';
-    // SBI Life variants → "SBI LIfe Insurance Company"
-    if (n === 'SBI Life')                                     return 'SBI LIfe Insurance Company';
-    // TATA AIG variants → "TATA AIG Health Insurance"
-    if (n === 'TAIG Health Insurance Company Ltd.' ||
-        n === 'TATA AIG Health Insurance Company Ltd.' ||
-        n === 'TATA AIG General Insurance')                  return 'TATA AIG Health Insurance';
-    // Canara HSBC variants → "Canara HSBC"
-    if (n && n.includes('Canara HSBC'))                      return 'Canara HSBC';
-    // Encoded (obfuscated) insurer names from order data → real account names
-    if (n === 'A8228Mph f7Rq7v0X')                           return 'HDFC Life';
-    if (n === 'M7P4hW7Z Z9xz93cY')                           return 'Star Union Daichi Life Insurance';
-    if (n === 'nA5N724T IpSA357U')                           return 'TATA AIA Life Insurance Company';
-    if (n === '5MyHaB07 3VrA426d')                           return 'SBI LIfe Insurance Company';
-    return n;
-  };
+  // _canonicalName is defined globally above renderKPIs — used here by reference.
 
   // ── Canonical merged maps ────────────────────────────────────────────
   // Fold aliased raw names into a single canonical key per account.
