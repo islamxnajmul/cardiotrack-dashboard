@@ -94,13 +94,17 @@ XLS_EMAIL_MAP = {
     #    messages, same subject).  Only DETAILED_BILLING_FILE1 is listed here so
     #    the main sync loop downloads it normally.  DETAILED_BILLING_FILE2 is
     #    handled by _sync_billing_file2() which scans the same thread by filename.
-    'Daily Insurer Billing':             DETAILED_BILLING_FILE1,
+    # NOTE: Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls are NOT
+    # downloaded from Gmail here. Gmail delivers them inconsistently (sometimes
+    # both attachments are the same file, sometimes only one is present).
+    # Instead, both files are committed to git and used as-is by --rebuild.
+    # To update billing data: download new XLS files, commit them, push.
 }
 
 # Attachment filename → destination for files that share a subject with another
 # report and can't be matched by subject alone.
 BILLING_EXTRA_FILES: dict = {
-    'daily_insurer_billing_2.xls': DETAILED_BILLING_FILE2,
+    # daily_insurer_billing_2.xls excluded — see REPORTS_MAP note above.
 }
 
 # Combined map (used by dashboard to know all expected reports)
