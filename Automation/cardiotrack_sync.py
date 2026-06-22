@@ -1648,8 +1648,12 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
                 _mb_ins[_cmo] = {}
             _filled = False
             for _cins, _camt in _cached_by_ins.items():
-                if _mb_ins[_cmo].get(_cins, 0) == 0 and _camt > 0:
-                    _mb_ins[_cmo][_cins] = _camt
+                # Canonicalise cache key so stale names (e.g. "Bajaj Life")
+                # merge into the current canonical key ("Bajaj") instead of
+                # creating a duplicate entry that doubles reported revenue.
+                _cins_canon = _canonical_insurer_name(_cins)
+                if _mb_ins[_cmo].get(_cins_canon, 0) == 0 and _camt > 0:
+                    _mb_ins[_cmo][_cins_canon] = _camt
                     _filled = True
             if _filled:
                 # Recalculate month total from merged by_insurer map
