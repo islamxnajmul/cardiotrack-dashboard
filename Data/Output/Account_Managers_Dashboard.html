@@ -137,7 +137,7 @@ function destroyCharts() { for (const k in charts) { try { charts[k].destroy(); 
 
 /* ── Helpers for Insurer Details ── */
 function calcRelationship(dateStr) {
-  const d = new Date(dateStr), t = new Date();
+  const d = new Date(dateStr), t = new Date('2026-05-25');
   let y = t.getFullYear() - d.getFullYear(), m = t.getMonth() - d.getMonth();
   if (t.getDate() < d.getDate()) m--;
   if (m < 0) { y--; m += 12; }
@@ -145,8 +145,7 @@ function calcRelationship(dateStr) {
   return y + ' yr' + (y !== 1 ? 's' : '') + (m > 0 ? ' ' + m + ' mo' : '');
 }
 function daysUntilExpiry(dateStr) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.ceil((new Date(dateStr) - today) / 86400000);
+  return Math.ceil((new Date(dateStr) - new Date('2026-05-25')) / 86400000);
 }
 
 /* ── Pipeline Health Pane ── */

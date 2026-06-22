@@ -1380,18 +1380,36 @@ function renderOrdersTable(d) {
     })
     .slice(0, 10);
 
+  // ── Revenue map for the selected period ──────────────────────────────────
+  const byIns = d.monthly_trend?.by_insurer || {};
+  let revMap = {};
+  if (ordersFilter === 'Q2') {
+    // Sum Apr + May + Jun per insurer
+    ['Apr 2026','May 2026','Jun 2026'].forEach(m => {
+      Object.entries(byIns[m] || {}).forEach(([k,v]) => {
+        const c = _canonicalName(k);
+        revMap[c] = (revMap[c] || 0) + (v || 0);
+      });
+    });
+  } else {
+    Object.entries(byIns[ordersFilter] || {}).forEach(([k,v]) => {
+      revMap[_canonicalName(k)] = v || 0;
+    });
+  }
+
   // Swap headers depending on mode
   if (showTargets) {
     thead.innerHTML = `<tr>
       <th>Insurer</th>
       <th title="Actual / Required incoming orders">Incoming<br><span style="font-weight:400;color:var(--text2);font-size:.65rem">actual / required</span></th>
       <th title="Actual / Required closed orders">Closed<br><span style="font-weight:400;color:var(--text2);font-size:.65rem">actual / required</span></th>
+      <th>Revenue</th>
       <th>Gap</th>
       <th>Status</th>
     </tr>`;
   } else {
     thead.innerHTML = `<tr>
-      <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Conv %</th><th>Status</th>
+      <th>Insurer</th><th>Incoming</th><th>Closed</th><th>Revenue</th><th>Conv %</th><th>Status</th>
     </tr>`;
   }
 
@@ -1429,6 +1447,7 @@ function renderOrdersTable(d) {
             ? '<span class="badge badge-amber">Catching up</span>'
             : '<span class="badge badge-red">At Risk</span>';
 
+      const rev = revMap[ins] || 0;
       rows += `<tr>
         <td>${shortName(ins)}</td>
         <td>
@@ -1439,6 +1458,7 @@ function renderOrdersTable(d) {
           <div style="font-weight:600">${c.toLocaleString()} / <span style="color:#1B4F72">${reqCl.toLocaleString()}</span></div>
           ${reqCl ? `<div style="font-size:.68rem;color:${clPct>=80?'#27AE60':clPct>=40?'#E8A838':'#C0392B'}">${clPct}%</div>` : ''}
         </td>
+        <td style="font-weight:600;color:#1B4F72">${rev > 0 ? fmtL(rev) : '<span style="color:var(--text2)">—</span>'}</td>
         <td>
           ${incGap > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${incGap.toLocaleString()} in</div>` : ''}
           ${clGap  > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${clGap.toLocaleString()} cl</div>`  : ''}
@@ -1447,17 +1467,19 @@ function renderOrdersTable(d) {
         <td>${status}</td>
       </tr>`;
     } else {
+      const rev = revMap[ins] || 0;
       const status = ins.includes('Canara')
         ? '<span class="badge badge-red">🔴 Blocked</span>'
         : conv >= 0.75 ? '<span class="badge badge-green">Strong</span>'
         : conv >= 0.4  ? '<span class="badge badge-amber">Monitor</span>'
         : '<span class="badge badge-red">At Risk</span>';
-      rows += `<tr><td>${shortName(ins)}</td><td>${i.toLocaleString()}</td><td>${c.toLocaleString()}</td><td>${convBadge(conv)}</td><td>${status}</td></tr>`;
+      rows += `<tr><td>${shortName(ins)}</td><td>${i.toLocaleString()}</td><td>${c.toLocaleString()}</td><td style="font-weight:600;color:#1B4F72">${rev > 0 ? fmtL(rev) : '—'}</td><td>${convBadge(conv)}</td><td>${status}</td></tr>`;
     }
   });
 
   // ── Totals row ────────────────────────────────────────────────────────────
   const totStyle = 'style="font-weight:700;background:var(--surface);border-top:2px solid var(--border)"';
+  const totRev = Object.values(revMap).reduce((s,v) => s + (v||0), 0);
   if (totInc > 0 || totCl > 0) {
     const totConv = totInc ? Math.round(totCl / totInc * 100) : 0;
     if (showTargets) {
@@ -1475,6 +1497,7 @@ function renderOrdersTable(d) {
           <div>${totCl.toLocaleString()} / <span style="color:#1B4F72">${totReqCl.toLocaleString()}</span></div>
           ${totClPct !== null ? `<div style="font-size:.68rem;color:${totClPct>=80?'#27AE60':totClPct>=40?'#E8A838':'#C0392B'}">${totClPct}%</div>` : ''}
         </td>
+        <td style="color:#1B4F72">${totRev > 0 ? fmtL(totRev) : '—'}</td>
         <td>
           ${totIncGap > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${totIncGap.toLocaleString()} in</div>` : ''}
           ${totClGap  > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${totClGap.toLocaleString()} cl</div>`  : ''}
@@ -1486,13 +1509,14 @@ function renderOrdersTable(d) {
         <td>Total</td>
         <td>${totInc.toLocaleString()}</td>
         <td>${totCl.toLocaleString()}</td>
+        <td style="color:#1B4F72">${totRev > 0 ? fmtL(totRev) : '—'}</td>
         <td>${convBadge(totConv / 100)}</td>
         <td><span style="font-size:.72rem;color:var(--text2)">—</span></td>
       </tr>`;
     }
   }
 
-  tbody.innerHTML = rows || `<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:18px">No data for this period</td></tr>`;
+  tbody.innerHTML = rows || `<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:18px">No data for this period</td></tr>`;
 }
 
 // ─────────────────────────────────────────────────────────────────
