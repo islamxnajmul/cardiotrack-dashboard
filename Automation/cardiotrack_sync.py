@@ -1302,6 +1302,7 @@ def _canonical_insurer_name(n: str) -> str:
     if n == 'M7P4hW7Z Z9xz93cY':                                  return 'Star Union Daichi Life Insurance'
     if n == 'nA5N724T IpSA357U':                                   return 'TATA AIA Life Insurance Company'
     if n == '5MyHaB07 3VrA426d':                                   return 'SBI LIfe Insurance Company'
+    if 'Canara HSBC' in n:                                         return 'Canara HSBC'
     return n
 
 

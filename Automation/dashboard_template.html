@@ -1240,7 +1240,12 @@ function renderOrdersChart(d) {
   renderOrdersKPIRow(d);
   destroyChart('orders');
   const ctx = document.getElementById('ordersChart').getContext('2d');
-  const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
+  // Normalize insurer keys through _canonicalName so variants merge (e.g.
+  // "Canara HSBC Life Insurance" from billing + "Canara HSBC" from targets → same row).
+  const _rawOrders = _ordersForMonth(d, ordersFilter);
+  const inc = {}, cl = {};
+  Object.entries(_rawOrders.incoming || {}).forEach(([k,v]) => { const c = _canonicalName(k); inc[c] = (inc[c]||0) + v; });
+  Object.entries(_rawOrders.closed   || {}).forEach(([k,v]) => { const c = _canonicalName(k); cl[c]  = (cl[c]||0)  + v; });
 
   const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
   const targetMap   = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
@@ -1360,6 +1365,17 @@ function renderOrdersTable(d) {
     </tr>`;
   }
 
+  // ── Compute totals across ALL insurers (not just visible slice) ──────────
+  const allInsurers = Array.from(insurerSet).filter(k => !k.includes('Test') && !k.includes('Cardiotrack'));
+  let totInc = 0, totCl = 0, totReqInc = 0, totReqCl = 0;
+  allInsurers.forEach(ins => {
+    totInc    += inc[ins] || 0;
+    totCl     += cl[ins]  || 0;
+    const t    = targetMap[ins] || {};
+    totReqInc += t.incoming_required || 0;
+    totReqCl  += t.closed_required   || 0;
+  });
+
   let rows = '';
   insurers.forEach(ins => {
     const i = inc[ins] || 0;
@@ -1410,7 +1426,43 @@ function renderOrdersTable(d) {
     }
   });
 
-  tbody.innerHTML = rows || `<tr><td colspan="${showTargets?5:5}" style="text-align:center;color:var(--text2);padding:18px">No data for this period</td></tr>`;
+  // ── Totals row ────────────────────────────────────────────────────────────
+  const totStyle = 'style="font-weight:700;background:var(--surface);border-top:2px solid var(--border)"';
+  if (totInc > 0 || totCl > 0) {
+    const totConv = totInc ? Math.round(totCl / totInc * 100) : 0;
+    if (showTargets) {
+      const totIncGap = Math.max(totReqInc - totInc, 0);
+      const totClGap  = Math.max(totReqCl  - totCl,  0);
+      const totIncPct = totReqInc ? Math.round(totInc / totReqInc * 100) : null;
+      const totClPct  = totReqCl  ? Math.round(totCl  / totReqCl  * 100) : null;
+      rows += `<tr ${totStyle}>
+        <td>Total</td>
+        <td>
+          <div>${totInc.toLocaleString()} / <span style="color:#1B4F72">${totReqInc.toLocaleString()}</span></div>
+          ${totIncPct !== null ? `<div style="font-size:.68rem;color:${totIncPct>=80?'#27AE60':totIncPct>=40?'#E8A838':'#C0392B'}">${totIncPct}%</div>` : ''}
+        </td>
+        <td>
+          <div>${totCl.toLocaleString()} / <span style="color:#1B4F72">${totReqCl.toLocaleString()}</span></div>
+          ${totClPct !== null ? `<div style="font-size:.68rem;color:${totClPct>=80?'#27AE60':totClPct>=40?'#E8A838':'#C0392B'}">${totClPct}%</div>` : ''}
+        </td>
+        <td>
+          ${totIncGap > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${totIncGap.toLocaleString()} in</div>` : ''}
+          ${totClGap  > 0 ? `<div style="font-size:.72rem;color:#C0392B">+${totClGap.toLocaleString()} cl</div>`  : ''}
+        </td>
+        <td><span style="font-size:.72rem;color:var(--text2)">Conv: ${totConv}%</span></td>
+      </tr>`;
+    } else {
+      rows += `<tr ${totStyle}>
+        <td>Total</td>
+        <td>${totInc.toLocaleString()}</td>
+        <td>${totCl.toLocaleString()}</td>
+        <td>${convBadge(totConv / 100)}</td>
+        <td><span style="font-size:.72rem;color:var(--text2)">—</span></td>
+      </tr>`;
+    }
+  }
+
+  tbody.innerHTML = rows || `<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:18px">No data for this period</td></tr>`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2587,6 +2639,8 @@ function renderInsurerDetailsView(d) {
     if (n === 'TAIG Health Insurance Company Ltd.' ||
         n === 'TATA AIG Health Insurance Company Ltd.' ||
         n === 'TATA AIG General Insurance')                  return 'TATA AIG Health Insurance';
+    // Canara HSBC variants → "Canara HSBC"
+    if (n && n.includes('Canara HSBC'))                      return 'Canara HSBC';
     // Encoded (obfuscated) insurer names from order data → real account names
     if (n === 'A8228Mph f7Rq7v0X')                           return 'HDFC Life';
     if (n === 'M7P4hW7Z Z9xz93cY')                           return 'Star Union Daichi Life Insurance';
