@@ -95,6 +95,17 @@ jobs:
       - name: Run sync (Gmail → CSVs → JSON → HTML)
         run: python3 Automation/cardiotrack_sync.py
 
+      # ── 3b. Restore committed billing XLS and rebuild ────────────────────
+      # Gmail occasionally delivers only one billing file or returns stale
+      # content for Daily_Insurer_Billing_2.xls. The committed XLS files are
+      # the verified source of truth; restore them and rebuild so the
+      # deployed dashboard always reflects both files' revenue.
+      - name: Restore billing XLS from git and rebuild dashboard
+        run: |
+          git checkout HEAD -- Data/Input/Daily_Insurer_Billing.xls \
+                               Data/Input/Daily_Insurer_Billing_2.xls 2>/dev/null || true
+          python3 Automation/cardiotrack_sync.py --rebuild
+
       # ── 4. Scrub secrets before any further steps run ────────────────────
       - name: Scrub OAuth artefacts
         if: always()
