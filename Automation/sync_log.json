@@ -16,30 +16,50 @@
   "last_sync": "2026-06-20T06:07:51.882696+00:00",
   "weekly_billing_cache": {
     "15 Jun \u2013 21 Jun 2026": {
-      "ICICI Lombard": {
-        "revenue": 267305.0,
-        "closed": 113
+      "Bajaj Life": {
+        "revenue": 331031.38,
+        "closed": 152
+      },
+      "Aditya Birla Sun Life Insurance": {
+        "revenue": 321760.0,
+        "closed": 160
+      },
+      "Canara HSBC": {
+        "revenue": 8998.0,
+        "closed": 5
       },
       "Star Union Daichi Life Insurance": {
-        "revenue": 32394.0,
-        "closed": 13
+        "revenue": 47801.0,
+        "closed": 20
       },
-      "Ageas Federal Life Insurance": {
-        "revenue": 67987.0,
-        "closed": 22
+      "ICICI Lombard": {
+        "revenue": 372345.0,
+        "closed": 157
       },
       "Pramerica Life Insurance": {
-        "revenue": 84438.0,
-        "closed": 40
+        "revenue": 96830.0,
+        "closed": 48
+      },
+      "Ageas Federal Life Insurance": {
+        "revenue": 85422.0,
+        "closed": 28
       }
     },
     "08 Jun \u2013 14 Jun 2026": {
+      "Aditya Birla Sun Life Insurance": {
+        "revenue": 467746.0,
+        "closed": 229
+      },
+      "Bajaj Life": {
+        "revenue": 412503.0,
+        "closed": 196
+      },
       "ICICI Lombard": {
         "revenue": 364900.0,
         "closed": 158
       },
       "Pramerica Life Insurance": {
-        "revenue": 95114.0,
+        "revenue": 95123.2,
         "closed": 52
       },
       "Ageas Federal Life Insurance": {
@@ -51,33 +71,15 @@
         "closed": 11
       }
     },
-    "25 May \u2013 31 May 2026": {
-      "ICICI Lombard": {
-        "revenue": 303510.0,
-        "closed": 141
-      },
-      "Pramerica Life Insurance": {
-        "revenue": 70076.4,
-        "closed": 57
-      },
-      "Ageas Federal Life Insurance": {
-        "revenue": 75592.0,
-        "closed": 29
-      },
-      "Star Union Daichi Life Insurance": {
-        "revenue": 38798.0,
-        "closed": 18
-      },
+    "01 Jun \u2013 07 Jun 2026": {
       "Bajaj Life": {
-        "revenue": 272376.0,
-        "closed": 130
+        "revenue": 358549.0,
+        "closed": 169
       },
       "Aditya Birla Sun Life Insurance": {
-        "revenue": 257900.0,
-        "closed": 122
-      }
-    },
-    "01 Jun \u2013 07 Jun 2026": {
+        "revenue": 277683.0,
+        "closed": 146
+      },
       "Star Union Daichi Life Insurance": {
         "revenue": 26137.0,
         "closed": 13
@@ -94,290 +96,341 @@
         "revenue": 49212.0,
         "closed": 19
       }
+    },
+    "25 May \u2013 31 May 2026": {
+      "Bajaj Life": {
+        "revenue": 355046.0,
+        "closed": 168
+      },
+      "Aditya Birla Sun Life Insurance": {
+        "revenue": 304389.0,
+        "closed": 145
+      },
+      "ICICI Lombard": {
+        "revenue": 303510.0,
+        "closed": 141
+      },
+      "Pramerica Life Insurance": {
+        "revenue": 70076.4,
+        "closed": 57
+      },
+      "Ageas Federal Life Insurance": {
+        "revenue": 75592.0,
+        "closed": 29
+      },
+      "Star Union Daichi Life Insurance": {
+        "revenue": 38798.0,
+        "closed": 18
+      }
     }
   },
   "monthly_billing_cache": {
     "Jun 2026": {
-      "total": 1544789.6,
+      "total": 3873343.18,
       "by_insurer": {
-        "ICICI Lombard": 956760.0,
-        "Star Union Daichi Life Insurance": 82708.0,
-        "Ageas Federal Life Insurance": 195087.0,
-        "Pramerica Life Insurance": 310234.6
+        "Bajaj Life": 1102083.38,
+        "Aditya Birla Sun Life Insurance": 1067189.0,
+        "Canara HSBC": 8998.0,
+        "Star Union Daichi Life Insurance": 98115.0,
+        "ICICI Lombard": 1061800.0,
+        "Pramerica Life Insurance": 322635.8,
+        "Ageas Federal Life Insurance": 212522.0
       }
     },
     "May 2026": {
-      "total": 4516654.4,
+      "total": 4644669.4,
       "by_insurer": {
+        "Bajaj Life": 1589083.0,
+        "Aditya Birla Sun Life Insurance": 1407985.0,
         "ICICI Lombard": 1166945.0,
         "Pramerica Life Insurance": 103605.4,
         "Ageas Federal Life Insurance": 243467.0,
-        "Star Union Daichi Life Insurance": 133584.0,
-        "Bajaj Life": 1506413.0,
-        "Aditya Birla Sun Life Insurance": 1362640.0
+        "Star Union Daichi Life Insurance": 133584.0
       }
     },
     "Apr 2026": {
       "total": 4931630.03,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 1617039.0,
+        "Bajaj Life": 1640934.0,
         "ICICI Lombard": 1307400.0,
         "Ageas Federal Life Insurance": 148821.0,
         "Star Union Daichi Life Insurance": 190295.0,
         "Pramerica Life Insurance": 25843.0,
-        "Aditya Birla Sun Life Insurance": 1617039.0,
-        "Bajaj Life": 1640934.0,
         "Cardiotrack Home Services": 1298.03
       }
     },
     "Mar 2026": {
-      "total": 6494808.0,
+      "total": 6496138.0,
       "by_insurer": {
+        "Bajaj Life": 1935404.0,
+        "Aditya Birla Sun Life Insurance": 2514603.0,
+        "Canara HSBC": 1330.0,
         "ICICI Lombard": 1522270.0,
         "Star Union Daichi Life Insurance": 346988.0,
         "Ageas Federal Life Insurance": 173052.0,
-        "Bajaj Life": 1935404.0,
-        "Aditya Birla Sun Life Insurance": 2514603.0,
         "Canara HSBC Life Insurance": 1330.0,
         "Cardiotrack Home Services": 1161.0
       }
     },
     "Feb 2026": {
-      "total": 5880660.5,
+      "total": 5888599.5,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 2210351.0,
+        "Bajaj Life": 1742589.5,
+        "Canara HSBC": 7939.0,
         "Star Union Daichi Life Insurance": 300775.0,
         "ICICI Lombard": 1489280.0,
         "Ageas Federal Life Insurance": 129726.0,
-        "Aditya Birla Sun Life Insurance": 2210351.0,
-        "Bajaj Life": 1742589.5,
         "Canara HSBC Life Insurance": 7939.0
       }
     },
-    "Dec 2025": {
-      "total": 6331598.0,
+    "Jan 2026": {
+      "total": 6236778.5,
       "by_insurer": {
+        "Bajaj Life": 2045303.5,
+        "Aditya Birla Sun Life Insurance": 2507437.0,
+        "Canara HSBC": 241116.0,
+        "ICICI Lombard": 928316.0,
+        "Ageas Federal Life Insurance": 95908.0,
+        "Star Union Daichi Life Insurance": 177582.0,
+        "Canara HSBC Life Insurance": 241116.0
+      }
+    },
+    "Dec 2025": {
+      "total": 6703834.0,
+      "by_insurer": {
+        "Bajaj Life": 2335387.0,
+        "Aditya Birla Sun Life Insurance": 2849160.0,
+        "Canara HSBC": 372236.0,
         "Star Union Daichi Life Insurance": 176509.0,
         "ICICI Lombard": 466210.0,
         "Ageas Federal Life Insurance": 119486.0,
         "HDFC Life": 12610.0,
-        "Bajaj Life": 2335387.0,
-        "Aditya Birla Sun Life Insurance": 2849160.0,
         "Canara HSBC Life Insurance": 372236.0
       }
     },
-    "Jan 2026": {
-      "total": 5995662.5,
-      "by_insurer": {
-        "ICICI Lombard": 928316.0,
-        "Ageas Federal Life Insurance": 95908.0,
-        "Star Union Daichi Life Insurance": 177582.0,
-        "Bajaj Life": 2045303.5,
-        "Aditya Birla Sun Life Insurance": 2507437.0,
-        "Canara HSBC Life Insurance": 241116.0
-      }
-    },
-    "Apr 2025": {
-      "total": 3841302.0,
-      "by_insurer": {
-        "ICICI Lombard": 1082106.0,
-        "HDFC Life": 573810.0,
-        "Ageas Federal Life Insurance": 17044.0,
-        "TATA AIG Health Insurance": 6578.0,
-        "Star Union Daichi Life Insurance": 2059.0,
-        "Bajaj Life": 1588883.0,
-        "Canara HSBC Life Insurance": 34965.0,
-        "Aditya Birla Sun Life Insurance": 535857.0
-      }
-    },
     "Nov 2025": {
-      "total": 5302182.0,
+      "total": 5531467.0,
       "by_insurer": {
+        "Bajaj Life": 2378636.0,
+        "Canara HSBC": 229285.0,
+        "Aditya Birla Sun Life Insurance": 1866648.0,
         "ICICI Lombard": 306541.0,
         "Star Union Daichi Life Insurance": 88619.0,
         "HDFC Life": 312895.0,
         "Ageas Federal Life Insurance": 112422.0,
         "Pramerica Life Insurance": 7136.0,
-        "Bajaj Life": 2378636.0,
-        "Canara HSBC Life Insurance": 229285.0,
-        "Aditya Birla Sun Life Insurance": 1866648.0
+        "Canara HSBC Life Insurance": 229285.0
       }
     },
     "Oct 2025": {
-      "total": 4203597.4,
+      "total": 4396821.4,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 1074843.4,
+        "Bajaj Life": 2002276.0,
+        "Canara HSBC": 193224.0,
         "HDFC Life": 605280.0,
         "Ageas Federal Life Insurance": 100806.0,
         "ICICI Lombard": 209010.0,
         "Star Union Daichi Life Insurance": 18158.0,
-        "Aditya Birla Sun Life Insurance": 1074843.4,
-        "Bajaj Life": 2002276.0,
         "Canara HSBC Life Insurance": 193224.0
       }
     },
     "Sep 2025": {
-      "total": 4933024.88,
+      "total": 5134250.88,
       "by_insurer": {
+        "Canara HSBC": 201226.0,
+        "Bajaj Life": 2186900.0,
+        "Aditya Birla Sun Life Insurance": 1347580.88,
         "HDFC Life": 663570.0,
         "Ageas Federal Life Insurance": 129121.0,
         "ICICI Lombard": 383350.0,
         "Star Union Daichi Life Insurance": 21277.0,
-        "Canara HSBC Life Insurance": 201226.0,
-        "Bajaj Life": 2186900.0,
-        "Aditya Birla Sun Life Insurance": 1347580.88
+        "Canara HSBC Life Insurance": 201226.0
       }
     },
     "Aug 2025": {
-      "total": 5235077.0,
+      "total": 5375654.0,
       "by_insurer": {
+        "Bajaj Life": 2457927.0,
+        "Aditya Birla Sun Life Insurance": 1589768.0,
+        "Canara HSBC": 140577.0,
         "ICICI Lombard": 494855.0,
         "Ageas Federal Life Insurance": 95116.0,
         "HDFC Life": 420710.0,
         "Star Union Daichi Life Insurance": 30331.0,
         "Pramerica Life Insurance": 5793.0,
-        "Bajaj Life": 2457927.0,
-        "Aditya Birla Sun Life Insurance": 1589768.0,
         "Canara HSBC Life Insurance": 140577.0
       }
     },
     "Jul 2025": {
-      "total": 4674553.0,
+      "total": 4697173.0,
       "by_insurer": {
+        "Bajaj Life": 2113697.0,
+        "Aditya Birla Sun Life Insurance": 1087573.0,
+        "Canara HSBC": 22620.0,
         "ICICI Lombard": 614755.0,
         "Ageas Federal Life Insurance": 162792.0,
         "HDFC Life": 533450.0,
         "Star Union Daichi Life Insurance": 119020.0,
         "Pramerica Life Insurance": 14528.0,
         "TATA AIG Health Insurance": 3818.0,
-        "Bajaj Life": 2113697.0,
-        "Aditya Birla Sun Life Insurance": 1087573.0,
         "Canara HSBC Life Insurance": 22620.0,
         "Cardiotrack Corporate Services": 2300.0
       }
     },
     "Jun 2025": {
-      "total": 3364570.0,
+      "total": 3369444.0,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 877996.0,
+        "Bajaj Life": 1254978.0,
+        "Canara HSBC": 4874.0,
         "ICICI Lombard": 629199.0,
         "HDFC Life": 467345.0,
         "Ageas Federal Life Insurance": 128074.0,
         "TATA AIG Health Insurance": 1909.0,
         "Star Union Daichi Life Insurance": 195.0,
-        "Aditya Birla Sun Life Insurance": 877996.0,
-        "Bajaj Life": 1254978.0,
         "Canara HSBC Life Insurance": 4874.0
       }
     },
-    "Jan 2025": {
-      "total": 5298155.0,
+    "Apr 2025": {
+      "total": 3876267.0,
       "by_insurer": {
-        "ICICI Lombard": 1469093.0,
-        "Ageas Federal Life Insurance": 126146.0,
-        "Star Union Daichi Life Insurance": 39392.0,
-        "HDFC Life": 477885.0,
-        "Acko Life Insurance": 41464.0,
-        "Acko Health Insurance": 250.0,
-        "Canara HSBC Life Insurance": 183467.0,
-        "Bajaj Life": 2192469.0,
-        "Aditya Birla Sun Life Insurance": 767989.0
-      }
-    },
-    "Nov 2024": {
-      "total": 4462704.0,
-      "by_insurer": {
-        "ICICI Lombard": 1750550.0,
-        "Star Union Daichi Life Insurance": 3081.0,
-        "HDFC Life": 276745.0,
-        "Acko Life Insurance": 326257.0,
-        "Acko Health Insurance": 328013.0,
-        "Ageas Federal Life Insurance": 19000.0,
-        "Bajaj Life": 623096.0,
-        "Aditya Birla Sun Life Insurance": 962341.0,
-        "Canara HSBC Life Insurance": 173621.0
+        "Bajaj Life": 1588883.0,
+        "Canara HSBC": 34965.0,
+        "Aditya Birla Sun Life Insurance": 535857.0,
+        "ICICI Lombard": 1082106.0,
+        "HDFC Life": 573810.0,
+        "Ageas Federal Life Insurance": 17044.0,
+        "TATA AIG Health Insurance": 6578.0,
+        "Star Union Daichi Life Insurance": 2059.0,
+        "Canara HSBC Life Insurance": 34965.0
       }
     },
     "May 2025": {
-      "total": 3394896.0,
+      "total": 3396924.0,
       "by_insurer": {
+        "Bajaj Life": 1852468.0,
+        "Aditya Birla Sun Life Insurance": 763314.0,
+        "Canara HSBC": 2028.0,
         "HDFC Life": 395065.0,
         "ICICI Lombard": 321435.0,
         "Ageas Federal Life Insurance": 53686.0,
-        "Bajaj Life": 1852468.0,
-        "Aditya Birla Sun Life Insurance": 763314.0,
         "Canara HSBC Life Insurance": 2028.0,
         "Cardiotrack Corporate Services": 6900.0
       }
     },
-    "Feb 2025": {
-      "total": 5875967.0,
-      "by_insurer": {
-        "Star Union Daichi Life Insurance": 26523.0,
-        "ICICI Lombard": 1219600.0,
-        "HDFC Life": 336145.0,
-        "Ageas Federal Life Insurance": 106550.0,
-        "Bajaj Life": 3374402.0,
-        "Canara HSBC Life Insurance": 94484.0,
-        "Aditya Birla Sun Life Insurance": 718263.0
-      }
-    },
     "Mar 2025": {
-      "total": 6866300.0,
+      "total": 7035434.0,
       "by_insurer": {
+        "Bajaj Life": 3630500.0,
+        "Aditya Birla Sun Life Insurance": 838007.0,
+        "Canara HSBC": 169134.0,
         "ICICI Lombard": 1470430.0,
         "HDFC Life": 590430.0,
         "TATA AIG Health Insurance": 17871.0,
         "Ageas Federal Life Insurance": 147869.0,
         "Star Union Daichi Life Insurance": 2059.0,
-        "Bajaj Life": 3630500.0,
-        "Aditya Birla Sun Life Insurance": 838007.0,
         "Canara HSBC Life Insurance": 169134.0
       }
     },
-    "Dec 2024": {
-      "total": 5343976.0,
+    "Feb 2025": {
+      "total": 5970451.0,
       "by_insurer": {
+        "Bajaj Life": 3374402.0,
+        "Canara HSBC": 94484.0,
+        "Aditya Birla Sun Life Insurance": 718263.0,
+        "Star Union Daichi Life Insurance": 26523.0,
+        "ICICI Lombard": 1219600.0,
+        "HDFC Life": 336145.0,
+        "Ageas Federal Life Insurance": 106550.0,
+        "Canara HSBC Life Insurance": 94484.0
+      }
+    },
+    "Dec 2024": {
+      "total": 5506588.0,
+      "by_insurer": {
+        "Bajaj Life": 1181663.0,
+        "Canara HSBC": 162612.0,
+        "Aditya Birla Sun Life Insurance": 1389775.0,
         "ICICI Lombard": 1579397.0,
         "Ageas Federal Life Insurance": 71255.0,
         "HDFC Life": 436850.0,
         "Acko Life Insurance": 413099.0,
         "Star Union Daichi Life Insurance": 26704.0,
         "Acko Health Insurance": 82621.0,
-        "Bajaj Life": 1181663.0,
-        "Canara HSBC Life Insurance": 162612.0,
-        "Aditya Birla Sun Life Insurance": 1389775.0
+        "Canara HSBC Life Insurance": 162612.0
       }
     },
-    "Dec 2023": {
-      "total": 3501795.0,
+    "Mar 2024": {
+      "total": 4038975.05,
       "by_insurer": {
-        "ICICI Lombard": 2095680.0,
-        "HDFC Life": 419385.0,
-        "SBI LIfe Insurance Company": 350040.0,
-        "TATA AIA Life Insurance Company": 179441.0,
-        "Pramerica Life Insurance": 66142.0,
-        "Star Union Daichi Life Insurance": 9191.0,
-        "Bajaj Life": 33939.0,
-        "Canara HSBC Life Insurance": 197193.0,
-        "Aditya Birla Sun Life Insurance": 149134.0,
-        "Cardiotrack Home Services": 1650.0
+        "Bajaj Life": 165449.0,
+        "Aditya Birla Sun Life Insurance": 99087.0,
+        "Canara HSBC": 89972.0,
+        "SBI LIfe Insurance Company": 654115.0,
+        "ICICI Lombard": 933808.0,
+        "TATA AIA Life Insurance Company": 1427098.05,
+        "HDFC Life": 553855.0,
+        "Acko Life Insurance": 5843.0,
+        "Star Union Daichi Life Insurance": 18045.0,
+        "Pramerica Life Insurance": 1731.0,
+        "Canara HSBC Life Insurance": 89972.0
+      }
+    },
+    "Jan 2025": {
+      "total": 5481622.0,
+      "by_insurer": {
+        "Canara HSBC": 183467.0,
+        "Bajaj Life": 2192469.0,
+        "Aditya Birla Sun Life Insurance": 767989.0,
+        "ICICI Lombard": 1469093.0,
+        "Ageas Federal Life Insurance": 126146.0,
+        "Star Union Daichi Life Insurance": 39392.0,
+        "HDFC Life": 477885.0,
+        "Acko Life Insurance": 41464.0,
+        "Acko Health Insurance": 250.0,
+        "Canara HSBC Life Insurance": 183467.0
+      }
+    },
+    "Nov 2024": {
+      "total": 4636325.0,
+      "by_insurer": {
+        "Bajaj Life": 623096.0,
+        "Aditya Birla Sun Life Insurance": 962341.0,
+        "Canara HSBC": 173621.0,
+        "ICICI Lombard": 1750550.0,
+        "Star Union Daichi Life Insurance": 3081.0,
+        "HDFC Life": 276745.0,
+        "Acko Life Insurance": 326257.0,
+        "Acko Health Insurance": 328013.0,
+        "Ageas Federal Life Insurance": 19000.0,
+        "Canara HSBC Life Insurance": 173621.0
       }
     },
     "Oct 2024": {
-      "total": 3110847.0,
+      "total": 3314970.0,
       "by_insurer": {
+        "Bajaj Life": 412489.0,
+        "Aditya Birla Sun Life Insurance": 224332.0,
+        "Canara HSBC": 204123.0,
         "HDFC Life": 354890.0,
         "Acko Life Insurance": 405325.0,
         "Acko Health Insurance": 261918.0,
         "ICICI Lombard": 1114797.0,
         "Ageas Federal Life Insurance": 91323.0,
         "Star Union Daichi Life Insurance": 18350.0,
-        "Bajaj Life": 412489.0,
-        "Aditya Birla Sun Life Insurance": 224332.0,
         "Canara HSBC Life Insurance": 204123.0,
         "Cardiotrack Corporate Services": 23300.0
       }
     },
     "Sep 2024": {
-      "total": 3924151.1,
+      "total": 4139876.1,
       "by_insurer": {
+        "Canara HSBC": 215725.0,
+        "Bajaj Life": 283577.0,
+        "Aditya Birla Sun Life Insurance": 93079.0,
         "Acko Health Insurance": 518893.1,
         "Acko Life Insurance": 368756.0,
         "HDFC Life": 407495.0,
@@ -385,14 +438,15 @@
         "Ageas Federal Life Insurance": 47100.0,
         "Star Union Daichi Life Insurance": 16299.0,
         "SBI LIfe Insurance Company": 104565.0,
-        "Canara HSBC Life Insurance": 215725.0,
-        "Bajaj Life": 283577.0,
-        "Aditya Birla Sun Life Insurance": 93079.0
+        "Canara HSBC Life Insurance": 215725.0
       }
     },
     "Aug 2024": {
-      "total": 3982306.0,
+      "total": 4106001.0,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 311004.0,
+        "Canara HSBC": 123695.0,
+        "Bajaj Life": 192623.0,
         "SBI LIfe Insurance Company": 367180.0,
         "Acko Life Insurance": 426374.0,
         "HDFC Life": 231205.0,
@@ -400,14 +454,15 @@
         "Ageas Federal Life Insurance": 73004.0,
         "Acko Health Insurance": 232587.0,
         "Star Union Daichi Life Insurance": 37096.0,
-        "Aditya Birla Sun Life Insurance": 311004.0,
-        "Canara HSBC Life Insurance": 123695.0,
-        "Bajaj Life": 192623.0
+        "Canara HSBC Life Insurance": 123695.0
       }
     },
     "Jul 2024": {
-      "total": 4151456.43,
+      "total": 4313529.43,
       "by_insurer": {
+        "Bajaj Life": 173449.0,
+        "Aditya Birla Sun Life Insurance": 269379.0,
+        "Canara HSBC": 162073.0,
         "ICICI Lombard": 2224470.0,
         "SBI LIfe Insurance Company": 428515.0,
         "HDFC Life": 199395.0,
@@ -417,14 +472,15 @@
         "Acko Life Insurance": 422464.0,
         "Pramerica Life Insurance": 2590.0,
         "TATA AIG Health Insurance": 5727.0,
-        "Bajaj Life": 173449.0,
-        "Aditya Birla Sun Life Insurance": 269379.0,
         "Canara HSBC Life Insurance": 162073.0
       }
     },
     "Jun 2024": {
-      "total": 3550136.58,
+      "total": 3712466.58,
       "by_insurer": {
+        "Bajaj Life": 286003.0,
+        "Aditya Birla Sun Life Insurance": 348064.0,
+        "Canara HSBC": 162330.0,
         "ICICI Lombard": 1741404.0,
         "Acko Life Insurance": 398560.58,
         "SBI LIfe Insurance Company": 112035.0,
@@ -435,14 +491,15 @@
         "TATA AIA Life Insurance Company": 206488.0,
         "Pramerica Life Insurance": 3259.0,
         "Acko Health Insurance Limited": 2874.0,
-        "Bajaj Life": 286003.0,
-        "Aditya Birla Sun Life Insurance": 348064.0,
         "Canara HSBC Life Insurance": 162330.0
       }
     },
     "May 2024": {
-      "total": 3155397.2,
+      "total": 3300622.2,
       "by_insurer": {
+        "Bajaj Life": 377952.0,
+        "Canara HSBC": 145225.0,
+        "Aditya Birla Sun Life Insurance": 70694.0,
         "TATA AIA Life Insurance Company": 444490.6,
         "HDFC Life": 294980.0,
         "ICICI Lombard": 1319796.0,
@@ -451,43 +508,30 @@
         "Pramerica Life Insurance": 5149.0,
         "SBI LIfe Insurance Company": 82305.0,
         "Star Union Daichi Life Insurance": 7851.0,
-        "Bajaj Life": 377952.0,
-        "Canara HSBC Life Insurance": 145225.0,
-        "Aditya Birla Sun Life Insurance": 70694.0
+        "Canara HSBC Life Insurance": 145225.0
       }
     },
     "Apr 2024": {
-      "total": 2888519.0,
+      "total": 2920553.0,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 60929.0,
+        "Bajaj Life": 203912.0,
+        "Canara HSBC": 32034.0,
         "ICICI Lombard": 1230765.0,
         "Acko Life Insurance": 193804.0,
         "TATA AIA Life Insurance Company": 637620.0,
         "SBI LIfe Insurance Company": 104270.0,
         "HDFC Life": 419635.0,
         "Star Union Daichi Life Insurance": 5550.0,
-        "Aditya Birla Sun Life Insurance": 60929.0,
-        "Bajaj Life": 203912.0,
         "Canara HSBC Life Insurance": 32034.0
       }
     },
-    "Mar 2024": {
-      "total": 3949003.05,
-      "by_insurer": {
-        "SBI LIfe Insurance Company": 654115.0,
-        "ICICI Lombard": 933808.0,
-        "TATA AIA Life Insurance Company": 1427098.05,
-        "HDFC Life": 553855.0,
-        "Acko Life Insurance": 5843.0,
-        "Star Union Daichi Life Insurance": 18045.0,
-        "Pramerica Life Insurance": 1731.0,
-        "Bajaj Life": 165449.0,
-        "Aditya Birla Sun Life Insurance": 99087.0,
-        "Canara HSBC Life Insurance": 89972.0
-      }
-    },
     "Feb 2024": {
-      "total": 5481224.0,
+      "total": 5737644.0,
       "by_insurer": {
+        "Canara HSBC": 256420.0,
+        "Bajaj Life": 125731.0,
+        "Aditya Birla Sun Life Insurance": 164585.0,
         "Pramerica Life Insurance": 9265.0,
         "TATA AIA Life Insurance Company": 298537.0,
         "SBI LIfe Insurance Company": 749890.0,
@@ -495,28 +539,45 @@
         "HDFC Life": 304010.0,
         "Star Union Daichi Life Insurance": 15941.0,
         "Canara HSBC Life Insurance": 256420.0,
-        "Bajaj Life": 125731.0,
-        "Aditya Birla Sun Life Insurance": 164585.0,
         "Pramerica Life Insurance VMER": 440.0
       }
     },
     "Jan 2024": {
-      "total": 4539086.88,
+      "total": 4782393.88,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 360020.0,
+        "Canara HSBC": 243307.0,
+        "Bajaj Life": 136944.88,
         "HDFC Life": 390695.0,
         "Star Union Daichi Life Insurance": 24914.0,
         "TATA AIA Life Insurance Company": 260554.0,
         "ICICI Lombard": 2662834.0,
         "SBI LIfe Insurance Company": 426130.0,
         "Pramerica Life Insurance": 33688.0,
-        "Aditya Birla Sun Life Insurance": 360020.0,
-        "Canara HSBC Life Insurance": 243307.0,
-        "Bajaj Life": 136944.88
+        "Canara HSBC Life Insurance": 243307.0
+      }
+    },
+    "Dec 2023": {
+      "total": 3698988.0,
+      "by_insurer": {
+        "Bajaj Life": 33939.0,
+        "Canara HSBC": 197193.0,
+        "Aditya Birla Sun Life Insurance": 149134.0,
+        "ICICI Lombard": 2095680.0,
+        "HDFC Life": 419385.0,
+        "SBI LIfe Insurance Company": 350040.0,
+        "TATA AIA Life Insurance Company": 179441.0,
+        "Pramerica Life Insurance": 66142.0,
+        "Star Union Daichi Life Insurance": 9191.0,
+        "Canara HSBC Life Insurance": 197193.0,
+        "Cardiotrack Home Services": 1650.0
       }
     },
     "Nov 2023": {
-      "total": 3930545.0,
+      "total": 4052102.0,
       "by_insurer": {
+        "Canara HSBC": 121557.0,
+        "Aditya Birla Sun Life Insurance": 303329.0,
         "ICICI Lombard": 2577462.0,
         "Star Union Daichi Life Insurance": 5371.0,
         "TATA AIA Life Insurance Company": 127237.0,
@@ -524,164 +585,182 @@
         "SBI LIfe Insurance Company": 477040.0,
         "Pramerica Life Insurance": 8141.0,
         "Canara HSBC Life Insurance": 121557.0,
-        "Aditya Birla Sun Life Insurance": 303329.0,
         "India First Life Insurance": 3035.0,
         "Cardiotrack Home Services": 7128.0
       }
     },
     "Oct 2023": {
-      "total": 4206016.98,
+      "total": 4340119.98,
       "by_insurer": {
+        "Canara HSBC": 134103.0,
+        "Aditya Birla Sun Life Insurance": 204053.0,
+        "Bajaj Life": 17054.0,
         "ICICI Lombard": 2974207.0,
         "HDFC Life": 271269.98,
         "SBI LIfe Insurance Company": 489711.0,
         "TATA AIA Life Insurance Company": 113728.0,
         "Pramerica Life Insurance": 1891.0,
-        "Canara HSBC Life Insurance": 134103.0,
-        "Aditya Birla Sun Life Insurance": 204053.0,
-        "Bajaj Life": 17054.0
-      }
-    },
-    "May 2023": {
-      "total": 2550017.3,
-      "by_insurer": {
-        "ICICI Lombard": 1965876.0,
-        "HDFC Life": 179036.33,
-        "TATA AIA Life Insurance Company": 139240.0,
-        "SBI LIfe Insurance Company": 158781.09,
-        "Pramerica Life Insurance": 9979.0,
-        "Aditya Birla Sun Life Insurance": 47729.0,
-        "Canara HSBC Life Insurance": 24950.0,
-        "Bajaj Life": 22744.5,
-        "Cardiotrack Home Services": 1346.38,
-        "India First Life Insurance": 335.0
+        "Canara HSBC Life Insurance": 134103.0
       }
     },
     "Sep 2023": {
       "total": 4915662.4,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 189225.0,
+        "Bajaj Life": 57911.0,
         "ICICI Lombard": 3577569.0,
         "SBI LIfe Insurance Company": 563665.0,
         "TATA AIA Life Insurance Company": 71691.0,
         "HDFC Life": 415840.0,
-        "Pramerica Life Insurance": 39761.4,
-        "Aditya Birla Sun Life Insurance": 189225.0,
-        "Bajaj Life": 57911.0
+        "Pramerica Life Insurance": 39761.4
       }
     },
     "Aug 2023": {
-      "total": 4490331.04,
+      "total": 4494881.04,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 170027.0,
+        "Bajaj Life": 81636.0,
+        "Canara HSBC": 4550.0,
         "ICICI Lombard": 3262611.04,
         "Pramerica Life Insurance": 107284.0,
         "TATA AIA Life Insurance Company": 209959.0,
         "HDFC Life": 376675.0,
         "SBI LIfe Insurance Company": 273099.0,
-        "Aditya Birla Sun Life Insurance": 170027.0,
-        "Bajaj Life": 81636.0,
         "Canara HSBC Life Insurance": 4550.0,
         "Cardiotrack Home Services": 4490.0
       }
     },
     "Jul 2023": {
-      "total": 4069190.4,
+      "total": 4079422.4,
       "by_insurer": {
+        "Bajaj Life": 390261.0,
+        "Aditya Birla Sun Life Insurance": 109031.0,
+        "Canara HSBC": 10232.0,
         "ICICI Lombard": 2812254.03,
         "TATA AIA Life Insurance Company": 189786.0,
         "HDFC Life": 273646.37,
         "Pramerica Life Insurance": 58965.0,
         "SBI LIfe Insurance Company": 211045.0,
-        "Bajaj Life": 390261.0,
-        "Aditya Birla Sun Life Insurance": 109031.0,
         "Canara HSBC Life Insurance": 10232.0,
         "Cardiotrack Home Services": 13970.0
       }
     },
     "Jun 2023": {
-      "total": 2793729.29,
+      "total": 2818480.84,
       "by_insurer": {
+        "Bajaj Life": 48208.0,
+        "Aditya Birla Sun Life Insurance": 158019.0,
+        "Canara HSBC": 24751.55,
         "ICICI Lombard": 1970902.67,
         "SBI LIfe Insurance Company": 164525.0,
         "Pramerica Life Insurance": 1215.0,
         "TATA AIA Life Insurance Company": 157824.0,
         "HDFC Life": 268284.07,
-        "Bajaj Life": 48208.0,
-        "Aditya Birla Sun Life Insurance": 158019.0,
         "Canara HSBC Life Insurance": 24751.55
+      }
+    },
+    "May 2023": {
+      "total": 2574967.3,
+      "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 47729.0,
+        "Canara HSBC": 24950.0,
+        "Bajaj Life": 22744.5,
+        "ICICI Lombard": 1965876.0,
+        "HDFC Life": 179036.33,
+        "TATA AIA Life Insurance Company": 139240.0,
+        "SBI LIfe Insurance Company": 158781.09,
+        "Pramerica Life Insurance": 9979.0,
+        "Canara HSBC Life Insurance": 24950.0,
+        "Cardiotrack Home Services": 1346.38,
+        "India First Life Insurance": 335.0
       }
     },
     "Apr 2023": {
       "total": 2221383.09,
       "by_insurer": {
+        "Bajaj Life": 44914.0,
+        "Aditya Birla Sun Life Insurance": 45788.0,
         "ICICI Lombard": 1689598.0,
         "TATA AIA Life Insurance Company": 101820.0,
         "HDFC Life": 284771.09,
-        "Pramerica Life Insurance": 54492.0,
-        "Bajaj Life": 44914.0,
-        "Aditya Birla Sun Life Insurance": 45788.0
+        "Pramerica Life Insurance": 54492.0
       }
     },
     "Mar 2023": {
-      "total": 1800794.85,
+      "total": 1811794.85,
       "by_insurer": {
+        "Bajaj Life": 72697.0,
+        "Aditya Birla Sun Life Insurance": 131542.0,
+        "Canara HSBC": 11000.0,
         "HDFC Life": 647581.12,
         "ICICI Lombard": 758908.0,
         "Pramerica Life Insurance": 19273.34,
         "TATA AIA Life Insurance Company": 157349.39,
-        "Bajaj Life": 72697.0,
-        "Aditya Birla Sun Life Insurance": 131542.0,
         "Canara HSBC Life Insurance": 11000.0,
         "Shriram Life Insurance": 2444.0
       }
     },
-    "Jan 2023": {
-      "total": 1611642.54,
-      "by_insurer": {
-        "HDFC Life": 409000.0,
-        "ICICI Lombard": 1043230.0,
-        "TATA AIA Life Insurance Company": 34585.0,
-        "Star Union Daichi Life Insurance": 5228.54,
-        "MD India LIC": 500.0,
-        "Aditya Birla Sun Life Insurance": 38067.0,
-        "Bajaj Life": 80532.0,
-        "Canara HSBC Life Insurance": 500.0
-      }
-    },
     "Feb 2023": {
-      "total": 1106695.76,
+      "total": 1109633.94,
       "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 88097.0,
+        "Bajaj Life": 53656.0,
+        "Canara HSBC": 2938.18,
         "HDFC Life": 287864.09,
         "Star Union Daichi Life Insurance": 11939.14,
         "ICICI Lombard": 595955.0,
         "TATA AIA Life Insurance Company": 59990.39,
         "Pramerica Life Insurance": 3843.0,
         "MD India LIC": 250.0,
-        "Aditya Birla Sun Life Insurance": 88097.0,
-        "Bajaj Life": 53656.0,
         "Canara HSBC Life Insurance": 2938.18,
         "Cardiotrack Home Services": 2162.96
+      }
+    },
+    "Jan 2023": {
+      "total": 1612142.54,
+      "by_insurer": {
+        "Aditya Birla Sun Life Insurance": 38067.0,
+        "Bajaj Life": 80532.0,
+        "Canara HSBC": 500.0,
+        "HDFC Life": 409000.0,
+        "ICICI Lombard": 1043230.0,
+        "TATA AIA Life Insurance Company": 34585.0,
+        "Star Union Daichi Life Insurance": 5228.54,
+        "MD India LIC": 500.0,
+        "Canara HSBC Life Insurance": 500.0
       }
     },
     "Dec 2022": {
       "total": 1728533.34,
       "by_insurer": {
+        "Bajaj Life": 94006.0,
         "HDFC Life": 824066.34,
         "ICICI Lombard": 797921.0,
         "MD India LIC": 5250.0,
-        "TATA AIA Life Insurance Company": 7290.0,
-        "Bajaj Life": 94006.0
+        "TATA AIA Life Insurance Company": 7290.0
       }
     },
     "Nov 2022": {
       "total": 1309500.3,
       "by_insurer": {
+        "Bajaj Life": 10252.0,
+        "Aditya Birla Sun Life Insurance": 3226.0,
         "HDFC Life": 600033.92,
         "ICICI Lombard": 676957.0,
         "MD India LIC": 6750.0,
         "TATA AIA Life Insurance Company": 10935.0,
-        "Bajaj Life": 10252.0,
-        "Aditya Birla Sun Life Insurance": 3226.0,
         "Cardiotrack Home Services": 1346.38
+      }
+    },
+    "Oct 2022": {
+      "total": 1023343.0,
+      "by_insurer": {
+        "Bajaj Life": 9216.0,
+        "Aditya Birla Sun Life Insurance": 3216.0,
+        "HDFC Life": 330275.0,
+        "ICICI Lombard": 657653.0,
+        "MD India LIC": 8250.0,
+        "MD India Max Life": 14733.0
       }
     },
     "Sep 2022": {
@@ -691,17 +770,6 @@
         "ICICI Lombard": 892383.0,
         "MD India LIC": 10750.0,
         "MD India Max Life": 40900.83
-      }
-    },
-    "Oct 2022": {
-      "total": 1023343.0,
-      "by_insurer": {
-        "HDFC Life": 330275.0,
-        "ICICI Lombard": 657653.0,
-        "MD India LIC": 8250.0,
-        "Bajaj Life": 9216.0,
-        "Aditya Birla Sun Life Insurance": 3216.0,
-        "MD India Max Life": 14733.0
       }
     },
     "Aug 2022": {
