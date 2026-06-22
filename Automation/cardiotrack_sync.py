@@ -465,6 +465,19 @@ def sync_gmail(force: bool = False) -> dict:
     processed = set(sync_data["processed_message_ids"])
     seen_hashes = dict(sync_data["attachment_hashes"])     # sha256 → report_name
 
+    # ── Save committed copies of billing XLS before any Gmail download ───────
+    # If Gmail delivers the same file for both File1 and File2 (e.g. only one
+    # attachment in the email), we restore the pre-download version of File2
+    # (which is the git-committed Bajaj/ABSLI file) so both insurers' revenue
+    # is always included.  The backup is taken here, before any overwrite.
+    _billing_file2_backup: bytes | None = None
+    if DETAILED_BILLING_FILE2.exists():
+        try:
+            _billing_file2_backup = DETAILED_BILLING_FILE2.read_bytes()
+            log.info(f"  Billing File2 backup saved ({len(_billing_file2_backup):,} bytes)")
+        except Exception as _e:
+            log.warning(f"  Could not backup billing File2: {_e}")
+
     try:
         service = gmail_authenticate()
         log.info("Gmail authenticated ✓")
@@ -654,6 +667,30 @@ def sync_gmail(force: bool = False) -> dict:
             if not found:
                 log.warning(f"  {extra_dest.name}: not found in billing thread")
                 status["missing"].append(extra_dest.name)
+
+    # ── Detect File1/File2 duplication and restore backup if needed ──────────
+    # Gmail sometimes delivers the same attachment under two filenames, or the
+    # extra-pass search picks up an older email whose File2 is a copy of the
+    # current File1.  If SHA256(File1) == SHA256(File2) after downloading, the
+    # dedup in read_detailed_billing_files() will drop all File2 rows (same
+    # record IDs + same insurer) — restoring the backup avoids this.
+    if (DETAILED_BILLING_FILE1.exists() and DETAILED_BILLING_FILE2.exists()
+            and _billing_file2_backup is not None):
+        try:
+            sha1 = hashlib.sha256(DETAILED_BILLING_FILE1.read_bytes()).hexdigest()
+            sha2 = hashlib.sha256(DETAILED_BILLING_FILE2.read_bytes()).hexdigest()
+            if sha1 == sha2:
+                log.warning("  File1 and File2 are identical after Gmail download — "
+                            "restoring committed File2 backup")
+                DETAILED_BILLING_FILE2.write_bytes(_billing_file2_backup)
+                # Remove from downloaded/unchanged so the summary is honest
+                for lst in (status["downloaded"], status["unchanged"]):
+                    if DETAILED_BILLING_FILE2.name in lst:
+                        lst.remove(DETAILED_BILLING_FILE2.name)
+            else:
+                log.info(f"  File1 sha={sha1[:12]}… File2 sha={sha2[:12]}… — distinct ✓")
+        except Exception as _e:
+            log.warning(f"  File1/File2 duplicate check failed: {_e}")
 
     sync_data["processed_message_ids"] = list(processed)
     sync_data["attachment_hashes"]     = seen_hashes
