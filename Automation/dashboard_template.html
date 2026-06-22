@@ -2362,7 +2362,9 @@ function renderPipelineScenario(d) {
   const el = document.getElementById('pipe-scenario-content');
   if (!el) return;
 
-  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + (d.kpis?.jun_revenue||0);
+  // Realized = Apr + May only. June is the forecast month — adding jun_revenue here
+  // would double-count it because JUN_EXISTING_BIZ is added separately below.
+  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0);
   const target    = d.kpis?.q2_target || 20000000;
 
   // Separate June pipeline items
