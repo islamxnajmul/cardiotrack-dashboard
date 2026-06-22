@@ -873,7 +873,8 @@ function renderKPIs(d) {
   const k = d.kpis;
   const mayRev_ = k.may_revenue || 0;
   const aprRev_ = k.apr_revenue || 0;
-  const q2Adj   = aprRev_ + mayRev_;
+  const junRev_ = k.jun_revenue || 0;
+  const q2Adj   = aprRev_ + mayRev_ + junRev_;
   const gapAdj  = Math.max((k.q2_target || 20000000) - q2Adj, 0);
   const pctAdj  = k.q2_target ? Math.round(q2Adj / k.q2_target * 100 * 10) / 10 : 0;
 
@@ -913,7 +914,7 @@ function renderKPIs(d) {
 function renderQ2Tracker(d) {
   const k        = d.kpis || {};
   const target   = k.q2_target || 20000000;
-  const realized = (k.apr_revenue || 0) + (k.may_revenue || 0);
+  const realized = (k.apr_revenue || 0) + (k.may_revenue || 0) + (k.jun_revenue || 0);
   const pipeline = (d.pipeline_by_type?.existing_weighted || 0) +
                    (d.pipeline_by_type?.prospect_weighted || 0);
   const gap      = Math.max(target - realized, 0);
@@ -1320,7 +1321,10 @@ function renderOrdersChart(d) {
 }
 
 function renderOrdersTable(d) {
-  const {incoming:inc, closed:cl} = _ordersForMonth(d, ordersFilter);
+  const _rawOrdersT = _ordersForMonth(d, ordersFilter);
+  const inc = {}, cl = {};
+  Object.entries(_rawOrdersT.incoming || {}).forEach(([k,v]) => { const c = _canonicalName(k); inc[c] = (inc[c]||0) + v; });
+  Object.entries(_rawOrdersT.closed   || {}).forEach(([k,v]) => { const c = _canonicalName(k); cl[c]  = (cl[c]||0)  + v; });
   const tbody = document.getElementById('orders-tbody');
   const thead = document.getElementById('orders-thead');
 
@@ -2112,7 +2116,8 @@ function renderActionableInsights(d) {
   const target    = k.q2_target    || 20000000;
   const aprRev    = k.apr_revenue  || 0;
   const mayRev    = k.may_revenue  || 0;
-  const q2Adj     = aprRev + mayRev;
+  const junRevAI  = k.jun_revenue  || 0;
+  const q2Adj     = aprRev + mayRev + junRevAI;
   const gapAdj    = Math.max(target - q2Adj, 0);
   // Per-insurer May revenue from XLS monthly_trend breakdown
   const mayRevXlsMap_ = (d.monthly_trend?.by_insurer || {})['May 2026'] || {};
@@ -2283,7 +2288,7 @@ function renderPipelineScenario(d) {
   const el = document.getElementById('pipe-scenario-content');
   if (!el) return;
 
-  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0);
+  const realized  = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + (d.kpis?.jun_revenue||0);
   const target    = d.kpis?.q2_target || 20000000;
 
   // Separate June pipeline items
@@ -2472,7 +2477,7 @@ function renderOrdersKPIRow(d) {
   const monthWise = d.month_wise || [];
   let revAchieved = 0, revTarget = 0;
   if (ordersFilter === 'Q2') {
-    revAchieved = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0);
+    revAchieved = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + (d.kpis?.jun_revenue||0);
     revTarget   = d.kpis?.q2_target || 20000000;
   } else {
     const mLabel = ordersFilter === 'Apr 2026' ? 'April 2026'
