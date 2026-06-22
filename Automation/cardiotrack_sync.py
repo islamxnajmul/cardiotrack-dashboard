@@ -435,7 +435,7 @@ def sync_gmail(force: bool = False) -> dict:
     Returns a status dict:
         {
             "ok":          bool,        # False = blocking failure (auth, packages, etc.)
-            "error":       str | None,  # human-readable reason when ok=False
+            "error":       None,  # str | None — human-readable reason when ok=False
             "downloaded":  [report_name, …],  # reports we just refreshed from Gmail
             "unchanged":   [report_name, …],  # found a message but bytes were identical
             "missing":     [report_name, …],  # no matching email found at all
@@ -1565,7 +1565,7 @@ def _revenue_kpis_from_detailed(records: list) -> dict:
     }
 
 
-def build_dashboard_data(sync_data: dict | None = None) -> dict:
+def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
     """Combine all sources into one JSON-serialisable dict."""
     log.info("Building dashboard data…")
     qt  = read_quarter_target()
@@ -1883,7 +1883,7 @@ def build_dashboard_data(sync_data: dict | None = None) -> dict:
                                                # May 25-30 billing cycle is included (ABSLI,
                                                # Bajaj Life etc. last billed on May 30)
 
-    def _billing_week_label(d: datetime) -> str | None:
+    def _billing_week_label(d: datetime):  # -> str | None
         """Return 'DD Mon – DD Mon YYYY' label for a Sun-Sat week, or None if before anchor."""
         bd = d.date() if hasattr(d, 'date') else d
         if bd < _WEEKLY_ANCHOR:
@@ -2171,7 +2171,7 @@ def read_detailed_billing_files() -> list:
     import io as _io
     from collections import defaultdict as _dd
 
-    seen_ids: set = set()   # Zoho record IDs seen so far — dedup across both files
+    seen_ids: set = set()   # (record_id, insurer) pairs seen — dedup across both files
     total_dupes = 0
     records: list = []
     for path in (DETAILED_BILLING_FILE1, DETAILED_BILLING_FILE2):
@@ -2197,13 +2197,18 @@ def read_detailed_billing_files() -> list:
             if not row or len(row) < 20:
                 continue
 
-            # ── Cross-file deduplication by Zoho record ID (col 0) ──────────
-            row_id = str(row[0]).strip() if row[0] is not None else ""
+            # ── Cross-file deduplication by (record_id, insurer) ────────────
+            # Key includes insurer so that sequential row numbers (1, 2, 3…)
+            # in col 0 don't falsely collide between files covering different
+            # insurers (e.g. File1=ICICI/Pramerica, File2=Bajaj/ABSLI).
+            row_id  = str(row[0]).strip() if row[0] is not None else ""
+            ins_raw_dedup = str(row[1]).strip() if row[1] is not None else ""
+            dedup_key = (row_id, ins_raw_dedup)
             if row_id:
-                if row_id in seen_ids:
+                if dedup_key in seen_ids:
                     file_dupes += 1
                     continue
-                seen_ids.add(row_id)
+                seen_ids.add(dedup_key)
 
             ins_raw = row[1]
             date_val = row[9]
