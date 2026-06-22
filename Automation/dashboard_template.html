@@ -1008,12 +1008,14 @@ function renderRevTrendChart(d) {
   const byIns  = d.monthly_trend.by_insurer || {};
   const labels = d.monthly_trend.labels     || [];
 
-  // Rank insurers by total revenue across all months
+  // Rank insurers by total revenue — merge canonical variants (e.g. "Bajaj Life" + "Bajaj")
   const totals = {};
   labels.forEach(m => {
     Object.entries(byIns[m] || {}).forEach(([ins, v]) => {
-      if (!ins.includes('Test') && !ins.includes('Cardiotrack'))
-        totals[ins] = (totals[ins] || 0) + v;
+      if (!ins.includes('Test') && !ins.includes('Cardiotrack')) {
+        const canon = _canonicalName(ins);
+        totals[canon] = (totals[canon] || 0) + v;
+      }
     });
   });
   const topIns = Object.entries(totals)
@@ -1060,17 +1062,17 @@ function _drawRevTrendChart(d, activeKey, topIns) {
   let chartType, datasets;
 
   if (activeKey === 'All') {
-    // Stacked bar — one dataset per top insurer
+    // Total monthly revenue — single bar per month (sum of all insurers)
     chartType = 'bar';
-    datasets = topIns.map(({ key, color }) => ({
-      label: key.replace(' Life Insurance','').replace(' Sun Life Insurance','')
-                .replace(' Insurance Company','').replace(' Life','')
-                .replace(' Daichi','').replace(' Federal',''),
-      data:  labels.map(m => Math.round((byIns[m] || {})[key] || 0)),
-      backgroundColor: color,
-      borderRadius: 2,
-      stack: 'rev',
-    }));
+    datasets = [{
+      label: 'Total Revenue',
+      data: labels.map(m => {
+        const mo = byIns[m] || {};
+        return Math.round(Object.values(mo).reduce((s, v) => s + (v || 0), 0));
+      }),
+      backgroundColor: '#1B4F72',
+      borderRadius: 3,
+    }];
   } else {
     // Single insurer — line chart
     chartType = 'line';
@@ -1078,7 +1080,11 @@ function _drawRevTrendChart(d, activeKey, topIns) {
     datasets = [{
       label: activeKey.replace(' Life Insurance','').replace(' Sun Life Insurance','')
                       .replace(' Insurance Company','').replace(' Life',''),
-      data:  labels.map(m => Math.round((byIns[m] || {})[activeKey] || 0)),
+      // Sum all raw keys that canonicalise to activeKey (handles "Bajaj Life" + "Bajaj" → "Bajaj")
+      data:  labels.map(m => Math.round(
+        Object.entries(byIns[m] || {}).reduce((s,[k,v]) =>
+          s + (_canonicalName(k) === activeKey ? (v||0) : 0), 0)
+      )),
       borderColor: color,
       backgroundColor: color + '22',
       fill: true,
@@ -1096,22 +1102,15 @@ function _drawRevTrendChart(d, activeKey, topIns) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: activeKey === 'All', position: 'bottom',
-          labels: { boxWidth: 12, font: { size: 11 } } },
+        legend: { display: false },
         tooltip: { callbacks: {
-          label: c => '  ' + (c.dataset.label||'') + ': ' + fmtL(c.raw),
-          footer: items => {
-            if (activeKey !== 'All' || !items.length) return '';
-            const total = items.reduce((s, c) => s + (c.raw || 0), 0);
-            return 'Total: ' + fmtL(total);
-          }
+          label: c => '  ' + fmtL(c.raw)
         }}
       },
       scales: {
-        y: { beginAtZero: true, stacked: activeKey === 'All',
+        y: { beginAtZero: true,
              ticks: { callback: v => fmtL(v) }, grid: { color: '#EEF2F5' } },
-        x: { stacked: activeKey === 'All',
-             ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
       }
     }
   });

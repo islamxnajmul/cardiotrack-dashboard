@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-06-22T06:11:22.429576+00:00",
+    "generated_at": "2026-06-22T06:16:40.791262+00:00",
     "q2_target": 20000000,
     "as_of": "22 Jun 2026",
     "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
@@ -2858,7 +2858,7 @@
     ]
   },
   "billing_analysis": {
-    "generated_at": "2026-06-22T06:11:22.292124+00:00",
+    "generated_at": "2026-06-22T06:16:40.648349+00:00",
     "total_rows": 97673,
     "date_from": "Mar 2022",
     "date_to": "Jun 2026",
