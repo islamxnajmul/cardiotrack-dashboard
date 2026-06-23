@@ -88,19 +88,16 @@ CSV_EMAIL_MAP = {
 # Excel/XLS reports (Zoho sends these as .xls / .xlsx attachments)
 XLS_EMAIL_MAP = {
     'Daily Insurer Billing Data':        BILLING_FILE,
-    # ⚠  BOTH Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls arrive
-    #    in the "Daily Insurer Billing" email thread. The main loop picks up File1
-    #    by subject; File2 is handled by the BILLING_EXTRA_FILES extra pass below.
-    #    If Gmail delivers the same content for both files, the backup/restore logic
-    #    in sync_gmail() restores whichever committed file differs, ensuring both
-    #    insurer groups (Bajaj and ICICI) are always represented.
-    'Daily Insurer Billing':             DETAILED_BILLING_FILE1,
+    # Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls are handled
+    # separately by sync_billing_files_smart() which scans ALL recent billing
+    # emails and routes each file to the correct destination by content (Bajaj
+    # group → File1, ICICI group → File2), regardless of delivery order.
 }
 
 # Attachment filename → destination for files that share a subject with another
 # report and can't be matched by subject alone.
 BILLING_EXTRA_FILES: dict = {
-    'daily_insurer_billing_2.xls': DETAILED_BILLING_FILE2,
+    # Detailed billing files handled by sync_billing_files_smart() — not here.
 }
 
 # Combined map (used by dashboard to know all expected reports)
@@ -296,6 +293,133 @@ def download_attachment(service, message_id: str, attachment_id: str, dest_path:
     sha = hashlib.sha256(data).hexdigest()
     log.info(f"  ✓ Saved {dest_path.name}  ({len(data):,} bytes, sha256={sha[:10]}…)")
     return len(data), sha
+
+
+def _identify_billing_group(xls_bytes: bytes) -> str:
+    """Peek at a billing XLS in-memory and return 'bajaj', 'icici', or 'unknown'.
+
+    Reads up to the first 200 data rows; whichever canonical insurer group
+    appears first determines the label.  'bajaj' covers Bajaj / ABSLI / Canara HSBC;
+    'icici' covers ICICI Lombard / Pramerica / Ageas / Star Union.
+    """
+    try:
+        import io
+        wb = openpyxl.load_workbook(io.BytesIO(xls_bytes), read_only=True, data_only=True)
+        ws = wb.active
+        bajaj_hits = 0
+        icici_hits = 0
+        BAJAJ_TOKENS  = ('bajaj', 'aditya birla', 'absli', 'canara hsbc')
+        ICICI_TOKENS  = ('icici', 'pramerica', 'ageas', 'star union')
+        for i, row in enumerate(ws.iter_rows(min_row=2, values_only=True)):
+            if i >= 200:
+                break
+            ins = str(row[1] or '').strip().lower()
+            if any(t in ins for t in BAJAJ_TOKENS):
+                bajaj_hits += 1
+            elif any(t in ins for t in ICICI_TOKENS):
+                icici_hits += 1
+        if bajaj_hits > icici_hits:
+            return 'bajaj'
+        if icici_hits > bajaj_hits:
+            return 'icici'
+        return 'unknown'
+    except Exception as _e:
+        log.debug(f"  _identify_billing_group error: {_e}")
+        return 'unknown'
+
+
+def sync_billing_files_smart(service) -> dict:
+    """Download both Daily Insurer Billing XLS files using content-based routing.
+
+    Problem: Gmail sends Bajaj and ICICI billing data as two separate emails with
+    the same subject "Daily Insurer Billing".  The delivery order varies daily, so
+    naively grabbing the "latest" email always misses one insurer group.
+
+    Solution: scan the last 20 messages in the billing thread, download every XLS
+    attachment into memory, identify its insurer group (Bajaj vs ICICI) by peeking
+    at the first 200 rows, then save the most-recent Bajaj file as File1 and the
+    most-recent ICICI file as File2.  The composite-key dedup (record_id, insurer)
+    in read_detailed_billing_files() prevents any double-counting.
+
+    Returns a status dict with keys: bajaj_found, icici_found, error.
+    """
+    status = {'bajaj_found': False, 'icici_found': False, 'error': None}
+    try:
+        q = 'subject:"Daily Insurer Billing" has:attachment filename:xls'
+        refs = service.users().messages().list(
+            userId='me', q=q, maxResults=20
+        ).execute().get('messages', [])
+        log.info(f"  Billing smart-sync: found {len(refs)} candidate messages")
+
+        bajaj_candidates: list  = []   # (internalDate, bytes)
+        icici_candidates: list  = []
+
+        for ref in refs:
+            try:
+                msg = service.users().messages().get(
+                    userId='me', id=ref['id'], format='full'
+                ).execute()
+                date_ms = int(msg.get('internalDate', 0))
+                for part in _iter_parts(msg.get('payload', {})):
+                    if not _looks_like_xls_part(part):
+                        continue
+                    fname = (part.get('filename') or '').lower()
+                    # Skip the summary file — only process the detailed files
+                    if 'billing_data' in fname:
+                        continue
+                    body   = part.get('body') or {}
+                    att_id = body.get('attachmentId')
+                    if att_id:
+                        try:
+                            att  = service.users().messages().attachments().get(
+                                userId='me', messageId=ref['id'], id=att_id
+                            ).execute()
+                            data = base64.urlsafe_b64decode(att.get('data', ''))
+                        except Exception as _de:
+                            log.debug(f"    attachment download failed: {_de}")
+                            continue
+                    else:
+                        # Inline base64
+                        data_b64 = body.get('data')
+                        if not data_b64:
+                            continue
+                        data = base64.urlsafe_b64decode(data_b64)
+
+                    group = _identify_billing_group(data)
+                    log.info(f"    {fname} ({len(data):,} bytes, date={date_ms}) → group={group}")
+                    if group == 'bajaj':
+                        bajaj_candidates.append((date_ms, data))
+                    elif group == 'icici':
+                        icici_candidates.append((date_ms, data))
+            except Exception as _me:
+                log.debug(f"  message {ref['id']} error: {_me}")
+                continue
+
+        # Save the most-recent of each group
+        if bajaj_candidates:
+            bajaj_candidates.sort(key=lambda x: x[0], reverse=True)
+            DETAILED_BILLING_FILE1.parent.mkdir(parents=True, exist_ok=True)
+            DETAILED_BILLING_FILE1.write_bytes(bajaj_candidates[0][1])
+            sha = hashlib.sha256(bajaj_candidates[0][1]).hexdigest()
+            log.info(f"  ✓ File1 (Bajaj group) saved — {len(bajaj_candidates[0][1]):,} bytes sha={sha[:10]}…")
+            status['bajaj_found'] = True
+        else:
+            log.warning("  ✗ No Bajaj-group billing file found in recent emails")
+
+        if icici_candidates:
+            icici_candidates.sort(key=lambda x: x[0], reverse=True)
+            DETAILED_BILLING_FILE2.parent.mkdir(parents=True, exist_ok=True)
+            DETAILED_BILLING_FILE2.write_bytes(icici_candidates[0][1])
+            sha = hashlib.sha256(icici_candidates[0][1]).hexdigest()
+            log.info(f"  ✓ File2 (ICICI group) saved — {len(icici_candidates[0][1]):,} bytes sha={sha[:10]}…")
+            status['icici_found'] = True
+        else:
+            log.warning("  ✗ No ICICI-group billing file found in recent emails")
+
+    except Exception as e:
+        status['error'] = str(e)
+        log.warning(f"  Billing smart-sync failed: {e}")
+    return status
 
 
 def _save_inline_attachment(part: dict, dest_path: Path):
@@ -678,42 +802,23 @@ def sync_gmail(force: bool = False) -> dict:
                 log.warning(f"  {extra_dest.name}: not found in billing thread")
                 status["missing"].append(extra_dest.name)
 
-    # ── Detect File1/File2 duplication and restore backup if needed ──────────
-    # Gmail sometimes delivers the same attachment under two filenames, or the
-    # Duplicate-delivery guard: Gmail sometimes sends the same attachment for both
-    # File1 and File2.  If SHA256(File1) == SHA256(File2) after download, one
-    # insurer group is missing.  We restore whichever committed backup has DIFFERENT
-    # content from the downloaded duplicate, so both insurer groups are always present.
-    if DETAILED_BILLING_FILE1.exists() and DETAILED_BILLING_FILE2.exists():
-        try:
-            sha1 = hashlib.sha256(DETAILED_BILLING_FILE1.read_bytes()).hexdigest()
-            sha2 = hashlib.sha256(DETAILED_BILLING_FILE2.read_bytes()).hexdigest()
-            if sha1 == sha2:
-                log.warning("  File1 and File2 are identical after Gmail download — "
-                            "searching backups for a distinct file to restore")
-                # Pick whichever committed backup has different content
-                _restored = False
-                for _bname, _bdata, _bdest in [
-                    (DETAILED_BILLING_FILE2.name, _billing_file2_backup, DETAILED_BILLING_FILE2),
-                    (DETAILED_BILLING_FILE1.name, _billing_file1_backup, DETAILED_BILLING_FILE2),
-                ]:
-                    if _bdata is None:
-                        continue
-                    _bsha = hashlib.sha256(_bdata).hexdigest()
-                    if _bsha != sha1:
-                        _bdest.write_bytes(_bdata)
-                        log.info(f"  Restored {_bname} backup (sha={_bsha[:12]}…) as File2")
-                        for lst in (status["downloaded"], status["unchanged"]):
-                            if DETAILED_BILLING_FILE2.name in lst:
-                                lst.remove(DETAILED_BILLING_FILE2.name)
-                        _restored = True
-                        break
-                if not _restored:
-                    log.warning("  No distinct backup available — both files may have same insurer group")
-            else:
-                log.info(f"  File1 sha={sha1[:12]}… File2 sha={sha2[:12]}… — distinct ✓")
-        except Exception as _e:
-            log.warning(f"  File1/File2 duplicate check failed: {_e}")
+    # ── Smart billing file download: content-based routing ───────────────────
+    # Downloads all recent "Daily Insurer Billing" emails, peeks at each
+    # attachment to determine insurer group, saves the most-recent Bajaj file
+    # as File1 and the most-recent ICICI file as File2.  This is immune to
+    # the daily-varying delivery order that broke the old subject-based approach.
+    log.info("  Billing files: running smart content-based sync…")
+    billing_status = sync_billing_files_smart(service)
+    if billing_status['bajaj_found']:
+        status["downloaded"].append(DETAILED_BILLING_FILE1.name)
+        status["new_files"] = True
+    else:
+        status["missing"].append(DETAILED_BILLING_FILE1.name)
+    if billing_status['icici_found']:
+        status["downloaded"].append(DETAILED_BILLING_FILE2.name)
+        status["new_files"] = True
+    else:
+        status["missing"].append(DETAILED_BILLING_FILE2.name)
 
     sync_data["processed_message_ids"] = list(processed)
     sync_data["attachment_hashes"]     = seen_hashes
