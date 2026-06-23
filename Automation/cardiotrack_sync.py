@@ -88,23 +88,19 @@ CSV_EMAIL_MAP = {
 # Excel/XLS reports (Zoho sends these as .xls / .xlsx attachments)
 XLS_EMAIL_MAP = {
     'Daily Insurer Billing Data':        BILLING_FILE,
-    # Detailed category-level billing exports.
-    # ⚠  BOTH Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls are sent
-    #    in the SAME email thread with subject "Daily Insurer Billing" (two separate
-    #    messages, same subject).  Only DETAILED_BILLING_FILE1 is listed here so
-    #    the main sync loop downloads it normally.  DETAILED_BILLING_FILE2 is
-    #    handled by _sync_billing_file2() which scans the same thread by filename.
-    # NOTE: Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls are NOT
-    # downloaded from Gmail here. Gmail delivers them inconsistently (sometimes
-    # both attachments are the same file, sometimes only one is present).
-    # Instead, both files are committed to git and used as-is by --rebuild.
-    # To update billing data: download new XLS files, commit them, push.
+    # ⚠  BOTH Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls arrive
+    #    in the "Daily Insurer Billing" email thread. The main loop picks up File1
+    #    by subject; File2 is handled by the BILLING_EXTRA_FILES extra pass below.
+    #    If Gmail delivers the same content for both files, the backup/restore logic
+    #    in sync_gmail() restores whichever committed file differs, ensuring both
+    #    insurer groups (Bajaj and ICICI) are always represented.
+    'Daily Insurer Billing':             DETAILED_BILLING_FILE1,
 }
 
 # Attachment filename → destination for files that share a subject with another
 # report and can't be matched by subject alone.
 BILLING_EXTRA_FILES: dict = {
-    # daily_insurer_billing_2.xls excluded — see REPORTS_MAP note above.
+    'daily_insurer_billing_2.xls': DETAILED_BILLING_FILE2,
 }
 
 # Combined map (used by dashboard to know all expected reports)
@@ -471,16 +467,26 @@ def sync_gmail(force: bool = False) -> dict:
 
     # ── Save committed copies of billing XLS before any Gmail download ───────
     # If Gmail delivers the same file for both File1 and File2 (e.g. only one
-    # attachment in the email), we restore the pre-download version of File2
-    # (which is the git-committed Bajaj/ABSLI file) so both insurers' revenue
-    # is always included.  The backup is taken here, before any overwrite.
+    # Back up BOTH committed billing files before Gmail overwrites them.
+    # If Gmail delivers the same attachment for File1 and File2 (duplicate),
+    # we restore whichever committed file differs from the downloaded content,
+    # ensuring both insurer groups (Bajaj and ICICI) are always represented.
+    _billing_file1_backup: bytes | None = None
     _billing_file2_backup: bytes | None = None
-    if DETAILED_BILLING_FILE2.exists():
-        try:
-            _billing_file2_backup = DETAILED_BILLING_FILE2.read_bytes()
-            log.info(f"  Billing File2 backup saved ({len(_billing_file2_backup):,} bytes)")
-        except Exception as _e:
-            log.warning(f"  Could not backup billing File2: {_e}")
+    for _bfile, _bvar in [
+        (DETAILED_BILLING_FILE1, '_billing_file1_backup'),
+        (DETAILED_BILLING_FILE2, '_billing_file2_backup'),
+    ]:
+        if _bfile.exists():
+            try:
+                _bdata = _bfile.read_bytes()
+                if _bvar == '_billing_file1_backup':
+                    _billing_file1_backup = _bdata
+                else:
+                    _billing_file2_backup = _bdata
+                log.info(f"  Billing backup: {_bfile.name} ({len(_bdata):,} bytes)")
+            except Exception as _e:
+                log.warning(f"  Could not backup {_bfile.name}: {_e}")
 
     try:
         service = gmail_authenticate()
@@ -674,23 +680,36 @@ def sync_gmail(force: bool = False) -> dict:
 
     # ── Detect File1/File2 duplication and restore backup if needed ──────────
     # Gmail sometimes delivers the same attachment under two filenames, or the
-    # extra-pass search picks up an older email whose File2 is a copy of the
-    # current File1.  If SHA256(File1) == SHA256(File2) after downloading, the
-    # dedup in read_detailed_billing_files() will drop all File2 rows (same
-    # record IDs + same insurer) — restoring the backup avoids this.
-    if (DETAILED_BILLING_FILE1.exists() and DETAILED_BILLING_FILE2.exists()
-            and _billing_file2_backup is not None):
+    # Duplicate-delivery guard: Gmail sometimes sends the same attachment for both
+    # File1 and File2.  If SHA256(File1) == SHA256(File2) after download, one
+    # insurer group is missing.  We restore whichever committed backup has DIFFERENT
+    # content from the downloaded duplicate, so both insurer groups are always present.
+    if DETAILED_BILLING_FILE1.exists() and DETAILED_BILLING_FILE2.exists():
         try:
             sha1 = hashlib.sha256(DETAILED_BILLING_FILE1.read_bytes()).hexdigest()
             sha2 = hashlib.sha256(DETAILED_BILLING_FILE2.read_bytes()).hexdigest()
             if sha1 == sha2:
                 log.warning("  File1 and File2 are identical after Gmail download — "
-                            "restoring committed File2 backup")
-                DETAILED_BILLING_FILE2.write_bytes(_billing_file2_backup)
-                # Remove from downloaded/unchanged so the summary is honest
-                for lst in (status["downloaded"], status["unchanged"]):
-                    if DETAILED_BILLING_FILE2.name in lst:
-                        lst.remove(DETAILED_BILLING_FILE2.name)
+                            "searching backups for a distinct file to restore")
+                # Pick whichever committed backup has different content
+                _restored = False
+                for _bname, _bdata, _bdest in [
+                    (DETAILED_BILLING_FILE2.name, _billing_file2_backup, DETAILED_BILLING_FILE2),
+                    (DETAILED_BILLING_FILE1.name, _billing_file1_backup, DETAILED_BILLING_FILE2),
+                ]:
+                    if _bdata is None:
+                        continue
+                    _bsha = hashlib.sha256(_bdata).hexdigest()
+                    if _bsha != sha1:
+                        _bdest.write_bytes(_bdata)
+                        log.info(f"  Restored {_bname} backup (sha={_bsha[:12]}…) as File2")
+                        for lst in (status["downloaded"], status["unchanged"]):
+                            if DETAILED_BILLING_FILE2.name in lst:
+                                lst.remove(DETAILED_BILLING_FILE2.name)
+                        _restored = True
+                        break
+                if not _restored:
+                    log.warning("  No distinct backup available — both files may have same insurer group")
             else:
                 log.info(f"  File1 sha={sha1[:12]}… File2 sha={sha2[:12]}… — distinct ✓")
         except Exception as _e:
