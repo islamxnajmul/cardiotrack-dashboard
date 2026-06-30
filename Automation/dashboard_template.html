@@ -658,7 +658,7 @@
       <p style="font-size:.75rem;color:var(--text2);margin-bottom:10px">
         💰 Q2 Revenue by Insurer — Apr / May / Jun 2026
       </p>
-      <div class="chart-wrap" style="height:320px"><canvas id="q2RevenueByInsurerChart"></canvas></div>
+      <div class="chart-wrap" style="height:360px"><canvas id="q2RevenueByInsurerChart"></canvas></div>
     </div>
   </div>
 
@@ -1753,36 +1753,75 @@ function renderQ2RevenueByInsurerChart(d) {
     return totB - totA;
   });
 
+  // Store raw rupee values; format as exact ₹XX.XXL on the bars
+  const rawData = MONTHS.map(month =>
+    insurers.map(ins =>
+      Object.entries(byIns[month] || {}).reduce((s, [k, v]) =>
+        s + (_canonicalName(k) === ins ? (v || 0) : 0), 0
+      )
+    )
+  );
+
+  // Helper: format raw rupees as ₹XX.XXL
+  const fmtExact = v => {
+    if (!v) return '';
+    const L = v / 100000;
+    return '₹' + L.toFixed(2) + 'L';
+  };
+
   const datasets = MONTHS.map((month, mi) => ({
     label: month.replace(' 2026', ''),
     backgroundColor: COLORS[mi],
     borderColor: BORDERS[mi],
     borderWidth: 1,
     borderRadius: 3,
-    data: insurers.map(ins =>
-      Math.round(
-        Object.entries(byIns[month] || {}).reduce((s, [k, v]) =>
-          s + (_canonicalName(k) === ins ? (v || 0) : 0), 0
-        ) / 100000   // → Lakhs
-      )
-    )
+    data: rawData[mi].map(v => parseFloat((v / 100000).toFixed(2)))  // exact 2-dp Lakhs for scale
   }));
+
+  // Custom plugin: draw exact value above every bar
+  const barLabelPlugin = {
+    id: 'q2BarLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx: c } = chart;
+      chart.data.datasets.forEach((ds, di) => {
+        const meta = chart.getDatasetMeta(di);
+        if (meta.hidden) return;
+        meta.data.forEach((bar, idx) => {
+          const raw = rawData[di][idx];
+          if (!raw) return;
+          const label = fmtExact(raw);
+          c.save();
+          c.font = 'bold 8.5px sans-serif';
+          c.fillStyle = '#2C3E50';
+          c.textAlign = 'center';
+          c.textBaseline = 'bottom';
+          c.fillText(label, bar.x, bar.y - 2);
+          c.restore();
+        });
+      });
+    }
+  };
 
   charts['q2RevByIns'] = new Chart(ctx, {
     type: 'bar',
     data: { labels: insurers, datasets },
+    plugins: [barLabelPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+      layout: { padding: { top: 22 } },   // room for on-bar labels
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
         tooltip: {
           callbacks: {
-            label: c => `  ${c.dataset.label}: ₹${c.raw.toLocaleString()}L`,
-            footer: items => {
-              const total = items.reduce((s, i) => s + (i.raw || 0), 0);
-              return `  Q2 Total: ₹${total.toLocaleString()}L`;
+            label: (c) => {
+              const raw = rawData[c.datasetIndex][c.dataIndex];
+              return `  ${c.dataset.label}: ${fmtExact(raw)}`;
+            },
+            footer: (items) => {
+              const total = items.reduce((s, i) => s + rawData[i.datasetIndex][i.dataIndex], 0);
+              return `  Q2 Total: ${fmtExact(total)}`;
             }
           }
         }
@@ -1791,10 +1830,7 @@ function renderQ2RevenueByInsurerChart(d) {
         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
         y: {
           beginAtZero: true,
-          ticks: {
-            font: { size: 10 },
-            callback: v => '₹' + v + 'L'
-          },
+          ticks: { font: { size: 10 }, callback: v => '₹' + v + 'L' },
           grid: { color: 'rgba(0,0,0,.05)' }
         }
       }
