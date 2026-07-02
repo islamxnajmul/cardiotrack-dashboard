@@ -390,7 +390,7 @@
 <!-- TOP-LEVEL VIEW SWITCHER -->
 <div class="view-tabs">
   <button class="view-tab active" data-view="sales" onclick="switchView('sales')">
-    <span class="vt-emoji">📊</span> Sales (Q2 FY2026)
+    <span class="vt-emoji">📊</span> Sales
   </button>
   <button class="view-tab" data-view="am" onclick="switchView('am')">
     <span class="vt-emoji">👥</span> Account Managers
@@ -405,37 +405,17 @@
 
 <div class="main" id="main-content" style="display:none">
 
-  <!-- KPI CARDS -->
-  <div class="grid-5" style="grid-template-columns:repeat(6,1fr)">
-    <div class="kpi kpi-target">
-      <div class="label">Q2 Target</div>
-      <div class="value" id="kpi-target">—</div>
-      <div class="sub">Apr – Jun 2026</div>
-    </div>
-    <div class="kpi kpi-apr">
-      <div class="label">April Achieved</div>
-      <div class="value" id="kpi-apr">—</div>
-      <div class="sub">✅ 100% Realized</div>
-    </div>
-    <div class="kpi kpi-may">
-      <div class="label">May Achieved</div>
-      <div class="value" id="kpi-may">—</div>
-      <div class="sub">Month Final ✅</div>
-    </div>
-    <div class="kpi kpi-q2">
-      <div class="label">Q2 So Far</div>
-      <div class="value" id="kpi-q2">—</div>
-      <div class="sub" id="kpi-q2-pct">—% of target</div>
-    </div>
-    <div class="kpi kpi-gap">
-      <div class="label">Gap to Target</div>
-      <div class="value" id="kpi-gap">—</div>
-    <div class="kpi" style="background:linear-gradient(135deg,#6C3483,#4A235A)">
+  <!-- KPI CARDS — June to-date + Q3 target -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+    <div class="kpi" style="background:linear-gradient(135deg,#6C3483,#4A235A);margin:0">
       <div class="label">June 2026 Revenue To-Date</div>
       <div class="value" id="kpi-jun">₹0</div>
       <div class="sub" id="kpi-jun-sub">Month in progress</div>
     </div>
-      <div class="sub">Remaining</div>
+    <div class="kpi" style="background:linear-gradient(135deg,#1B4F72,#0D2137);margin:0">
+      <div class="label">Q3 FY2026 Target</div>
+      <div class="value" id="kpi-q3-target">—</div>
+      <div class="sub" id="kpi-q3-sub">1.7× Q3 2025 actual</div>
     </div>
   </div>
 
@@ -452,12 +432,13 @@
       <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF">
         <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Q2 Target</div>
         <div style="font-size:1.25rem;font-weight:800;color:#0D1B2A;margin-top:4px" id="qt-target">—</div>
-        <div style="font-size:.66rem;color:var(--text2);margin-top:2px">Apr 60L · May 65L · Jun 75L</div>
+        <div style="font-size:.66rem;color:var(--text2);margin-top:2px">Apr + May + Jun 2026</div>
       </div>
       <div style="border:1px solid #D5F5E3;border-radius:8px;padding:11px 14px;background:#F4FCF8">
-        <div style="font-size:.65rem;font-weight:700;color:#1E8449;text-transform:uppercase;letter-spacing:.5px">Realized</div>
+        <div style="font-size:.65rem;font-weight:700;color:#1E8449;text-transform:uppercase;letter-spacing:.5px">Achieved</div>
         <div style="font-size:1.25rem;font-weight:800;color:#1E8449;margin-top:4px" id="qt-realized">—</div>
         <div style="font-size:.66rem;color:#1E8449;margin-top:2px"><span id="qt-realized-pct">—</span> of target</div>
+        <div style="font-size:.63rem;color:#555;margin-top:5px;line-height:1.5" id="qt-achieved-breakdown">—</div>
       </div>
       <div style="border:1px solid #FEF3C7;border-radius:8px;padding:11px 14px;background:#FFFBEB">
         <div style="font-size:.65rem;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:.5px">Weighted Pipeline</div>
@@ -905,33 +886,27 @@ function switchTab(id, groupId) {
 // RENDER FUNCTIONS
 // ─────────────────────────────────────────────────────────────────
 function renderKPIs(d) {
-  const k = d.kpis;
-  const mayRev_ = k.may_revenue || 0;
-  const aprRev_ = k.apr_revenue || 0;
-  const junRev_ = k.jun_revenue || 0;
-  const q2Adj   = aprRev_ + mayRev_ + junRev_;
-  const gapAdj  = Math.max((k.q2_target || 20000000) - q2Adj, 0);
-  const pctAdj  = k.q2_target ? Math.round(q2Adj / k.q2_target * 100 * 10) / 10 : 0;
-
-  document.getElementById('kpi-target').textContent = fmtL(k.q2_target);
-  document.getElementById('kpi-apr').textContent    = fmtL(aprRev_);
-  document.getElementById('kpi-may').textContent    = fmtL(mayRev_);
-  document.getElementById('kpi-q2').textContent     = fmtL(q2Adj);
-  document.getElementById('kpi-q2-pct').textContent = pctAdj + '% of target';
-  document.getElementById('kpi-gap').textContent    = fmtL(gapAdj);
-
-  const maySubEl = document.querySelector('.kpi-may .sub');
-  if (maySubEl) maySubEl.textContent = 'Month Final ✅';
+  const k = d.kpis || {};
 
   // June KPI card
-  const junRev   = d.kpis?.jun_revenue || 0;
-  const junRevEl = document.getElementById('kpi-jun');
-  const junSubEl = document.getElementById('kpi-jun-sub');
+  const junRev    = k.jun_revenue || 0;
   const junTarget = (d.month_wise || []).find(m => m.month === 'June 2026')?.target || 7500000;
+  const junRevEl  = document.getElementById('kpi-jun');
+  const junSubEl  = document.getElementById('kpi-jun-sub');
   if (junRevEl) junRevEl.textContent = junRev > 0 ? fmtL(junRev) : '₹0';
   if (junSubEl) junSubEl.textContent = junRev > 0
     ? Math.round(junRev / junTarget * 100) + '% of ' + fmtL(junTarget) + ' target'
     : 'Target: ' + fmtL(junTarget);
+
+  // Q3 FY2026 target = 1.7 × Q3 2025 actual (Jul+Aug+Sep 2025)
+  const byIns   = d.monthly_trend?.by_insurer || {};
+  const q3_2025 = ['Jul 2025','Aug 2025','Sep 2025'].reduce((s, m) =>
+    s + Object.values(byIns[m] || {}).reduce((a, v) => a + (v || 0), 0), 0);
+  const q3Target = Math.round(q3_2025 * 1.7);
+  const q3El     = document.getElementById('kpi-q3-target');
+  const q3SubEl  = document.getElementById('kpi-q3-sub');
+  if (q3El)    q3El.textContent    = fmtL(q3Target);
+  if (q3SubEl) q3SubEl.textContent = '1.7× Q3 2025 actual of ' + fmtL(Math.round(q3_2025));
 
   renderQ2Tracker(d);
 }
@@ -947,54 +922,69 @@ function renderKPIs(d) {
 //    50-99% → at risk, need to build more pipeline
 //    < 50%  → unlikely to hit target without major intervention
 function renderQ2Tracker(d) {
-  const k        = d.kpis || {};
-  const target   = k.q2_target || 20000000;
-  const realized = (k.apr_revenue || 0) + (k.may_revenue || 0) + (k.jun_revenue || 0);
-  const pipeline = (d.pipeline_by_type?.existing_weighted || 0) +
-                   (d.pipeline_by_type?.prospect_weighted || 0);
-  const gap      = Math.max(target - realized, 0);
-  // Cap the visualised pipeline at the size of the remaining gap so the bar
-  // never overflows past 100% of the target.
+  const k      = d.kpis || {};
+  const target = 20000000;   // ₹200L Q2 target
+
+  // Achieved = Apr + May + Jun billing + pipeline items converted (probability == 1.0)
+  const aprRev  = k.apr_revenue || 0;
+  const mayRev  = k.may_revenue || 0;
+  const junRev  = k.jun_revenue || 0;
+  const converted = (d.pipeline || [])
+    .filter(p => (p.probability || 0) >= 1.0)
+    .reduce((s, p) => s + (p.delta || 0), 0);
+  const achieved = aprRev + mayRev + junRev + converted;
+
+  // Weighted pipeline excludes the already-converted (prob=1.0) items
+  const pipeline = (d.pipeline || [])
+    .filter(p => (p.probability || 0) < 1.0)
+    .reduce((s, p) => s + (p.weighted || 0), 0);
+
+  const gap            = Math.max(target - achieved, 0);
   const pipelineCapped = Math.min(pipeline, gap);
-  const uncovered = Math.max(gap - pipelineCapped, 0);
+  const uncovered      = Math.max(gap - pipelineCapped, 0);
+  const coveragePct    = gap > 0 ? Math.round(pipeline / gap * 100) : 100;
+  const coverageColor  = coveragePct >= 100 ? '#1E8449'
+                       : coveragePct >= 50  ? '#B45309' : '#C0392B';
 
-  const coveragePct = gap > 0 ? Math.round(pipeline / gap * 100) : 100;
-  const coverageColor = coveragePct >= 100 ? '#1E8449'
-                      : coveragePct >= 50  ? '#B45309'
-                      : '#C0392B';
-
-  // Stat tiles
   const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
-  set('qt-target',         fmtL(target));
-  set('qt-target-inline',  fmtL(target));
-  set('qt-realized',       fmtL(realized));
-  set('qt-realized-pct',   Math.round(realized/target*100) + '%');
-  set('qt-pipeline',       fmtL(pipeline));
-  set('qt-pipeline-pct',   Math.round(pipeline/target*100) + '%');
-  set('qt-coverage',       coveragePct + '%');
-  set('qt-gap',            fmtL(gap));
+  set('qt-target',        fmtL(target));
+  set('qt-target-inline', fmtL(target));
+  set('qt-realized',      fmtL(achieved));
+  set('qt-realized-pct',  Math.round(achieved / target * 100) + '%');
+  set('qt-pipeline',      fmtL(pipeline));
+  set('qt-pipeline-pct',  Math.round(pipeline / target * 100) + '%');
+  set('qt-coverage',      coveragePct + '%');
+  set('qt-gap',           fmtL(gap));
 
-  // Colour the coverage card by health
+  // Breakdown line inside the Achieved tile
+  const bkEl = document.getElementById('qt-achieved-breakdown');
+  if (bkEl) {
+    const parts = [
+      'Apr ' + fmtL(aprRev),
+      'May ' + fmtL(mayRev),
+      'Jun ' + fmtL(junRev),
+    ];
+    if (converted > 0) parts.push('Converted ' + fmtL(converted));
+    bkEl.textContent = parts.join(' · ');
+  }
+
+  // Colour coverage card by health
   const card = document.getElementById('qt-coverage-card');
   if (card) {
-    card.style.background = coveragePct >= 100 ? '#F4FCF8'
-                          : coveragePct >= 50  ? '#FFFBEB'
-                          : '#FDEDEC';
-    card.style.borderColor = coveragePct >= 100 ? '#D5F5E3'
-                           : coveragePct >= 50  ? '#FEF3C7'
-                           : '#FADBD8';
+    card.style.background  = coveragePct >= 100 ? '#F4FCF8' : coveragePct >= 50 ? '#FFFBEB' : '#FDEDEC';
+    card.style.borderColor = coveragePct >= 100 ? '#D5F5E3' : coveragePct >= 50 ? '#FEF3C7' : '#FADBD8';
   }
   const covEl = document.getElementById('qt-coverage');
   if (covEl) covEl.style.color = coverageColor;
 
-  // Stacked bar segments — widths as % of target
+  // Stacked bar
   const segR = document.getElementById('qt-seg-realized');
   const segP = document.getElementById('qt-seg-pipeline');
   const segG = document.getElementById('qt-seg-gap');
-  const rPct = (realized       / target) * 100;
+  const rPct = (achieved       / target) * 100;
   const pPct = (pipelineCapped / target) * 100;
   const gPct = Math.max(100 - rPct - pPct, 0);
-  if (segR) { segR.style.width = rPct + '%'; segR.textContent = rPct >= 10 ? fmtL(realized)       : ''; }
+  if (segR) { segR.style.width = rPct + '%'; segR.textContent = rPct >= 10 ? fmtL(achieved)       : ''; }
   if (segP) { segP.style.width = pPct + '%'; segP.textContent = pPct >= 10 ? fmtL(pipelineCapped) : ''; }
   if (segG) { segG.style.width = gPct + '%'; segG.textContent = gPct >= 10 ? fmtL(uncovered)      : ''; }
 }
