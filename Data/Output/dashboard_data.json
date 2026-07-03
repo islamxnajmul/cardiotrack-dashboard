@@ -1,8 +1,8 @@
 {
   "meta": {
-    "generated_at": "2026-06-23T05:18:28.195901+00:00",
+    "generated_at": "2026-07-02T06:41:46.568181+00:00",
     "q2_target": 20000000,
-    "as_of": "23 Jun 2026",
+    "as_of": "2 Jul 2026",
     "revenue_source": "Daily_Insurer_Billing.xls + Daily_Insurer_Billing_2.xls",
     "public_refresh_url": "https://cardiotrack-sync-trigger.islam-najmul.workers.dev",
     "files": {
@@ -23,8 +23,8 @@
       },
       "quarter_target_xlsx": {
         "name": "Quarter Target.xlsx",
-        "mtime": "2026-05-15T07:08:34.498552+00:00",
-        "size": 51692
+        "mtime": "2026-07-02T06:41:16.076106+00:00",
+        "size": 42681
       }
     }
   },
@@ -32,17 +32,16 @@
     "q2_target": 20000000,
     "apr_revenue": 4931630.03,
     "may_revenue": 4644669.4,
-    "jun_revenue": 3873343.18,
+    "jun_revenue": 5630000,
     "q2_achieved": 13449642.61,
     "gap": 6550357.390000001,
     "achievement_pct": 67.2,
     "baseline_est": 15000000,
     "delta_required": 5000000,
-    "delta_weighted": 5427330
+    "delta_weighted": 0
   },
   "monthly_trend": {
     "labels": [
-      "Apr 2025",
       "May 2025",
       "Jun 2025",
       "Jul 2025",
@@ -56,10 +55,10 @@
       "Mar 2026",
       "Apr 2026",
       "May 2026",
-      "Jun 2026"
+      "Jun 2026",
+      "Jul 2026"
     ],
     "values": [
-      3841302.0,
       3394896.0,
       3364570.0,
       4674553.0,
@@ -73,19 +72,10 @@
       6494808.0,
       4931630.03,
       4644669.4,
-      3873343.18
+      3873343.18,
+      0
     ],
     "by_insurer": {
-      "Apr 2025": {
-        "Bajaj": 1588883.0,
-        "Canara HSBC": 34965.0,
-        "Aditya Birla Sun Life Insurance": 535857.0,
-        "ICICI Lombard": 1082106.0,
-        "HDFC Life": 573810.0,
-        "Ageas Federal Life Insurance": 17044.0,
-        "TATA AIG Health Insurance": 6578.0,
-        "Star Union Daichi Life Insurance": 2059.0
-      },
       "May 2025": {
         "Bajaj": 1852468.0,
         "Aditya Birla Sun Life Insurance": 763314.0,
@@ -207,14 +197,15 @@
         "Star Union Daichi Life Insurance": 133584.0
       },
       "Jun 2026": {
-        "Bajaj": 1102083.38,
-        "Aditya Birla Sun Life Insurance": 1067189.0,
-        "Canara HSBC": 8998.0,
-        "Star Union Daichi Life Insurance": 98115.0,
-        "ICICI Lombard": 1061800.0,
-        "Pramerica Life Insurance": 322635.8,
-        "Ageas Federal Life Insurance": 212522.0
-      }
+        "Bajaj": 1601905.42,
+        "Aditya Birla Sun Life Insurance": 1551185.58,
+        "Canara HSBC": 13078.82,
+        "Star Union Daichi Life Insurance": 142612.58,
+        "ICICI Lombard": 1543352.53,
+        "Pramerica Life Insurance": 468959.11,
+        "Ageas Federal Life Insurance": 308905.98
+      },
+      "Jul 2026": {}
     }
   },
   "month_wise": [
@@ -366,9 +357,9 @@
       "month": "May",
       "delta": 182961.0,
       "probability": 0.9,
-      "weighted": 164664.9,
-      "add_closed": 92.1005949763734,
-      "add_incoming": 211.129865142399,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -377,9 +368,9 @@
       "month": "May",
       "delta": 100000.0,
       "probability": 0.5,
-      "weighted": 50000.0,
-      "add_closed": 40.988838940741,
-      "add_incoming": 73.2423515498486,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": "Meet Anurag"
     },
@@ -388,9 +379,9 @@
       "month": "May",
       "delta": 400000.0,
       "probability": 0.9,
-      "weighted": 360000.0,
-      "add_closed": 190.379381498585,
-      "add_incoming": 221.581123920889,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": "Call with Aditya and Meet Anil"
     },
@@ -399,9 +390,9 @@
       "month": "May",
       "delta": 50000.0,
       "probability": 0.5,
-      "weighted": 25000.0,
-      "add_closed": 28.3446712018141,
-      "add_incoming": 70.8616780045351,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": "Unblock the API. Sumit is the key"
     },
@@ -410,9 +401,9 @@
       "month": "May",
       "delta": 100000.0,
       "probability": 0.5,
-      "weighted": 50000.0,
-      "add_closed": 44.1306266548985,
-      "add_incoming": 56.7503032546529,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": "Meet Santosh and Rajani"
     },
@@ -421,9 +412,9 @@
       "month": "May",
       "delta": 50000.0,
       "probability": 0.5,
-      "weighted": 25000.0,
-      "add_closed": 40.6299578222342,
-      "add_incoming": 133.498432844484,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": "Call with Prem"
     },
@@ -432,7 +423,7 @@
       "month": "May",
       "delta": 300000.0,
       "probability": 0.8,
-      "weighted": 240000.0,
+      "weighted": 0.0,
       "add_closed": 288.780247241413,
       "add_incoming": 444.277303448328,
       "type": "Exisitng Customer",
@@ -443,7 +434,7 @@
       "month": "May",
       "delta": 280000.0,
       "probability": 0.9,
-      "weighted": 252000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Exisitng Customer",
@@ -454,9 +445,9 @@
       "month": "June",
       "delta": 1082961.0,
       "probability": 0.9,
-      "weighted": 974664.9,
-      "add_closed": 545.15089246456,
-      "add_incoming": 1249.6947977136,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -465,9 +456,9 @@
       "month": "June",
       "delta": 100000.0,
       "probability": 0.5,
-      "weighted": 50000.0,
-      "add_closed": 40.988838940741,
-      "add_incoming": 73.2423515498486,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -476,9 +467,9 @@
       "month": "June",
       "delta": 600000.0,
       "probability": 0.9,
-      "weighted": 540000.0,
-      "add_closed": 285.569072247878,
-      "add_incoming": 332.371685881333,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -487,9 +478,9 @@
       "month": "June",
       "delta": 500000.0,
       "probability": 0.8,
-      "weighted": 400000.0,
-      "add_closed": 283.446712018141,
-      "add_incoming": 708.616780045351,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -498,9 +489,9 @@
       "month": "June",
       "delta": 200000.0,
       "probability": 0.5,
-      "weighted": 100000.0,
-      "add_closed": 88.261253309797,
-      "add_incoming": 113.500606509306,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -509,9 +500,9 @@
       "month": "June",
       "delta": 100000.0,
       "probability": 0.8,
-      "weighted": 80000.0,
-      "add_closed": 81.2347684809098,
-      "add_incoming": 266.914239294418,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -520,9 +511,9 @@
       "month": "June",
       "delta": 400000.0,
       "probability": 0.8,
-      "weighted": 320000.0,
-      "add_closed": 165.016501650165,
-      "add_incoming": 326.239520503775,
+      "weighted": 0.0,
+      "add_closed": 0.0,
+      "add_incoming": 0.0,
       "type": "Exisitng Customer",
       "key_action": ""
     },
@@ -531,7 +522,7 @@
       "month": "May",
       "delta": 400000.0,
       "probability": 0.5,
-      "weighted": 200000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -542,7 +533,7 @@
       "month": "June",
       "delta": 200000.0,
       "probability": 0.2,
-      "weighted": 40000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -553,7 +544,7 @@
       "month": "June",
       "delta": 280000.0,
       "probability": 0.6,
-      "weighted": 168000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -564,7 +555,7 @@
       "month": "June",
       "delta": 350000.0,
       "probability": 0.6,
-      "weighted": 210000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -575,7 +566,7 @@
       "month": "June",
       "delta": 350000.0,
       "probability": 0.9,
-      "weighted": 315000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -586,7 +577,7 @@
       "month": "May",
       "delta": 48000.0,
       "probability": 1.0,
-      "weighted": 48000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -596,19 +587,8 @@
       "name": "Thyrocare ECG - June",
       "month": "June",
       "delta": 375000.0,
-      "probability": 0.5,
-      "weighted": 187500.0,
-      "add_closed": 0.0,
-      "add_incoming": 0.0,
-      "type": "Prospect",
-      "key_action": ""
-    },
-    {
-      "name": "Lupin ECG - June",
-      "month": "June",
-      "delta": 375000.0,
-      "probability": 0.5,
-      "weighted": 187500.0,
+      "probability": 1.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -619,7 +599,7 @@
       "month": "June",
       "delta": 400000.0,
       "probability": 0.6,
-      "weighted": 240000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
@@ -630,20 +610,20 @@
       "month": "June",
       "delta": 1000000.0,
       "probability": 0.2,
-      "weighted": 200000.0,
+      "weighted": 0.0,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
       "key_action": ""
     }
   ],
-  "existing_pipeline_total": 3631330,
-  "prospect_pipeline_total": 1796000,
+  "existing_pipeline_total": 0,
+  "prospect_pipeline_total": 0,
   "pipeline_by_type": {
-    "existing_weighted": 3631330,
-    "prospect_weighted": 1796000,
+    "existing_weighted": 0,
+    "prospect_weighted": 0,
     "existing_delta": 4445922,
-    "prospect_delta": 3778000
+    "prospect_delta": 3403000
   },
   "q2_orders": {
     "incoming_by_insurer": {
@@ -1934,11 +1914,6 @@
   },
   "orders_monthly_totals": [
     {
-      "month": "Apr 2025",
-      "incoming": 2359,
-      "closed": 1665
-    },
-    {
       "month": "May 2025",
       "incoming": 2670,
       "closed": 1461
@@ -2007,76 +1982,23 @@
       "month": "Jun 2026",
       "incoming": 3375,
       "closed": 1651
+    },
+    {
+      "month": "Jul 2026",
+      "incoming": 0,
+      "closed": 0
     }
   ],
   "monthly_targets": {
     "May 2026": {
-      "incoming_required": 5078,
-      "closed_required": 3066,
-      "by_insurer": {
-        "Aditya Birla Sun Life Insurance": {
-          "incoming_required": 2077,
-          "closed_required": 906
-        },
-        "Ageas Federal Life Insurance": {
-          "incoming_required": 182,
-          "closed_required": 102
-        },
-        "Bajaj": {
-          "incoming_required": 1131,
-          "closed_required": 971
-        },
-        "Canara HSBC": {
-          "incoming_required": 71,
-          "closed_required": 28
-        },
-        "ICICI Lombard": {
-          "incoming_required": 799,
-          "closed_required": 621
-        },
-        "Pramerica Life Insurance": {
-          "incoming_required": 202,
-          "closed_required": 62
-        },
-        "Star Union Daichi Life Insurance": {
-          "incoming_required": 616,
-          "closed_required": 376
-        }
-      }
+      "incoming_required": 0,
+      "closed_required": 0,
+      "by_insurer": {}
     },
     "Jun 2026": {
-      "incoming_required": 6938,
-      "closed_required": 3831,
-      "by_insurer": {
-        "Aditya Birla Sun Life Insurance": {
-          "incoming_required": 3116,
-          "closed_required": 1359
-        },
-        "Ageas Federal Life Insurance": {
-          "incoming_required": 182,
-          "closed_required": 102
-        },
-        "Bajaj": {
-          "incoming_required": 1241,
-          "closed_required": 1067
-        },
-        "Canara HSBC": {
-          "incoming_required": 709,
-          "closed_required": 283
-        },
-        "ICICI Lombard": {
-          "incoming_required": 856,
-          "closed_required": 665
-        },
-        "Pramerica Life Insurance": {
-          "incoming_required": 336,
-          "closed_required": 102
-        },
-        "Star Union Daichi Life Insurance": {
-          "incoming_required": 498,
-          "closed_required": 252
-        }
-      }
+      "incoming_required": 0,
+      "closed_required": 0,
+      "by_insurer": {}
     }
   },
   "key_actions": [
@@ -2130,8 +2052,8 @@
     }
   ],
   "pipeline_by_month": {
-    "may": 1414665,
-    "june": 4012665,
+    "may": 0,
+    "june": 0,
     "q2": 0
   },
   "_plan_has_month_col": true,
@@ -2846,7 +2768,7 @@
     ]
   },
   "billing_analysis": {
-    "generated_at": "2026-06-23T05:18:28.048044+00:00",
+    "generated_at": "2026-07-02T06:41:46.472630+00:00",
     "total_rows": 97673,
     "date_from": "Mar 2022",
     "date_to": "Jun 2026",
