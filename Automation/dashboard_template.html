@@ -784,26 +784,38 @@
 
         <!-- OVERVIEW PANEL -->
         <div class="tab-panel active" id="tt-overview">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="tt-tiles">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px" id="tt-tiles">
+            <!-- Row 1: Revenue KPIs -->
             <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF">
-              <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Target</div>
+              <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Revenue Target</div>
               <div style="font-size:1.25rem;font-weight:800;color:#0D1B2A;margin-top:4px" id="tt-target">—</div>
               <div style="font-size:.66rem;color:var(--text2);margin-top:2px" id="tt-target-sub">—</div>
             </div>
             <div style="border:1px solid #D5F5E3;border-radius:8px;padding:11px 14px;background:#F4FCF8">
-              <div style="font-size:.65rem;font-weight:700;color:#1E8449;text-transform:uppercase;letter-spacing:.5px">Achieved</div>
+              <div style="font-size:.65rem;font-weight:700;color:#1E8449;text-transform:uppercase;letter-spacing:.5px">Revenue Achieved</div>
               <div style="font-size:1.25rem;font-weight:800;color:#1E8449;margin-top:4px" id="tt-achieved">—</div>
               <div style="font-size:.66rem;color:#1E8449;margin-top:2px"><span id="tt-achieved-pct">—</span> of target</div>
             </div>
-            <div style="border:1px solid #FEF3C7;border-radius:8px;padding:11px 14px;background:#FFFBEB" id="tt-additional-card">
-              <div style="font-size:.65rem;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:.5px" id="tt-additional-label">Additional Needed</div>
-              <div style="font-size:1.25rem;font-weight:800;color:#92400E;margin-top:4px" id="tt-additional">—</div>
-              <div style="font-size:.66rem;color:#92400E;margin-top:2px" id="tt-additional-sub">—</div>
-            </div>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF" id="tt-gap-card">
-              <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Gap to Target</div>
+            <div style="border:1px solid #FADBD8;border-radius:8px;padding:11px 14px;background:#FEF9F9" id="tt-gap-card">
+              <div style="font-size:.65rem;font-weight:700;color:#922B21;text-transform:uppercase;letter-spacing:.5px">Revenue Gap</div>
               <div style="font-size:1.25rem;font-weight:800;margin-top:4px" id="tt-gap">—</div>
-              <div style="font-size:.66rem;color:var(--text2);margin-top:2px" id="tt-gap-pct">—</div>
+              <div style="font-size:.66rem;color:#922B21;margin-top:2px" id="tt-gap-pct">—</div>
+            </div>
+            <!-- Row 2: Orders + Achievement -->
+            <div style="border:1px solid #D6EAF8;border-radius:8px;padding:11px 14px;background:#EBF5FB">
+              <div style="font-size:.65rem;font-weight:700;color:#1A5276;text-transform:uppercase;letter-spacing:.5px">Incoming Orders Required</div>
+              <div style="font-size:1.25rem;font-weight:800;color:#1A5276;margin-top:4px" id="tt-incoming-req">—</div>
+              <div style="font-size:.66rem;color:#1A5276;margin-top:2px">new orders to place</div>
+            </div>
+            <div style="border:1px solid #D6EAF8;border-radius:8px;padding:11px 14px;background:#EBF5FB">
+              <div style="font-size:.65rem;font-weight:700;color:#1A5276;text-transform:uppercase;letter-spacing:.5px">Closed Orders Required</div>
+              <div style="font-size:1.25rem;font-weight:800;color:#1A5276;margin-top:4px" id="tt-closed-req">—</div>
+              <div style="font-size:.66rem;color:#1A5276;margin-top:2px">orders to close</div>
+            </div>
+            <div style="border:1px solid #D5D8DC;border-radius:8px;padding:11px 14px;background:#F2F3F4">
+              <div style="font-size:.65rem;font-weight:700;color:#566573;text-transform:uppercase;letter-spacing:.5px">Target Achievement</div>
+              <div style="font-size:1.25rem;font-weight:800;color:#0D1B2A;margin-top:4px" id="tt-ach-pct-tile">—</div>
+              <div style="font-size:.66rem;color:var(--text2);margin-top:2px" id="tt-ach-pct-sub">of target reached</div>
             </div>
           </div>
 
@@ -836,9 +848,12 @@
               <thead>
                 <tr>
                   <th>Insurer</th>
-                  <th id="tt-th-actual-rev">Actual Revenue</th><th id="tt-th-actual-closed">Actual Closed</th><th id="tt-th-actual-incoming">Actual Incoming</th>
-                  <th id="tt-th-prior">Prior Month</th><th id="tt-th-baseline">Baseline</th>
-                  <th>Additional Needed</th><th id="tt-th-target">Target</th><th>Orders Needed</th>
+                  <th>Revenue Target</th>
+                  <th>Revenue Achieved</th>
+                  <th>Revenue Gap</th>
+                  <th>Incoming Required</th>
+                  <th>Closed Required</th>
+                  <th>Achievement %</th>
                 </tr>
               </thead>
               <tbody id="tt-insurer-tbody"></tbody>
@@ -1218,21 +1233,18 @@ function renderTargetPeriod(periodName) {
   set('tt-achieved', fmtL(achieved));
   set('tt-achieved-pct', achPct + '%');
   set('tt-gap', fmtL(gap));
-  set('tt-gap-pct', gap > 0 ? 'still to close' : 'target reached');
+  set('tt-gap-pct', gap > 0 ? 'still to close' : 'target reached ✓');
 
-  // "Additional Needed" tile only makes sense for an open, bottom-up-built
-  // period; for closed periods repurpose it to show the achievement %.
-  const addCard  = document.getElementById('tt-additional-card');
-  const addLabel = document.getElementById('tt-additional-label');
-  if (additional != null) {
-    if (addLabel) addLabel.textContent = 'Additional Needed';
-    set('tt-additional', fmtL(additional));
-    set('tt-additional-sub', 'On top of ' + fmtL(period.baseline || 0) + ' baseline');
-  } else {
-    if (addLabel) addLabel.textContent = 'Achievement';
-    set('tt-additional', achPct + '%');
-    set('tt-additional-sub', 'of ' + fmtL(target) + ' target');
-  }
+  // Orders required + achievement tiles
+  const ordReq = period.orders_required || {};
+  set('tt-incoming-req', ordReq.incoming != null ? ordReq.incoming.toLocaleString() + ' orders' : '—');
+  set('tt-closed-req',   ordReq.closed   != null ? ordReq.closed.toLocaleString()   + ' orders' : '—');
+  const achPctStr = achPct + '%';
+  set('tt-ach-pct-tile', achPctStr);
+  set('tt-ach-pct-sub',  period.status === 'open' ? 'of target reached so far' : 'of target reached');
+  // Colour the achievement tile based on performance
+  const achTile = document.getElementById('tt-ach-pct-tile');
+  if (achTile) achTile.style.color = achPct >= 80 ? '#1E8449' : achPct >= 50 ? '#B45309' : '#C0392B';
 
   // Stacked bar
   const segA = document.getElementById('tt-seg-achieved');
@@ -1252,58 +1264,46 @@ function renderTargetPeriod(periodName) {
     ? period.quick_wins.map(q => `<li><strong>${q.label}</strong> — ${q.note}</li>`).join('')
     : '<li style="color:var(--text2)">No quick wins logged for this period.</li>';
 
-  // By-insurer table
-  const priorLabel = period.months && period.months.length > 1
-    ? 'Prior Period' : (d.monthly_trend?.labels || []).slice(-2, -1)[0] || 'Prior Month';
-  set('tt-th-prior',    priorLabel);
-  set('tt-th-baseline', period.status === 'open' ? 'Baseline' : 'Target');
-  set('tt-th-target',   period.period + ' Target');
-  const actualColLabel = period.status === 'open' ? period.period + ' so far' : '—';
-  set('tt-th-actual-rev',      'Actual Revenue' + (period.status === 'open' ? ' (' + actualColLabel + ')' : ''));
-  set('tt-th-actual-closed',   'Actual Closed');
-  set('tt-th-actual-incoming', 'Actual Incoming');
-
+  // By-insurer table (7 columns: Insurer | Revenue Target | Revenue Achieved | Revenue Gap | Incoming Required | Closed Required | Achievement %)
   const tbody = document.getElementById('tt-insurer-tbody');
   const tfoot = document.getElementById('tt-insurer-tfoot');
   if (tbody) {
     if (period.by_insurer && period.by_insurer.length) {
-      let actTotalRev = 0, actTotalClosed = 0, actTotalIncoming = 0, anyActualMatched = false;
-      tbody.innerHTML = period.by_insurer.map(row => {
-        const orders = row.orders_needed
-          ? `${row.orders_needed.closed} closed / ${row.orders_needed.incoming} incoming`
-          : (row.note || '—');
-        const act = _ttActualForInsurer(d, period, row.insurer);
-        if (act.revenue  != null) { actTotalRev      += act.revenue;  anyActualMatched = true; }
-        if (act.closed   != null) { actTotalClosed   += act.closed;   anyActualMatched = true; }
-        if (act.incoming != null) { actTotalIncoming += act.incoming; anyActualMatched = true; }
+      let actTotalRev = 0, anyActualMatched = false;
+      const rows = period.by_insurer.map(row => {
+        const act        = _ttActualForInsurer(d, period, row.insurer);
+        const achRev     = act.revenue != null ? act.revenue : 0;
+        const rowGap     = row.target - achRev;
+        const rowAchPct  = row.target > 0 ? Math.round(achRev / row.target * 100) : 0;
+        const pctColor   = rowAchPct >= 80 ? '#1E8449' : rowAchPct >= 50 ? '#B45309' : '#C0392B';
+        const gapColor   = rowGap <= 0 ? '#1E8449' : '#C0392B';
+        if (act.revenue != null) { actTotalRev += act.revenue; anyActualMatched = true; }
         return `<tr>
           <td style="text-align:left">${row.insurer}</td>
-          <td style="font-weight:700;color:#1E8449">${act.revenue  != null ? fmtL(act.revenue) : '—'}</td>
-          <td>${act.closed   != null ? act.closed   : '—'}</td>
-          <td>${act.incoming != null ? act.incoming : '—'}</td>
-          <td>${row.prior_month != null ? fmtL(row.prior_month) : '—'}</td>
-          <td>${row.baseline != null ? fmtL(row.baseline) : '—'}</td>
-          <td>${row.additional_needed ? fmtL(row.additional_needed) : '—'}</td>
           <td style="font-weight:700">${fmtL(row.target)}</td>
-          <td style="font-size:.72rem">${orders}</td>
+          <td style="font-weight:700;color:#1E8449">${act.revenue != null ? fmtL(act.revenue) : '—'}</td>
+          <td style="color:${act.revenue != null ? gapColor : 'var(--text2)'}">${act.revenue != null ? fmtL(rowGap) : '—'}</td>
+          <td>${row.orders_needed?.incoming ?? '—'}</td>
+          <td>${row.orders_needed?.closed ?? '—'}</td>
+          <td style="font-weight:700;color:${act.revenue != null ? pctColor : 'var(--text2)'}">${act.revenue != null ? rowAchPct + '%' : '—'}</td>
         </tr>`;
-      }).join('');
-      const sum = (key) => period.by_insurer.reduce((s, r) => s + (r[key] || 0), 0);
-      const closedSum   = (period.orders_required || {}).closed;
-      const incomingSum = (period.orders_required || {}).incoming;
+      });
+      tbody.innerHTML = rows.join('');
+      const sumTarget = period.by_insurer.reduce((s, r) => s + (r.target || 0), 0);
+      const totalGap  = sumTarget - actTotalRev;
+      const totalPct  = sumTarget > 0 ? Math.round(actTotalRev / sumTarget * 100) : 0;
+      const totOrd    = period.orders_required || {};
       if (tfoot) tfoot.innerHTML = `<tr style="background:#EAF1F8;font-weight:800">
           <td style="text-align:left">Total</td>
+          <td>${fmtL(sumTarget)}</td>
           <td style="color:#1E8449">${anyActualMatched ? fmtL(actTotalRev) : '—'}</td>
-          <td>${anyActualMatched ? actTotalClosed   : '—'}</td>
-          <td>${anyActualMatched ? actTotalIncoming : '—'}</td>
-          <td>${fmtL(sum('prior_month'))}</td>
-          <td>${fmtL(sum('baseline'))}</td>
-          <td>${fmtL(sum('additional_needed'))}</td>
-          <td>${fmtL(sum('target'))}</td>
-          <td style="font-size:.72rem">${closedSum != null ? `~${closedSum} closed / ~${incomingSum} incoming` : '—'}</td>
+          <td style="color:${anyActualMatched ? (totalGap <= 0 ? '#1E8449' : '#C0392B') : 'var(--text2)'}">${anyActualMatched ? fmtL(totalGap) : '—'}</td>
+          <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>
+          <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
+          <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
         </tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="9" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
       if (tfoot) tfoot.innerHTML = '';
     }
   }

@@ -918,27 +918,43 @@ def _month_sort_key(label: str) -> tuple:
 
 
 def _normalize_month(raw: str, fallback_name: str = "") -> str:
-    """Normalise a month value to 'May', 'June', or 'Q2'.
+    """Normalise a month value to its full English name ('May', 'June', 'July', …) or 'Q2'.
 
     Accepts:
-      - 'May', 'May 2026', 'May-26', 'may'              → 'May'
-      - 'June', 'Jun 2026', 'June 26', 'jun'            → 'June'
-      - datetime stringified ('2026-05-01 00:00:00')    → 'May'
-      - empty / unknown → parse 'May' or 'June' out of fallback_name; else 'Q2'
+      - 'May', 'May 2026', 'may'                       → 'May'
+      - 'June', 'Jun 2026', 'jun'                      → 'June'
+      - 'July', 'Jul 2026', 'jul'                      → 'July'
+      - datetime stringified ('2026-07-01 00:00:00')   → 'July'
+      - ISO date string '2026-07-01'                   → 'July'
+      - empty / unknown → parse month from fallback_name; else 'Q2'
     """
+    _TOKENS = [
+        ("January",   ("jan", "-01-", "/01/")),
+        ("February",  ("feb", "-02-", "/02/")),
+        ("March",     ("mar", "-03-", "/03/")),
+        ("April",     ("apr", "-04-", "/04/")),
+        ("May",       ("may", "-05-", "/05/")),
+        ("June",      ("jun", "-06-", "/06/")),
+        ("July",      ("jul", "-07-", "/07/")),
+        ("August",    ("aug", "-08-", "/08/")),
+        ("September", ("sep", "-09-", "/09/")),
+        ("October",   ("oct", "-10-", "/10/")),
+        ("November",  ("nov", "-11-", "/11/")),
+        ("December",  ("dec", "-12-", "/12/")),
+    ]
     s = (raw or "").strip().lower()
     if s:
-        if "may" in s or s.startswith("05") or "-05-" in s or "/05/" in s:
-            return "May"
-        if "jun" in s or s.startswith("06") or "-06-" in s or "/06/" in s:
-            return "June"
-        if "apr" in s or s.startswith("04") or "-04-" in s or "/04/" in s:
-            return "April"
-    # Fallback: pull from the row name (existing convention: 'X - May', 'Y - June')
+        for label, tokens in _TOKENS:
+            if any(t in s for t in tokens):
+                return label
+    # Fallback: pull month from the row name (e.g. 'X - May', 'Y - July')
     n = (fallback_name or "").lower()
-    if " - may" in n or n.endswith("may"):  return "May"
-    if " - june" in n or n.endswith("june") or " - jun" in n: return "June"
-    # No month info anywhere → quarter-wide
+    for label, tokens in _TOKENS:
+        lbl_l = label.lower()
+        lbl_3 = lbl_l[:3]
+        if f" - {lbl_l}" in n or f" - {lbl_3}" in n or n.endswith(lbl_l):
+            return label
+    # No month info anywhere → quarter-wide item
     return "Q2"
 
 
@@ -1150,18 +1166,24 @@ def read_quarter_target() -> dict:
             if delta <= 0:
                 continue
 
-            # ── Resolve the month (May / June / Q2) ─────────────────────────
-            month_raw = ""
+            # ── Resolve the month ─────────────────────────────────────────────
+            month_raw   = ""
+            month_label = None   # "Jul 2026" format — used by target period builder
             m_val = get(row, MONTH_COL)
             if m_val:
-                month_raw = str(m_val).strip()
+                if hasattr(m_val, "strftime"):   # datetime object from openpyxl
+                    month_label = m_val.strftime("%b %Y")    # "Jul 2026"
+                    month_raw   = m_val.strftime("%Y-%m-%d") # "2026-07-01"
+                else:
+                    month_raw = str(m_val).strip()
             month = _normalize_month(month_raw, fallback_name=name)
 
             type_v   = get(row, TYPE_COL)
             action_v = get(row, ACTION_COL)
             pipeline.append({
                 "name":        name,
-                "month":       month,            # ← May | June | Q2
+                "month":       month,           # "May" | "June" | "July" | "Q2"
+                "month_label": month_label,     # "May 2026" | "Jun 2026" | "Jul 2026" | None
                 "delta":       delta,
                 "probability": prob,
                 "weighted":    safe_float(get(row, WEIGHT_COL)),
@@ -1454,6 +1476,14 @@ _MONTH_ABBR = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",
                7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
 _MONTH_NUM  = {v.lower():k for k,v in _MONTH_ABBR.items()}
 
+# Strip trailing '- July' / '- Jul' / '- June' etc. from Plan sheet insurer names.
+# 'Bajaj Life Insurance Company - July' → 'Bajaj Life Insurance Company'
+_PLAN_MONTH_SUFFIX_RE = re.compile(
+    r'\s*[-–—]\s*(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|'
+    r'July?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s*$',
+    re.IGNORECASE
+)
+
 def _canonical_insurer_name(n: str) -> str:
     if n == 'Acko Life':                                          return 'Acko Life Insurance'
     if n in ('Acko Health - Insurance Limited',
@@ -1734,105 +1764,200 @@ def _revenue_kpis_from_detailed(records: list) -> dict:
     }
 
 
-def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
-                                 q2_total: float, q2_target: int) -> list:
-    """Build d["targets"] — the period model behind the dashboard's Target
-    Tracker tab. Each entry is self-contained (target, baseline, by-insurer
-    breakdown, milestones, key accounts, quick wins); the dashboard JS reads
-    whichever period is selected, so adding a new quarter/month later is
-    just appending one more entry here.
+# ── Narrative content for target periods ─────────────────────────────────────
+# Pipeline targets (insurer-level deltas and orders) are read dynamically from
+# Quarter Target.xlsx every sync. Narrative content (milestones, key-account
+# notes, quick wins) is hand-maintained here — update when the plan changes
+# mid-month, or append a new key (e.g. "Aug 2026") when the next period is set.
+# New months added to the Drive spreadsheet appear automatically in the Target
+# tab; their milestone/key-account sections start empty until you add notes here.
+_PERIOD_NARRATIVES: dict = {
+    "Jul 2026": {
+        "milestones": [
+            {"date": "2026-07-09", "label": "Bajaj new channel allocation",   "status": "open"},
+            {"date": "2026-07-09", "label": "Canara HSBC API integration",    "status": "open"},
+            {"date": "2026-07-09", "label": "SUD Life new channel flow",       "status": "open"},
+            {"date": "2026-07-12", "label": "Tata AIA ECG AI pilot",           "status": "open"},
+            {"date": "2026-07-15", "label": "Ageas Life new channel flow",     "status": "open"},
+            {"date": "2026-07-15", "label": "Pramerica Life new channel flow", "status": "open"},
+            {"date": "2026-07-15", "label": "Tata AIA pilot cases start",      "status": "open"},
+            {"date": "2026-07-15", "label": "Policy Bazaar pilot cases start", "status": "open"},
+            {"date": "2026-07-20", "label": "Bajaj Life ECG AI agreement",     "status": "open"},
+            {"date": "2026-07-30", "label": "Thyrocare ECG device delivery",   "status": "open"},
+        ],
+        "key_accounts": [
+            {"insurer": "Canara HSBC", "note": "Near-zero for months; needs a 10× jump (₹0.5L→₹5.5L) off the API integration landing 9 Jul. Highest risk, highest reward."},
+            {"insurer": "Bajaj Life",  "note": "Largest base and largest single ask (+₹5L); hinges on new channel allocation, 9 Jul."},
+            {"insurer": "SUD Life",    "note": "5× revenue ask (+₹5L) via new channel flow, 9 Jul."},
+            {"insurer": "Ageas Life",  "note": "Non-inhouse channel enablement unlocks +₹1L, 15 Jul."},
+        ],
+        "quick_wins": [
+            {"label": "AI ECG interpretation (Bajaj + Tata)", "note": "New ₹5.8L revenue line, not dependent on insurer order-volume growth."},
+            {"label": "Pramerica Life",          "note": "+₹2L already on track, lowest-risk piece of the plan."},
+            {"label": "Tata AIA PPMC pilot",     "note": "200 pilot cases — new ₹2L line, starts 15 Jul."},
+            {"label": "Policy Bazaar PPMC pilot","note": "200 pilot cases — new ₹2L line, starts 15 Jul."},
+        ],
+    },
+}
 
-    "Q2 2026" is computed fresh every run from the same revenue figures used
-    elsewhere in this function, so it always reflects the latest billing
-    sync — no manual upkeep needed.
 
-    "Jul 2026" is a hand-maintained snapshot of the bottom-up plan (as of
-    4 Jul 2026): baseline = repeat June performance, plus insurer-level asks
-    to reach a ₹84.2L target, plus dated milestones and narrative notes.
-    That narrative content (milestones, key-account notes, the new PPMC
-    pilot lines) doesn't live in Quarter Target.xlsx or Gmail in a
-    machine-readable form this script reads, so it's hardcoded rather than
-    parsed. Update this block by hand if the plan changes mid-month, and
-    append a new entry (same shape) once August's plan is set.
+def _strip_plan_month_suffix(name: str) -> str:
+    """Strip trailing '- July' / '- Jul' / '- June' etc. from a Plan sheet name.
+
+    'Bajaj Life Insurance Company - July' → 'Bajaj Life Insurance Company'
+    'Thyrocare ECG - June'                → 'Thyrocare ECG'
     """
+    return _PLAN_MONTH_SUFFIX_RE.sub("", name).strip()
+
+
+def _prior_month_label_of(month_label: str) -> str:
+    """Return the label of the month before month_label.
+
+    'Jul 2026' → 'Jun 2026'
+    'Jan 2026' → 'Dec 2025'
+    """
+    try:
+        parts   = month_label.split()
+        mon_num = _MONTH_NUM.get(parts[0].lower()[:3], 0)
+        year    = int(parts[1])
+        if mon_num <= 1:
+            return f"Dec {year - 1}"
+        return f"{_MONTH_ABBR[mon_num - 1]} {year}"
+    except Exception:
+        return ""
+
+
+def _find_billing_for_insurer(insurer: str, billing_dict: dict) -> float:
+    """Look up insurer revenue in {{insurer: amount}} using canonical name matching."""
+    canon = _canonical_insurer_name(insurer)
+    for k, v in billing_dict.items():
+        if _canonical_insurer_name(k) == canon:
+            return float(v or 0)
+    return 0.0
+
+
+def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
+                                 q2_total: float, q2_target: int,
+                                 pipeline: list | None = None,
+                                 monthly_by_insurer: dict | None = None) -> list:
+    """Build d["targets"] — the period model behind the Target Tracker tab.
+
+    Q2 2026 is always present as a closed historical entry.
+    All subsequent entries (Jul 2026, Aug 2026, …) are generated dynamically
+    from pipeline items in Quarter Target.xlsx — one entry per unique month_label
+    found in the pipeline, ordered chronologically.
+
+    No future months are hardcoded here; the list grows automatically when the
+    user adds a new month's rows to the Drive spreadsheet.
+
+    Narrative content (milestones, key accounts, quick wins) per period is
+    stored in _PERIOD_NARRATIVES above — new months get empty lists until notes
+    are hand-added there.
+    """
+    _mbi = monthly_by_insurer or {}
+
     q2_entry = {
-        "period": "Q2 2026",
-        "label": "Apr – Jun 2026",
-        "status": "closed",
-        "months": ["Apr 2026", "May 2026", "Jun 2026"],
-        "target": q2_target,
-        "achieved": round(q2_total, 2),
+        "period":     "Q2 2026",
+        "label":      "Apr – Jun 2026",
+        "status":     "closed",
+        "months":     ["Apr 2026", "May 2026", "Jun 2026"],
+        "target":     q2_target,
+        "achieved":   round(q2_total, 2),
         "by_insurer": None,
-        "milestones": [],
+        "milestones":   [],
         "key_accounts": [],
-        "quick_wins": [],
+        "quick_wins":   [],
     }
 
-    jul_by_insurer = [
-        {"insurer": "ICICI Lombard", "prior_month": 1630000, "baseline": 1630000, "additional_needed": 0, "target": 1630000, "orders_needed": None},
-        {"insurer": "Bajaj Life Insurance Company", "prior_month": 1550000, "baseline": 1550000, "additional_needed": 500000, "target": 2050000, "orders_needed": {"closed": 236, "incoming": 306}},
-        {"insurer": "Aditya Birla Sun Life Insurance", "prior_month": 1560000, "baseline": 1560000, "additional_needed": 0, "target": 1560000, "orders_needed": None},
-        {"insurer": "Pramerica Life Insurance", "prior_month": 410000, "baseline": 410000, "additional_needed": 200000, "target": 610000, "orders_needed": {"closed": 115, "incoming": 285}},
-        {"insurer": "Ageas Federal Life Insurance", "prior_month": 320000, "baseline": 320000, "additional_needed": 100000, "target": 420000, "orders_needed": {"closed": 34, "incoming": 63}},
-        {"insurer": "Star Union Daichi Life Insurance", "prior_month": 120000, "baseline": 120000, "additional_needed": 500000, "target": 620000, "orders_needed": {"closed": 242, "incoming": 525}},
-        {"insurer": "Canara HSBC", "prior_month": 50000, "baseline": 50000, "additional_needed": 500000, "target": 550000, "orders_needed": {"closed": 350, "incoming": 970}},
-        {"insurer": "AI ECG (Bajaj + Tata, new)", "prior_month": None, "baseline": None, "additional_needed": 580000, "target": 580000, "orders_needed": None, "note": "Pilot conversions"},
-        {"insurer": "Tata AIA — 200 PPMC Cases", "prior_month": None, "baseline": None, "additional_needed": 200000, "target": 200000, "orders_needed": None, "note": "Pilot cases"},
-        {"insurer": "Policy Bazaar — 200 PPMC Cases", "prior_month": None, "baseline": None, "additional_needed": 200000, "target": 200000, "orders_needed": None, "note": "Pilot cases"},
-    ]
+    periods = [q2_entry]
 
-    jul_milestones = [
-        {"date": "2026-07-09", "label": "Bajaj new channel allocation", "status": "open"},
-        {"date": "2026-07-09", "label": "Canara HSBC API integration", "status": "open"},
-        {"date": "2026-07-09", "label": "SUD Life new channel flow", "status": "open"},
-        {"date": "2026-07-12", "label": "Tata AIA ECG AI pilot", "status": "open"},
-        {"date": "2026-07-15", "label": "Ageas Life new channel flow", "status": "open"},
-        {"date": "2026-07-15", "label": "Pramerica Life new channel flow", "status": "open"},
-        {"date": "2026-07-15", "label": "Tata AIA pilot cases start", "status": "open"},
-        {"date": "2026-07-15", "label": "Policy Bazaar pilot cases start", "status": "open"},
-        {"date": "2026-07-20", "label": "Bajaj Life ECG AI agreement", "status": "open"},
-        {"date": "2026-07-30", "label": "Thyrocare ECG device delivery", "status": "open"},
-    ]
+    if not pipeline:
+        return periods
 
-    jul_key_accounts = [
-        {"insurer": "Canara HSBC", "note": "Near-zero for months; needs a 10× jump (₹0.5L→₹5.5L) off the API integration landing 9 Jul. Highest risk, highest reward."},
-        {"insurer": "Bajaj Life", "note": "Largest base and largest single ask (+₹5L); hinges on new channel allocation, 9 Jul."},
-        {"insurer": "SUD Life", "note": "5× revenue ask (+₹5L) via new channel flow, 9 Jul."},
-        {"insurer": "Ageas Life", "note": "Non-inhouse channel enablement unlocks +₹1L, 15 Jul."},
-    ]
+    # ── Group pipeline items by month_label, skip Q2 / historical months ──────
+    from collections import defaultdict as _dd
+    HISTORICAL = {"Apr 2026", "May 2026", "Jun 2026"}
+    by_month: dict = _dd(list)
+    for p in pipeline:
+        ml = p.get("month_label")
+        if ml and ml not in HISTORICAL:
+            by_month[ml].append(p)
 
-    jul_quick_wins = [
-        {"label": "AI ECG interpretation (Bajaj + Tata)", "note": "New ₹5.8L revenue line, not dependent on insurer order-volume growth."},
-        {"label": "Pramerica Life", "note": "+₹2L already on track, lowest-risk piece of the plan."},
-        {"label": "Tata AIA PPMC pilot", "note": "200 pilot cases — new ₹2L line, starts 15 Jul."},
-        {"label": "Policy Bazaar PPMC pilot", "note": "200 pilot cases — new ₹2L line, starts 15 Jul."},
-    ]
+    if not by_month:
+        return periods
 
-    jul_entry = {
-        "period": "Jul 2026",
-        "label": "July 2026",
-        "status": "open",
-        "months": ["Jul 2026"],
-        "target": 8420000,
-        "baseline": 5640000,
-        "additional_needed": 2780000,
-        "orders_required": {"closed": 977, "incoming": 2149},
-        "by_insurer": jul_by_insurer,
-        "milestones": jul_milestones,
-        "key_accounts": jul_key_accounts,
-        "quick_wins": jul_quick_wins,
-    }
+    def _label_sort_key(label: str):
+        try:
+            parts = label.split()
+            return (int(parts[1]), _MONTH_NUM.get(parts[0].lower()[:3], 0))
+        except Exception:
+            return (9999, 99)
 
-    return [q2_entry, jul_entry]
+    for month_label in sorted(by_month.keys(), key=_label_sort_key):
+        items        = by_month[month_label]
+        prior_label  = _prior_month_label_of(month_label)
+        prior_billing = _mbi.get(prior_label, {})
+
+        by_insurer     = []
+        total_target   = 0
+        total_closed   = 0
+        total_incoming = 0
+
+        for p in items:
+            insurer      = _strip_plan_month_suffix(p["name"])
+            prior_rev    = round(_find_billing_for_insurer(insurer, prior_billing))
+            delta        = round(p.get("delta", 0))
+            target_amt   = prior_rev + delta
+            add_closed   = int(p.get("add_closed",   0) or 0)
+            add_incoming = int(p.get("add_incoming", 0) or 0)
+
+            by_insurer.append({
+                "insurer":           insurer,
+                "prior_month":       prior_rev or None,
+                "baseline":          prior_rev or None,
+                "additional_needed": delta,
+                "target":            target_amt,
+                "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
+                                     if (add_closed or add_incoming) else None,
+            })
+            total_target   += target_amt
+            total_closed   += add_closed
+            total_incoming += add_incoming
+
+        total_baseline   = sum(item.get("prior_month") or 0 for item in by_insurer)
+        total_additional = sum(item["additional_needed"] for item in by_insurer)
+        narrative        = _PERIOD_NARRATIVES.get(month_label, {})
+
+        periods.append({
+            "period":            month_label,
+            "label":             month_label,
+            "status":            "open",
+            "months":            [month_label],
+            "target":            round(total_target),
+            "baseline":          round(total_baseline),
+            "additional_needed": round(total_additional),
+            "orders_required":   {"closed": total_closed, "incoming": total_incoming},
+            "by_insurer":        by_insurer,
+            "milestones":        narrative.get("milestones",   []),
+            "key_accounts":      narrative.get("key_accounts", []),
+            "quick_wins":        narrative.get("quick_wins",   []),
+        })
+
+    return periods
 
 
 def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
-                         q2_total: float, q2_target: int) -> list:
+                         q2_total: float, q2_target: int,
+                         pipeline: list | None = None,
+                         monthly_by_insurer: dict | None = None) -> list:
     """Wraps _build_targets_period_model so a bug there can't take down the
-    whole sync — the dashboard's other tabs (and even the Target Tracker's
-    own graceful "no periods" empty state) keep working either way."""
+    whole sync — the dashboard's other tabs keep working either way."""
     try:
-        return _build_targets_period_model(apr_rev, may_rev, jun_rev, q2_total, q2_target)
+        return _build_targets_period_model(
+            apr_rev, may_rev, jun_rev, q2_total, q2_target,
+            pipeline=pipeline,
+            monthly_by_insurer=monthly_by_insurer,
+        )
     except Exception as e:
         log.warning(f"  _build_targets_period_model failed, Target Tracker will show no periods: {e}")
         return []
@@ -1849,6 +1974,7 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
     # Detailed billing files are loaded first.  The summary billing file
     # (Daily_Insurer_Billing_Data.xls) is only read when the detailed files are
     # absent — avoids a redundant 12-second file read in the normal path.
+    _mb_ins: dict = {}   # {month: {insurer: amount}} — populated in detailed path
     detailed_records = read_detailed_billing_files()
     if detailed_records:
         bk = _revenue_kpis_from_detailed(detailed_records)
@@ -2419,7 +2545,8 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
         # ── Target Tracker period model (dashboard's 4th tab) ─────────────────
         # Never let a problem here take down the whole sync — worst case the
         # Target Tracker tab just shows no periods until this is fixed.
-        "targets": _safe_build_targets(apr_rev, may_rev, jun_rev, q2_total, Q2_TARGET),
+        "targets": _safe_build_targets(apr_rev, may_rev, jun_rev, q2_total, Q2_TARGET,
+                                        pipeline=pipeline, monthly_by_insurer=_mb_ins),
     }
 
 
