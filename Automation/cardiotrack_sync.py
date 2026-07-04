@@ -1553,21 +1553,41 @@ _PLAN_MONTH_SUFFIX_RE = re.compile(
 )
 
 def _canonical_insurer_name(n: str) -> str:
+    n = (n or '').strip()
     if n == 'Acko Life':                                          return 'Acko Life Insurance'
     if n in ('Acko Health - Insurance Limited',
              'Acko Health -  Insurance Limited', 'Acko General'): return 'Acko Health Insurance'
     if n in ('Bajaj Life Insurance Company',
              'Bajaj Allianz Life Insurance Company',
              'Bajaj Life', 'Bajaj Company'):                      return 'Bajaj'
-    if n == 'Tata AIA Life':                                      return 'TATA AIA Life Insurance Company'
-    if n == 'SBI Life':                                           return 'SBI LIfe Insurance Company'
+    # ABSLI / Aditya Birla Sun Life – all known variants
+    if n in ('ABSLI', 'Aditya Birla Sun Life', 'Aditya Birla Sun Life Ins',
+             'Aditya Birla Sun Life Insurance'):                   return 'Aditya Birla Sun Life Insurance'
+    # Ageas Federal variants
+    if n in ('Ageas Federal', 'Ageas Federal Life', 'Ageas Federal Life Ins',
+             'Ageas Federal Life Insurance'):                      return 'Ageas Federal Life Insurance'
+    # SUD Life / Star Union Daichi variants (including obfuscated ID)
+    if n in ('SUD Life', 'Star Union Daichi', 'Star Union Daichi Life',
+             'Star Union Daichi Life In', 'Star Union Daichi Life Insurance',
+             'M7P4hW7Z Z9xz93cY'):                               return 'Star Union Daichi Life Insurance'
+    # TATA AIA variants (including obfuscated ID and MD India channel names)
+    if n in ('TATA AIA', 'Tata AIA Life', 'TATA AIA Life',
+             'Health Assure Tata AIA', 'MD India Tata AIA',
+             'TATA AIA Life Insurance Company',
+             'nA5N724T IpSA357U'):                               return 'TATA AIA Life Insurance Company'
+    # SBI Life variants (including obfuscated ID)
+    if n in ('SBI Life', '5MyHaB07 3VrA426d',
+             'SBI LIfe Insurance Company'):                        return 'SBI LIfe Insurance Company'
+    # Pramerica variants
+    if n in ('Pramerica', 'Pramerica Life', 'Pramerica Life Ins',
+             'Pramerica Life Insurance', 'Pramerica Life Insurance VMER'): return 'Pramerica Life Insurance'
     if n in ('TAIG Health Insurance Company Ltd.',
              'TATA AIG Health Insurance Company Ltd.',
              'TATA AIG General Insurance'):                        return 'TATA AIG Health Insurance'
-    if n == 'A8228Mph f7Rq7v0X':                                  return 'HDFC Life'
-    if n == 'M7P4hW7Z Z9xz93cY':                                  return 'Star Union Daichi Life Insurance'
-    if n == 'nA5N724T IpSA357U':                                   return 'TATA AIA Life Insurance Company'
-    if n == '5MyHaB07 3VrA426d':                                   return 'SBI LIfe Insurance Company'
+    # HDFC Life (including obfuscated ID)
+    if n in ('A8228Mph f7Rq7v0X', 'HDFC Life'):                   return 'HDFC Life'
+    # ICICI Lombard – normalize capitalization
+    if n in ('ICICI LOMBARD',):                                    return 'ICICI Lombard'
     if 'Canara HSBC' in n:                                         return 'Canara HSBC'
     return n
 
