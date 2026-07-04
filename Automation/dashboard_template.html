@@ -835,7 +835,9 @@
             <table id="tt-insurer-table">
               <thead>
                 <tr>
-                  <th>Insurer</th><th id="tt-th-prior">Prior Month</th><th id="tt-th-baseline">Baseline</th>
+                  <th>Insurer</th>
+                  <th id="tt-th-actual-rev">Actual Revenue</th><th id="tt-th-actual-closed">Actual Closed</th><th id="tt-th-actual-incoming">Actual Incoming</th>
+                  <th id="tt-th-prior">Prior Month</th><th id="tt-th-baseline">Baseline</th>
                   <th>Additional Needed</th><th id="tt-th-target">Target</th><th>Orders Needed</th>
                 </tr>
               </thead>
@@ -1119,6 +1121,44 @@ function ttTab(id) {
   });
 }
 
+// Insurer names aren't spelled consistently across data sources in this
+// pipeline (e.g. revenue data says "Bajaj", order-count data says "Bajaj
+// Life Insurance Company"). Match on the first significant word rather
+// than requiring an exact string match.
+function _ttFindInsurerKey(dict, insurerName) {
+  if (!dict) return null;
+  if (dict[insurerName] !== undefined) return insurerName;
+  const token = (insurerName.split(/[\s—-]+/)[0] || '').toLowerCase();
+  if (!token) return null;
+  return Object.keys(dict).find(k => k.toLowerCase().startsWith(token)) || null;
+}
+
+// Sums actual revenue/closed/incoming for one insurer across every month
+// in an open period (usually just the current month). Returns nulls for
+// closed periods or insurers with no match in the live data (new pilot
+// lines like the PPMC cases aren't tracked as a discrete insurer yet).
+function _ttActualForInsurer(d, period, insurerName) {
+  if (period.status !== 'open') return { revenue: null, closed: null, incoming: null };
+  let revenue = 0, closed = 0, incoming = 0;
+  let revMatched = false, closedMatched = false, incomingMatched = false;
+  for (const m of (period.months || [])) {
+    const revDict = d.monthly_trend?.by_insurer?.[m];
+    const rKey = _ttFindInsurerKey(revDict, insurerName);
+    if (rKey) { revenue += revDict[rKey] || 0; revMatched = true; }
+
+    const ordersForMonth = d.orders_monthly?.[m];
+    const cKey = _ttFindInsurerKey(ordersForMonth?.closed, insurerName);
+    const iKey = _ttFindInsurerKey(ordersForMonth?.incoming, insurerName);
+    if (cKey) { closed   += ordersForMonth.closed[cKey]   || 0; closedMatched   = true; }
+    if (iKey) { incoming += ordersForMonth.incoming[iKey] || 0; incomingMatched = true; }
+  }
+  return {
+    revenue:  revMatched      ? revenue  : null,
+    closed:   closedMatched   ? closed   : null,
+    incoming: incomingMatched ? incoming : null,
+  };
+}
+
 function _ttComputeAchieved(d, period) {
   if (period.status === 'closed') return period.achieved || 0;
   const labels = d.monthly_trend?.labels || [];
@@ -1218,17 +1258,29 @@ function renderTargetPeriod(periodName) {
   set('tt-th-prior',    priorLabel);
   set('tt-th-baseline', period.status === 'open' ? 'Baseline' : 'Target');
   set('tt-th-target',   period.period + ' Target');
+  const actualColLabel = period.status === 'open' ? period.period + ' so far' : '—';
+  set('tt-th-actual-rev',      'Actual Revenue' + (period.status === 'open' ? ' (' + actualColLabel + ')' : ''));
+  set('tt-th-actual-closed',   'Actual Closed');
+  set('tt-th-actual-incoming', 'Actual Incoming');
 
   const tbody = document.getElementById('tt-insurer-tbody');
   const tfoot = document.getElementById('tt-insurer-tfoot');
   if (tbody) {
     if (period.by_insurer && period.by_insurer.length) {
+      let actTotalRev = 0, actTotalClosed = 0, actTotalIncoming = 0, anyActualMatched = false;
       tbody.innerHTML = period.by_insurer.map(row => {
         const orders = row.orders_needed
           ? `${row.orders_needed.closed} closed / ${row.orders_needed.incoming} incoming`
           : (row.note || '—');
+        const act = _ttActualForInsurer(d, period, row.insurer);
+        if (act.revenue  != null) { actTotalRev      += act.revenue;  anyActualMatched = true; }
+        if (act.closed   != null) { actTotalClosed   += act.closed;   anyActualMatched = true; }
+        if (act.incoming != null) { actTotalIncoming += act.incoming; anyActualMatched = true; }
         return `<tr>
           <td style="text-align:left">${row.insurer}</td>
+          <td style="font-weight:700;color:#1E8449">${act.revenue  != null ? fmtL(act.revenue) : '—'}</td>
+          <td>${act.closed   != null ? act.closed   : '—'}</td>
+          <td>${act.incoming != null ? act.incoming : '—'}</td>
           <td>${row.prior_month != null ? fmtL(row.prior_month) : '—'}</td>
           <td>${row.baseline != null ? fmtL(row.baseline) : '—'}</td>
           <td>${row.additional_needed ? fmtL(row.additional_needed) : '—'}</td>
@@ -1241,6 +1293,9 @@ function renderTargetPeriod(periodName) {
       const incomingSum = (period.orders_required || {}).incoming;
       if (tfoot) tfoot.innerHTML = `<tr style="background:#EAF1F8;font-weight:800">
           <td style="text-align:left">Total</td>
+          <td style="color:#1E8449">${anyActualMatched ? fmtL(actTotalRev) : '—'}</td>
+          <td>${anyActualMatched ? actTotalClosed   : '—'}</td>
+          <td>${anyActualMatched ? actTotalIncoming : '—'}</td>
           <td>${fmtL(sum('prior_month'))}</td>
           <td>${fmtL(sum('baseline'))}</td>
           <td>${fmtL(sum('additional_needed'))}</td>
@@ -1248,7 +1303,7 @@ function renderTargetPeriod(periodName) {
           <td style="font-size:.72rem">${closedSum != null ? `~${closedSum} closed / ~${incomingSum} incoming` : '—'}</td>
         </tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
       if (tfoot) tfoot.innerHTML = '';
     }
   }
