@@ -1041,6 +1041,24 @@ def _parse_monthly_targets(rows: list) -> dict:
         cl_actual_col   = hcol("closed",   "cases")
         conv_col        = hcol("conversion")
 
+        # ── Fallback for "Additional orders" style headers (July 2026+) ──────────
+        # When only "Additonal/Additional Incoming orders to achieve" is labelled
+        # at inc_col, the remaining cols have EMPTY headers but follow the pattern:
+        #   [Add_Inc | Add_Cl | Total_Inc | Total_Cl | Total_Rev]
+        # Re-point inc_col → Total Incoming and infer closed_col / rev_col.
+        if closed_col is None and inc_col is not None:
+            hdr_val = (hdr[inc_col] if inc_col < len(hdr) else "")
+            if "add" in hdr_val:          # "additional" / "additonal" style header
+                _orig      = inc_col
+                _total_inc = _orig + 2
+                _total_cl  = _orig + 3
+                _total_rev = _orig + 4
+                if _total_cl < len(hdr):
+                    inc_col    = _total_inc   # Total Incoming orders
+                    closed_col = _total_cl    # Total Closed orders
+                if rev_col is None and _total_rev < len(hdr):
+                    rev_col = _total_rev      # Total Revenue target
+
         if inc_col is None and closed_col is None and rev_col is None:
             i += 1
             continue
