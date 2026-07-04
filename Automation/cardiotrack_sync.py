@@ -1025,8 +1025,14 @@ def _parse_monthly_targets(rows: list) -> dict:
                     return j
             return None
 
-        inc_col    = hcol("incoming", "achieve")
-        closed_col = hcol("closed",   "achieve")
+        # Prefer "Total incoming/closed orders" columns (added Jul 2026+),
+        # then fall back to legacy "Additional … to achieve" style headers.
+        inc_col    = (hcol("total", "incoming")
+                      or hcol("incoming", "achieve")
+                      or hcol("add", "incoming"))
+        closed_col = (hcol("total", "closed")
+                      or hcol("closed",  "achieve")
+                      or hcol("add", "closed"))
         rev_col    = hcol("revenue")     # "Revenue" or "Revenue ₹"
 
         if inc_col is None and closed_col is None and rev_col is None:
