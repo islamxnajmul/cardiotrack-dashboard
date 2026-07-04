@@ -2148,14 +2148,12 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
     # ── Manual correction: Jun 2026 is a closed month, but the automated
     # billing sync under-reports it because invoices post with a lag after
     # month-end — the daily billing XLS exports hadn't caught up as of this
-    # writing. Confirmed final total (Najmul, 5 Jul 2026): Apr + May + Jun
-    # 2026 = ₹170.6L. Apr/May above already match that, so override Jun
-    # here — this keeps kpis, the revenue trend chart, and the Target
-    # Tracker's frozen Q2 2026 snapshot all consistent with the confirmed
-    # figure. Remove this block once the billing feed itself reports the
-    # same total on its own (check apr_rev + may_rev + jun_rev == 17060000
-    # before removing).
-    JUN_2026_CONFIRMED_FINAL = 7483700.57  # brings Apr+May+Jun to ₹170.6L exactly
+    # writing. Confirmed final total (Najmul, 4 Jul 2026): Jun 2026 billing
+    # (insurers only) = ₹56.3L. Thyrocare ECG ₹18L is tracked separately as
+    # a converted pipeline item — do NOT fold it into jun_rev here.
+    # Q2 achieved = Apr + May + Jun billing + converted pipeline = ₹170.54L.
+    # Remove this block once the billing feed itself reports ₹56.3L on its own.
+    JUN_2026_CONFIRMED_FINAL = 5_630_000  # ₹56.3L — billing only, Thyrocare separate
     if JUN_2026_CONFIRMED_FINAL is not None:
         jun_rev = JUN_2026_CONFIRMED_FINAL
         monthly_billing = dict(monthly_billing)
