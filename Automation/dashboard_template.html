@@ -1293,7 +1293,7 @@ function renderTargetPeriod(periodName) {
   const tfoot = document.getElementById('tt-insurer-tfoot');
   if (tbody) {
     if (period.by_insurer && period.by_insurer.length) {
-      let actTotalRev = 0, totIncAch = 0, totClAch = 0, anyActualMatched = false;
+      let actTotalRev = 0, totIncAch = 0, totClAch = 0, anyActualMatched = false, anyOrderData = false;
       const rows = period.by_insurer.map(row => {
         const act       = _ttActualForInsurer(d, period, row.insurer);
         const achRev    = act.revenue != null ? act.revenue : 0;
@@ -1304,8 +1304,8 @@ function renderTargetPeriod(periodName) {
         if (act.revenue != null) { actTotalRev += act.revenue; anyActualMatched = true; }
         const incAch = row.incoming_actual != null ? row.incoming_actual : null;
         const clAch  = row.closed_actual   != null ? row.closed_actual   : null;
-        if (incAch != null) totIncAch += incAch;
-        if (clAch  != null) totClAch  += clAch;
+        if (incAch != null) { totIncAch += incAch; anyOrderData = true; }
+        if (clAch  != null) { totClAch  += clAch;  anyOrderData = true; }
         return `<tr>
           <td style="text-align:left">${row.insurer}</td>
           <td style="font-weight:700">${fmtL(row.target)}</td>
@@ -1328,8 +1328,8 @@ function renderTargetPeriod(periodName) {
           <td>${fmtL(sumTarget)}</td>
           <td style="color:#1E8449">${anyActualMatched ? fmtL(actTotalRev) : '—'}</td>
           <td style="color:${anyActualMatched ? (totalGap <= 0 ? '#1E8449' : '#C0392B') : 'var(--text2)'}">${anyActualMatched ? fmtL(totalGap) : '—'}</td>
-          <td style="color:#1565C0">${totIncAch > 0 ? totIncAch.toLocaleString() : '—'}</td>
-          <td style="color:#1565C0">${totClAch  > 0 ? totClAch.toLocaleString()  : '—'}</td>
+          <td style="color:#1565C0">${anyOrderData ? totIncAch.toLocaleString() : '—'}</td>
+          <td style="color:#1565C0">${anyOrderData ? totClAch.toLocaleString()  : '—'}</td>
           <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>
           <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
           <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
