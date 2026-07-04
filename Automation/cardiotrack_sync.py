@@ -1025,15 +1025,21 @@ def _parse_monthly_targets(rows: list) -> dict:
                     return j
             return None
 
-        # Prefer "Total incoming/closed orders" columns (added Jul 2026+),
-        # then fall back to legacy "Additional … to achieve" style headers.
+        # TARGET columns (what's needed to hit target)
+        # Prefer "Total … to achieve" / "Total … orders" cols over legacy "Add…" style.
         inc_col    = (hcol("total", "incoming")
                       or hcol("incoming", "achieve")
                       or hcol("add", "incoming"))
         closed_col = (hcol("total", "closed")
                       or hcol("closed",  "achieve")
                       or hcol("add", "closed"))
-        rev_col    = hcol("revenue")     # "Revenue" or "Revenue ₹"
+        # Revenue TARGET: prefer "Total Revenue … to achieve" over plain "Revenue ₹"
+        rev_col    = hcol("total", "revenue") or hcol("revenue")
+
+        # ACTUAL columns (Incoming cases / Closed cases / Conversion already done)
+        inc_actual_col  = hcol("incoming", "cases")
+        cl_actual_col   = hcol("closed",   "cases")
+        conv_col        = hcol("conversion")
 
         if inc_col is None and closed_col is None and rev_col is None:
             i += 1
@@ -1060,7 +1066,8 @@ def _parse_monthly_targets(rows: list) -> dict:
                 j += 1
                 continue
             if "target" in name_lo:
-                # "July 2026 target revenue" row — capture the official total
+                # "July 2026 target revenue" row — capture the official revenue total
+                # The value is in the TARGET revenue column (rev_col), not actual revenue.
                 if "revenue" in name_lo and rev_col is not None and rev_col < len(row):
                     v = safe_float(row[rev_col])
                     if v > 0:
@@ -1068,19 +1075,26 @@ def _parse_monthly_targets(rows: list) -> dict:
                 j += 1
                 continue
 
-            inc_val = safe_float(row[inc_col]) if (inc_col is not None and inc_col < len(row)) else 0
-            cl_val  = safe_float(row[closed_col]) if (closed_col is not None and closed_col < len(row)) else 0
-            rev_val = safe_float(row[rev_col])    if (rev_col  is not None and rev_col  < len(row)) else 0
+            inc_val    = safe_float(row[inc_col])           if (inc_col is not None           and inc_col           < len(row)) else 0
+            cl_val     = safe_float(row[closed_col])        if (closed_col is not None         and closed_col        < len(row)) else 0
+            rev_val    = safe_float(row[rev_col])           if (rev_col is not None            and rev_col           < len(row)) else 0
+            inc_actual = safe_float(row[inc_actual_col])    if (inc_actual_col is not None     and inc_actual_col    < len(row)) else None
+            cl_actual  = safe_float(row[cl_actual_col])     if (cl_actual_col is not None      and cl_actual_col     < len(row)) else None
+            conv_val   = safe_float(row[conv_col])          if (conv_col is not None           and conv_col          < len(row)) else None
 
-            if inc_val > 0 or cl_val > 0 or rev_val > 0:
+            if inc_val > 0 or cl_val > 0 or rev_val > 0 or inc_actual or cl_actual:
                 canon_name = _canonical_insurer_name(name)
                 existing   = per_insurer.get(canon_name, {
-                    "incoming_required": 0, "closed_required": 0, "revenue_target": 0
+                    "incoming_required": 0, "closed_required": 0, "revenue_target": 0,
+                    "incoming_actual": None, "closed_actual": None, "conversion": None,
                 })
                 per_insurer[canon_name] = {
                     "incoming_required": existing["incoming_required"] + int(round(inc_val)),
                     "closed_required":   existing["closed_required"]   + int(round(cl_val)),
                     "revenue_target":    existing["revenue_target"]    + round(rev_val),
+                    "incoming_actual":   int(round(inc_actual)) if inc_actual is not None else existing["incoming_actual"],
+                    "closed_actual":     int(round(cl_actual))  if cl_actual  is not None else existing["closed_actual"],
+                    "conversion":        round(conv_val, 4)      if conv_val   is not None else existing["conversion"],
                 }
                 inc_total += inc_val
                 cl_total  += cl_val
@@ -1974,6 +1988,10 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
                     "target":            rev_target,
                     "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
                                          if (add_closed or add_incoming) else None,
+                    # Actuals from the sheet's "Incoming cases / Closed cases" cols
+                    "incoming_actual":   ins_data.get("incoming_actual"),
+                    "closed_actual":     ins_data.get("closed_actual"),
+                    "conversion":        ins_data.get("conversion"),
                 })
                 total_target   += rev_target
                 total_closed   += add_closed

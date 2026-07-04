@@ -852,7 +852,10 @@
                   <th>Revenue Achieved</th>
                   <th>Revenue Gap</th>
                   <th>Incoming Required</th>
+                  <th>Incoming Done</th>
                   <th>Closed Required</th>
+                  <th>Closed Done</th>
+                  <th>Conversion</th>
                   <th>Achievement %</th>
                 </tr>
               </thead>
@@ -1264,12 +1267,13 @@ function renderTargetPeriod(periodName) {
     ? period.quick_wins.map(q => `<li><strong>${q.label}</strong> — ${q.note}</li>`).join('')
     : '<li style="color:var(--text2)">No quick wins logged for this period.</li>';
 
-  // By-insurer table (7 columns: Insurer | Revenue Target | Revenue Achieved | Revenue Gap | Incoming Required | Closed Required | Achievement %)
+  // By-insurer table (10 cols: Insurer | Rev Target | Rev Achieved | Rev Gap |
+  //   Incoming Required | Incoming Done | Closed Required | Closed Done | Conversion | Achievement %)
   const tbody = document.getElementById('tt-insurer-tbody');
   const tfoot = document.getElementById('tt-insurer-tfoot');
   if (tbody) {
     if (period.by_insurer && period.by_insurer.length) {
-      let actTotalRev = 0, anyActualMatched = false;
+      let actTotalRev = 0, totIncDone = 0, totClDone = 0, anyActualMatched = false;
       const rows = period.by_insurer.map(row => {
         const act        = _ttActualForInsurer(d, period, row.insurer);
         const achRev     = act.revenue != null ? act.revenue : 0;
@@ -1278,32 +1282,44 @@ function renderTargetPeriod(periodName) {
         const pctColor   = rowAchPct >= 80 ? '#1E8449' : rowAchPct >= 50 ? '#B45309' : '#C0392B';
         const gapColor   = rowGap <= 0 ? '#1E8449' : '#C0392B';
         if (act.revenue != null) { actTotalRev += act.revenue; anyActualMatched = true; }
+        const incDone = row.incoming_actual != null ? row.incoming_actual : null;
+        const clDone  = row.closed_actual   != null ? row.closed_actual   : null;
+        const conv    = row.conversion      != null ? Math.round(row.conversion * 100) + '%' : '—';
+        if (incDone != null) totIncDone += incDone;
+        if (clDone  != null) totClDone  += clDone;
         return `<tr>
           <td style="text-align:left">${row.insurer}</td>
           <td style="font-weight:700">${fmtL(row.target)}</td>
           <td style="font-weight:700;color:#1E8449">${act.revenue != null ? fmtL(act.revenue) : '—'}</td>
           <td style="color:${act.revenue != null ? gapColor : 'var(--text2)'}">${act.revenue != null ? fmtL(rowGap) : '—'}</td>
           <td>${row.orders_needed?.incoming ?? '—'}</td>
+          <td style="color:#1565C0">${incDone != null ? incDone.toLocaleString() : '—'}</td>
           <td>${row.orders_needed?.closed ?? '—'}</td>
+          <td style="color:#1565C0">${clDone != null ? clDone.toLocaleString() : '—'}</td>
+          <td style="color:#6C3483">${conv}</td>
           <td style="font-weight:700;color:${act.revenue != null ? pctColor : 'var(--text2)'}">${act.revenue != null ? rowAchPct + '%' : '—'}</td>
         </tr>`;
       });
       tbody.innerHTML = rows.join('');
-      const sumTarget = period.by_insurer.reduce((s, r) => s + (r.target || 0), 0);
-      const totalGap  = sumTarget - actTotalRev;
-      const totalPct  = sumTarget > 0 ? Math.round(actTotalRev / sumTarget * 100) : 0;
-      const totOrd    = period.orders_required || {};
+      const sumTarget  = period.by_insurer.reduce((s, r) => s + (r.target || 0), 0);
+      const totalGap   = sumTarget - actTotalRev;
+      const totalPct   = sumTarget > 0 ? Math.round(actTotalRev / sumTarget * 100) : 0;
+      const totOrd     = period.orders_required || {};
+      const totConv    = totIncDone > 0 ? Math.round(totClDone / totIncDone * 100) + '%' : '—';
       if (tfoot) tfoot.innerHTML = `<tr style="background:#EAF1F8;font-weight:800">
           <td style="text-align:left">Total</td>
           <td>${fmtL(sumTarget)}</td>
           <td style="color:#1E8449">${anyActualMatched ? fmtL(actTotalRev) : '—'}</td>
           <td style="color:${anyActualMatched ? (totalGap <= 0 ? '#1E8449' : '#C0392B') : 'var(--text2)'}">${anyActualMatched ? fmtL(totalGap) : '—'}</td>
           <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>
+          <td style="color:#1565C0">${totIncDone > 0 ? totIncDone.toLocaleString() : '—'}</td>
           <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
+          <td style="color:#1565C0">${totClDone > 0 ? totClDone.toLocaleString() : '—'}</td>
+          <td style="color:#6C3483">${totConv}</td>
           <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
         </tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
       if (tfoot) tfoot.innerHTML = '';
     }
   }
