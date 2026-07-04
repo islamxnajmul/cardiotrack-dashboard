@@ -32,7 +32,7 @@
     "q2_target": 20000000,
     "apr_revenue": 4931630.03,
     "may_revenue": 4644669.4,
-    "jun_revenue": 7483700.57,
+    "jun_revenue": 5630000,
     "q2_achieved": 17060000.0,
     "gap": 2940000.0,
     "achievement_pct": 85.3,
@@ -197,13 +197,13 @@
         "Star Union Daichi Life Insurance": 133584.0
       },
       "Jun 2026": {
-        "Bajaj": 1102083.38,
-        "Aditya Birla Sun Life Insurance": 1067189.0,
-        "Canara HSBC": 8998.0,
-        "Star Union Daichi Life Insurance": 98115.0,
-        "ICICI Lombard": 1061800.0,
-        "Pramerica Life Insurance": 322635.8,
-        "Ageas Federal Life Insurance": 212522.0
+        "Bajaj": 1601905.42,
+        "Aditya Birla Sun Life Insurance": 1551185.58,
+        "Canara HSBC": 13078.82,
+        "Star Union Daichi Life Insurance": 142612.58,
+        "ICICI Lombard": 1543352.53,
+        "Pramerica Life Insurance": 468959.11,
+        "Ageas Federal Life Insurance": 308905.98
       },
       "Jul 2026": {}
     }
@@ -575,9 +575,9 @@
     {
       "name": "Vortex ECG - June",
       "month": "May",
-      "delta": 48000.0,
+      "delta": 48000,
       "probability": 1.0,
-      "weighted": 0.0,
+      "weighted": 48000,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
