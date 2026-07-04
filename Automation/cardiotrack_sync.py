@@ -1039,8 +1039,9 @@ def _parse_monthly_targets(rows: list) -> dict:
             i += 1
             continue
 
-        inc_total = 0.0
-        cl_total  = 0.0
+        inc_total      = 0.0
+        cl_total       = 0.0
+        rev_override   = 0.0   # set when we find a "[Month YYYY] target revenue" row
         per_insurer: dict = {}
         j = i + 2
         while j < len(rows):
@@ -1054,7 +1055,16 @@ def _parse_monthly_targets(rows: list) -> dict:
                 continue
             if _head_to_key(name):   # next section starts — stop here
                 break
-            if "total" in name.lower() or "target" in name.lower():
+            name_lo = name.lower()
+            if "total" in name_lo:
+                j += 1
+                continue
+            if "target" in name_lo:
+                # "July 2026 target revenue" row — capture the official total
+                if "revenue" in name_lo and rev_col is not None and rev_col < len(row):
+                    v = safe_float(row[rev_col])
+                    if v > 0:
+                        rev_override = v
                 j += 1
                 continue
 
@@ -1076,10 +1086,15 @@ def _parse_monthly_targets(rows: list) -> dict:
                 cl_total  += cl_val
             j += 1
 
+        # Official total: prefer the explicit "[Month] target revenue" cell;
+        # fall back to summing per-insurer revenue_target values.
+        insurer_rev_sum = round(sum(d["revenue_target"] for d in per_insurer.values()))
+        total_rev = round(rev_override) if rev_override > 0 else insurer_rev_sum
+
         targets[json_key] = {
             "incoming_required":    int(round(inc_total)),
             "closed_required":      int(round(cl_total)),
-            "total_revenue_target": round(sum(d["revenue_target"] for d in per_insurer.values())),
+            "total_revenue_target": total_rev,
             "by_insurer":           per_insurer,
         }
         i = j
