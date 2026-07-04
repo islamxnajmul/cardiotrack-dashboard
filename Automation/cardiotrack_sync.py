@@ -1048,6 +1048,8 @@ def _parse_monthly_targets(rows: list) -> dict:
         inc_total      = 0.0
         cl_total       = 0.0
         rev_override   = 0.0   # set when we find a "[Month YYYY] target revenue" row
+        inc_override   = 0.0   # official total incoming orders required (from summary row)
+        cl_override    = 0.0   # official total closed orders required (from summary row)
         per_insurer: dict = {}
         j = i + 2
         while j < len(rows):
@@ -1063,15 +1065,31 @@ def _parse_monthly_targets(rows: list) -> dict:
                 break
             name_lo = name.lower()
             if "total" in name_lo:
+                # "Total" summary row — capture official order totals
+                if inc_col is not None and inc_col < len(row):
+                    v = safe_float(row[inc_col])
+                    if v > 0:
+                        inc_override = max(inc_override, v)
+                if closed_col is not None and closed_col < len(row):
+                    v = safe_float(row[closed_col])
+                    if v > 0:
+                        cl_override = max(cl_override, v)
                 j += 1
                 continue
             if "target" in name_lo:
-                # "July 2026 target revenue" row — capture the official revenue total
-                # The value is in the TARGET revenue column (rev_col), not actual revenue.
-                if "revenue" in name_lo and rev_col is not None and rev_col < len(row):
+                # "[Month YYYY] target revenue" row — capture all official totals
+                if rev_col is not None and rev_col < len(row):
                     v = safe_float(row[rev_col])
                     if v > 0:
                         rev_override = v
+                if inc_col is not None and inc_col < len(row):
+                    v = safe_float(row[inc_col])
+                    if v > 0:
+                        inc_override = v
+                if closed_col is not None and closed_col < len(row):
+                    v = safe_float(row[closed_col])
+                    if v > 0:
+                        cl_override = v
                 j += 1
                 continue
 
@@ -1100,14 +1118,15 @@ def _parse_monthly_targets(rows: list) -> dict:
                 cl_total  += cl_val
             j += 1
 
-        # Official total: prefer the explicit "[Month] target revenue" cell;
-        # fall back to summing per-insurer revenue_target values.
+        # Official totals: prefer explicit summary-row cells; fall back to per-insurer sums.
         insurer_rev_sum = round(sum(d["revenue_target"] for d in per_insurer.values()))
         total_rev = round(rev_override) if rev_override > 0 else insurer_rev_sum
+        total_inc = int(round(inc_override)) if inc_override > 0 else int(round(inc_total))
+        total_cl  = int(round(cl_override))  if cl_override  > 0 else int(round(cl_total))
 
         targets[json_key] = {
-            "incoming_required":    int(round(inc_total)),
-            "closed_required":      int(round(cl_total)),
+            "incoming_required":    total_inc,
+            "closed_required":      total_cl,
             "total_revenue_target": total_rev,
             "by_insurer":           per_insurer,
         }
@@ -2083,6 +2102,25 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
                 if inc_a > 0:
                     entry["conversion"] = round(cl_a / inc_a, 4)
 
+        # ── Default None → 0 for tracked insurers with no orders yet ─────────
+        # Any insurer that appears in the target table is being actively tracked.
+        # "No orders found" = 0, not unknown (—). This ensures new accounts like
+        # Policy Bazaar / TATA AIA show 0 rather than — in the dashboard.
+        for entry in by_insurer:
+            if entry.get("incoming_actual") is None:
+                entry["incoming_actual"] = 0
+            if entry.get("closed_actual") is None:
+                entry["closed_actual"] = 0
+
+        # ── Use sheet-official totals for orders_required ────────────────────
+        # The sheet's summary row has the authoritative total closed/incoming
+        # required — use it directly instead of summing per-insurer values,
+        # which may differ if the sheet has a manually-set total.
+        sheet_inc_req = mt_data.get("incoming_required", 0) if mt_data else 0
+        sheet_cl_req  = mt_data.get("closed_required",  0) if mt_data else 0
+        period_inc_req = sheet_inc_req if sheet_inc_req > 0 else total_incoming
+        period_cl_req  = sheet_cl_req  if sheet_cl_req  > 0 else total_closed
+
         # ── Weighted pipeline for this month ─────────────────────────────────
         weighted_pipe = round(sum(
             p.get("delta", 0) * p.get("probability", 0)
@@ -2100,7 +2138,7 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
             "target":            round(total_target),
             "baseline":          round(total_baseline) or None,
             "additional_needed": round(total_additional) or None,
-            "orders_required":   {"closed": total_closed, "incoming": total_incoming},
+            "orders_required":   {"closed": period_cl_req, "incoming": period_inc_req},
             "weighted_pipeline": weighted_pipe,
             "by_insurer":        by_insurer,
             "milestones":        narrative.get("milestones",   []),
