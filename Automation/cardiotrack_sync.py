@@ -1734,6 +1734,110 @@ def _revenue_kpis_from_detailed(records: list) -> dict:
     }
 
 
+def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
+                                 q2_total: float, q2_target: int) -> list:
+    """Build d["targets"] — the period model behind the dashboard's Target
+    Tracker tab. Each entry is self-contained (target, baseline, by-insurer
+    breakdown, milestones, key accounts, quick wins); the dashboard JS reads
+    whichever period is selected, so adding a new quarter/month later is
+    just appending one more entry here.
+
+    "Q2 2026" is computed fresh every run from the same revenue figures used
+    elsewhere in this function, so it always reflects the latest billing
+    sync — no manual upkeep needed.
+
+    "Jul 2026" is a hand-maintained snapshot of the bottom-up plan (as of
+    4 Jul 2026): baseline = repeat June performance, plus insurer-level asks
+    to reach a ₹84.2L target, plus dated milestones and narrative notes.
+    That narrative content (milestones, key-account notes, the new PPMC
+    pilot lines) doesn't live in Quarter Target.xlsx or Gmail in a
+    machine-readable form this script reads, so it's hardcoded rather than
+    parsed. Update this block by hand if the plan changes mid-month, and
+    append a new entry (same shape) once August's plan is set.
+    """
+    q2_entry = {
+        "period": "Q2 2026",
+        "label": "Apr – Jun 2026",
+        "status": "closed",
+        "months": ["Apr 2026", "May 2026", "Jun 2026"],
+        "target": q2_target,
+        "achieved": round(q2_total, 2),
+        "by_insurer": None,
+        "milestones": [],
+        "key_accounts": [],
+        "quick_wins": [],
+    }
+
+    jul_by_insurer = [
+        {"insurer": "ICICI Lombard", "prior_month": 1630000, "baseline": 1630000, "additional_needed": 0, "target": 1630000, "orders_needed": None},
+        {"insurer": "Bajaj Life Insurance Company", "prior_month": 1550000, "baseline": 1550000, "additional_needed": 500000, "target": 2050000, "orders_needed": {"closed": 236, "incoming": 306}},
+        {"insurer": "Aditya Birla Sun Life Insurance", "prior_month": 1560000, "baseline": 1560000, "additional_needed": 0, "target": 1560000, "orders_needed": None},
+        {"insurer": "Pramerica Life Insurance", "prior_month": 410000, "baseline": 410000, "additional_needed": 200000, "target": 610000, "orders_needed": {"closed": 115, "incoming": 285}},
+        {"insurer": "Ageas Federal Life Insurance", "prior_month": 320000, "baseline": 320000, "additional_needed": 100000, "target": 420000, "orders_needed": {"closed": 34, "incoming": 63}},
+        {"insurer": "Star Union Daichi Life Insurance", "prior_month": 120000, "baseline": 120000, "additional_needed": 500000, "target": 620000, "orders_needed": {"closed": 242, "incoming": 525}},
+        {"insurer": "Canara HSBC", "prior_month": 50000, "baseline": 50000, "additional_needed": 500000, "target": 550000, "orders_needed": {"closed": 350, "incoming": 970}},
+        {"insurer": "AI ECG (Bajaj + Tata, new)", "prior_month": None, "baseline": None, "additional_needed": 580000, "target": 580000, "orders_needed": None, "note": "Pilot conversions"},
+        {"insurer": "Tata AIA — 200 PPMC Cases", "prior_month": None, "baseline": None, "additional_needed": 200000, "target": 200000, "orders_needed": None, "note": "Pilot cases"},
+        {"insurer": "Policy Bazaar — 200 PPMC Cases", "prior_month": None, "baseline": None, "additional_needed": 200000, "target": 200000, "orders_needed": None, "note": "Pilot cases"},
+    ]
+
+    jul_milestones = [
+        {"date": "2026-07-09", "label": "Bajaj new channel allocation", "status": "open"},
+        {"date": "2026-07-09", "label": "Canara HSBC API integration", "status": "open"},
+        {"date": "2026-07-09", "label": "SUD Life new channel flow", "status": "open"},
+        {"date": "2026-07-12", "label": "Tata AIA ECG AI pilot", "status": "open"},
+        {"date": "2026-07-15", "label": "Ageas Life new channel flow", "status": "open"},
+        {"date": "2026-07-15", "label": "Pramerica Life new channel flow", "status": "open"},
+        {"date": "2026-07-15", "label": "Tata AIA pilot cases start", "status": "open"},
+        {"date": "2026-07-15", "label": "Policy Bazaar pilot cases start", "status": "open"},
+        {"date": "2026-07-20", "label": "Bajaj Life ECG AI agreement", "status": "open"},
+        {"date": "2026-07-30", "label": "Thyrocare ECG device delivery", "status": "open"},
+    ]
+
+    jul_key_accounts = [
+        {"insurer": "Canara HSBC", "note": "Near-zero for months; needs a 10× jump (₹0.5L→₹5.5L) off the API integration landing 9 Jul. Highest risk, highest reward."},
+        {"insurer": "Bajaj Life", "note": "Largest base and largest single ask (+₹5L); hinges on new channel allocation, 9 Jul."},
+        {"insurer": "SUD Life", "note": "5× revenue ask (+₹5L) via new channel flow, 9 Jul."},
+        {"insurer": "Ageas Life", "note": "Non-inhouse channel enablement unlocks +₹1L, 15 Jul."},
+    ]
+
+    jul_quick_wins = [
+        {"label": "AI ECG interpretation (Bajaj + Tata)", "note": "New ₹5.8L revenue line, not dependent on insurer order-volume growth."},
+        {"label": "Pramerica Life", "note": "+₹2L already on track, lowest-risk piece of the plan."},
+        {"label": "Tata AIA PPMC pilot", "note": "200 pilot cases — new ₹2L line, starts 15 Jul."},
+        {"label": "Policy Bazaar PPMC pilot", "note": "200 pilot cases — new ₹2L line, starts 15 Jul."},
+    ]
+
+    jul_entry = {
+        "period": "Jul 2026",
+        "label": "July 2026",
+        "status": "open",
+        "months": ["Jul 2026"],
+        "target": 8420000,
+        "baseline": 5640000,
+        "additional_needed": 2780000,
+        "orders_required": {"closed": 977, "incoming": 2149},
+        "by_insurer": jul_by_insurer,
+        "milestones": jul_milestones,
+        "key_accounts": jul_key_accounts,
+        "quick_wins": jul_quick_wins,
+    }
+
+    return [q2_entry, jul_entry]
+
+
+def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
+                         q2_total: float, q2_target: int) -> list:
+    """Wraps _build_targets_period_model so a bug there can't take down the
+    whole sync — the dashboard's other tabs (and even the Target Tracker's
+    own graceful "no periods" empty state) keep working either way."""
+    try:
+        return _build_targets_period_model(apr_rev, may_rev, jun_rev, q2_total, q2_target)
+    except Exception as e:
+        log.warning(f"  _build_targets_period_model failed, Target Tracker will show no periods: {e}")
+        return []
+
+
 def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
     """Combine all sources into one JSON-serialisable dict."""
     log.info("Building dashboard data…")
@@ -2292,6 +2396,11 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
         # ── Detailed category-level billing analysis ──────────────────────────
         # Already computed above from the same detailed_records — no double-read.
         "billing_analysis": billing_analysis_data,
+
+        # ── Target Tracker period model (dashboard's 4th tab) ─────────────────
+        # Never let a problem here take down the whole sync — worst case the
+        # Target Tracker tab just shows no periods until this is fixed.
+        "targets": _safe_build_targets(apr_rev, may_rev, jun_rev, q2_total, Q2_TARGET),
     }
 
 

@@ -398,6 +398,9 @@
   <button class="view-tab" data-view="insurer" onclick="switchView('insurer')">
     <span class="vt-emoji">🤝</span> Insurer Details
   </button>
+  <button class="view-tab" data-view="target" onclick="switchView('target')">
+    <span class="vt-emoji">🎯</span> Target Tracker
+  </button>
 </div>
 
 <!-- ───────────── SALES VIEW (existing dashboard) ───────────── -->
@@ -747,6 +750,112 @@
   </div>
 </div>
 
+<!-- ───────────── TARGET TRACKER VIEW ─────────────
+     Data-driven: reads d.targets (array of period objects, one per
+     quarter/month). Each period is self-contained — target, baseline,
+     by-insurer breakdown, milestones, key accounts, quick wins — so a
+     new month/quarter is added by appending one object to d.targets
+     in dashboard_data.json. No HTML/JS changes needed for future periods.
+     "Achieved" for the currently-open period is computed live from
+     monthly_trend so it updates automatically as billing data syncs in;
+     closed periods use the frozen "achieved" value stored at close-out. -->
+<div id="view-target" class="dash-view">
+  <div class="main">
+
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div class="card-title" style="margin-bottom:0">🎯 Revenue Target Tracker</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label for="tt-period-select" style="font-size:.72rem;color:var(--text2);font-weight:600">Period:</label>
+          <select id="tt-period-select" onchange="onTargetPeriodChange(this.value)"
+                  style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.78rem;font-weight:600;color:var(--navy);background:#fff;cursor:pointer"></select>
+        </div>
+      </div>
+      <p style="font-size:.72rem;color:var(--text2);margin:6px 0 14px" id="tt-period-sub">—</p>
+
+      <!-- sub-tabs: Overview / By Insurer / Roadmap (self-scoped, doesn't touch existing switchTab()) -->
+      <div id="tabs-target-nav" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <div class="tab active" data-tt="tt-overview" onclick="ttTab('tt-overview')">Overview</div>
+        <div class="tab" data-tt="tt-insurer" onclick="ttTab('tt-insurer')">By Insurer</div>
+        <div class="tab" data-tt="tt-roadmap" onclick="ttTab('tt-roadmap')">Roadmap</div>
+      </div>
+
+      <div id="tabs-target">
+
+        <!-- OVERVIEW PANEL -->
+        <div class="tab-panel active" id="tt-overview">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="tt-tiles">
+            <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF">
+              <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Target</div>
+              <div style="font-size:1.25rem;font-weight:800;color:#0D1B2A;margin-top:4px" id="tt-target">—</div>
+              <div style="font-size:.66rem;color:var(--text2);margin-top:2px" id="tt-target-sub">—</div>
+            </div>
+            <div style="border:1px solid #D5F5E3;border-radius:8px;padding:11px 14px;background:#F4FCF8">
+              <div style="font-size:.65rem;font-weight:700;color:#1E8449;text-transform:uppercase;letter-spacing:.5px">Achieved</div>
+              <div style="font-size:1.25rem;font-weight:800;color:#1E8449;margin-top:4px" id="tt-achieved">—</div>
+              <div style="font-size:.66rem;color:#1E8449;margin-top:2px"><span id="tt-achieved-pct">—</span> of target</div>
+            </div>
+            <div style="border:1px solid #FEF3C7;border-radius:8px;padding:11px 14px;background:#FFFBEB" id="tt-additional-card">
+              <div style="font-size:.65rem;font-weight:700;color:#92400E;text-transform:uppercase;letter-spacing:.5px" id="tt-additional-label">Additional Needed</div>
+              <div style="font-size:1.25rem;font-weight:800;color:#92400E;margin-top:4px" id="tt-additional">—</div>
+              <div style="font-size:.66rem;color:#92400E;margin-top:2px" id="tt-additional-sub">—</div>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:11px 14px;background:#FFF" id="tt-gap-card">
+              <div style="font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px">Gap to Target</div>
+              <div style="font-size:1.25rem;font-weight:800;margin-top:4px" id="tt-gap">—</div>
+              <div style="font-size:.66rem;color:var(--text2);margin-top:2px" id="tt-gap-pct">—</div>
+            </div>
+          </div>
+
+          <div style="position:relative;height:36px;background:#F0F4F8;border-radius:8px;overflow:hidden;display:flex">
+            <div id="tt-seg-achieved" style="height:100%;background:linear-gradient(135deg,#27AE60,#1E8449);transition:width .5s ease;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.78rem;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.3)" title="Achieved"></div>
+            <div id="tt-seg-gap" style="height:100%;background:repeating-linear-gradient(45deg,#D5D8DC,#D5D8DC 8px,#E5E7E9 8px,#E5E7E9 16px);transition:width .5s ease;display:flex;align-items:center;justify-content:center;color:#5D6D7E;font-size:.78rem;font-weight:700" title="Remaining"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:var(--text2);margin-top:8px">
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:#27AE60;margin-right:5px"></span>Achieved</span>
+            <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:repeating-linear-gradient(45deg,#D5D8DC,#D5D8DC 4px,#E5E7E9 4px,#E5E7E9 8px);margin-right:5px"></span>Remaining</span>
+            <span>Target: <span id="tt-target-inline">—</span></span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px" id="tt-notes-grid">
+            <div>
+              <div class="card-title" style="margin-bottom:8px">Key Accounts to Focus</div>
+              <ul id="tt-key-accounts" style="margin:0;padding-left:18px;font-size:.8rem;line-height:1.7;color:var(--text)"></ul>
+            </div>
+            <div>
+              <div class="card-title" style="margin-bottom:8px">Quick-Win Opportunities</div>
+              <ul id="tt-quick-wins" style="margin:0;padding-left:18px;font-size:.8rem;line-height:1.7;color:var(--text)"></ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- BY INSURER PANEL -->
+        <div class="tab-panel" id="tt-insurer">
+          <div style="overflow-x:auto">
+            <table id="tt-insurer-table">
+              <thead>
+                <tr>
+                  <th>Insurer</th><th id="tt-th-prior">Prior Month</th><th id="tt-th-baseline">Baseline</th>
+                  <th>Additional Needed</th><th id="tt-th-target">Target</th><th>Orders Needed</th>
+                </tr>
+              </thead>
+              <tbody id="tt-insurer-tbody"></tbody>
+              <tfoot id="tt-insurer-tfoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- ROADMAP PANEL -->
+        <div class="tab-panel" id="tt-roadmap">
+          <div id="tt-roadmap-timeline"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
 <script>
 // ─────────────────────────────────────────────────────────────────
@@ -987,6 +1096,189 @@ function renderQ2Tracker(d) {
   if (segR) { segR.style.width = rPct + '%'; segR.textContent = rPct >= 10 ? fmtL(achieved)       : ''; }
   if (segP) { segP.style.width = pPct + '%'; segP.textContent = pPct >= 10 ? fmtL(pipelineCapped) : ''; }
   if (segG) { segG.style.width = gPct + '%'; segG.textContent = gPct >= 10 ? fmtL(uncovered)      : ''; }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// TARGET TRACKER (generalized — one card per "period" in d.targets)
+// ─────────────────────────────────────────────────────────────────
+// Design: d.targets is an array of period objects, e.g. "Q2 2026" (closed),
+// "Jul 2026" (open). Adding a new month/quarter later is a pure data
+// change — append one object to targets[] in dashboard_data.json — no
+// HTML/JS edits required. The period <select> is (re)built from
+// whatever periods exist. "Achieved" for an open period is computed
+// live from monthly_trend so it keeps updating as billing syncs land;
+// closed periods use the frozen "achieved" value recorded at close-out.
+let targetTrackerData = null;   // most recent JSON, captured here for the period-select handler
+
+function ttTab(id) {
+  document.querySelectorAll('#tabs-target .tab-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById(id);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('#tabs-target-nav .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tt === id);
+  });
+}
+
+function _ttComputeAchieved(d, period) {
+  if (period.status === 'closed') return period.achieved || 0;
+  const labels = d.monthly_trend?.labels || [];
+  const values = d.monthly_trend?.values || [];
+  return (period.months || []).reduce((sum, m) => {
+    const idx = labels.indexOf(m);
+    return sum + (idx >= 0 ? (values[idx] || 0) : 0);
+  }, 0);
+}
+
+function renderTargetTracker(d) {
+  targetTrackerData = d;
+  const targets = d.targets || [];
+  const sel = document.getElementById('tt-period-select');
+  if (!sel || !targets.length) return;
+
+  // Build the period dropdown fresh each load (cheap; list is short)
+  sel.innerHTML = targets.map(p =>
+    `<option value="${p.period}">${p.period}${p.status === 'open' ? ' (current)' : ''}</option>`
+  ).join('');
+
+  // Default to the open period if one exists, else the most recent entry
+  const openPeriod = targets.find(p => p.status === 'open');
+  const defaultPeriod = (openPeriod || targets[targets.length - 1]).period;
+  sel.value = defaultPeriod;
+
+  renderTargetPeriod(defaultPeriod);
+}
+
+function onTargetPeriodChange(periodName) {
+  renderTargetPeriod(periodName);
+}
+
+function renderTargetPeriod(periodName) {
+  const d = targetTrackerData;
+  if (!d) return;
+  const targets = d.targets || [];
+  const period = targets.find(p => p.period === periodName);
+  if (!period) return;
+
+  const set  = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  const achieved   = _ttComputeAchieved(d, period);
+  const target     = period.target || 0;
+  const additional = period.additional_needed;
+  const gap        = Math.max(target - achieved, 0);
+  const achPct     = target > 0 ? Math.round(achieved / target * 100) : 0;
+
+  set('tt-period-sub', period.label + (period.status === 'open'
+    ? ' — in progress, "Achieved" updates automatically as billing syncs in'
+    : ' — closed period'));
+
+  set('tt-target', fmtL(target));
+  set('tt-target-inline', fmtL(target));
+  set('tt-target-sub', period.status === 'open' && period.baseline != null
+    ? 'Baseline ' + fmtL(period.baseline) + ' + additional ' + fmtL(additional || 0)
+    : period.months.join(' + '));
+  set('tt-achieved', fmtL(achieved));
+  set('tt-achieved-pct', achPct + '%');
+  set('tt-gap', fmtL(gap));
+  set('tt-gap-pct', gap > 0 ? 'still to close' : 'target reached');
+
+  // "Additional Needed" tile only makes sense for an open, bottom-up-built
+  // period; for closed periods repurpose it to show the achievement %.
+  const addCard  = document.getElementById('tt-additional-card');
+  const addLabel = document.getElementById('tt-additional-label');
+  if (additional != null) {
+    if (addLabel) addLabel.textContent = 'Additional Needed';
+    set('tt-additional', fmtL(additional));
+    set('tt-additional-sub', 'On top of ' + fmtL(period.baseline || 0) + ' baseline');
+  } else {
+    if (addLabel) addLabel.textContent = 'Achievement';
+    set('tt-additional', achPct + '%');
+    set('tt-additional-sub', 'of ' + fmtL(target) + ' target');
+  }
+
+  // Stacked bar
+  const segA = document.getElementById('tt-seg-achieved');
+  const segG = document.getElementById('tt-seg-gap');
+  const aPct = target > 0 ? Math.min(achieved / target * 100, 100) : 0;
+  const gPct = Math.max(100 - aPct, 0);
+  if (segA) { segA.style.width = aPct + '%'; segA.textContent = aPct >= 10 ? fmtL(achieved) : ''; }
+  if (segG) { segG.style.width = gPct + '%'; segG.textContent = gPct >= 10 ? fmtL(gap)      : ''; }
+
+  // Key accounts / quick wins
+  const kaEl = document.getElementById('tt-key-accounts');
+  const qwEl = document.getElementById('tt-quick-wins');
+  if (kaEl) kaEl.innerHTML = (period.key_accounts || []).length
+    ? period.key_accounts.map(a => `<li><strong>${a.insurer}</strong> — ${a.note}</li>`).join('')
+    : '<li style="color:var(--text2)">No accounts flagged for this period.</li>';
+  if (qwEl) qwEl.innerHTML = (period.quick_wins || []).length
+    ? period.quick_wins.map(q => `<li><strong>${q.label}</strong> — ${q.note}</li>`).join('')
+    : '<li style="color:var(--text2)">No quick wins logged for this period.</li>';
+
+  // By-insurer table
+  const priorLabel = period.months && period.months.length > 1
+    ? 'Prior Period' : (d.monthly_trend?.labels || []).slice(-2, -1)[0] || 'Prior Month';
+  set('tt-th-prior',    priorLabel);
+  set('tt-th-baseline', period.status === 'open' ? 'Baseline' : 'Target');
+  set('tt-th-target',   period.period + ' Target');
+
+  const tbody = document.getElementById('tt-insurer-tbody');
+  const tfoot = document.getElementById('tt-insurer-tfoot');
+  if (tbody) {
+    if (period.by_insurer && period.by_insurer.length) {
+      tbody.innerHTML = period.by_insurer.map(row => {
+        const orders = row.orders_needed
+          ? `${row.orders_needed.closed} closed / ${row.orders_needed.incoming} incoming`
+          : (row.note || '—');
+        return `<tr>
+          <td style="text-align:left">${row.insurer}</td>
+          <td>${row.prior_month != null ? fmtL(row.prior_month) : '—'}</td>
+          <td>${row.baseline != null ? fmtL(row.baseline) : '—'}</td>
+          <td>${row.additional_needed ? fmtL(row.additional_needed) : '—'}</td>
+          <td style="font-weight:700">${fmtL(row.target)}</td>
+          <td style="font-size:.72rem">${orders}</td>
+        </tr>`;
+      }).join('');
+      const sum = (key) => period.by_insurer.reduce((s, r) => s + (r[key] || 0), 0);
+      const closedSum   = (period.orders_required || {}).closed;
+      const incomingSum = (period.orders_required || {}).incoming;
+      if (tfoot) tfoot.innerHTML = `<tr style="background:#EAF1F8;font-weight:800">
+          <td style="text-align:left">Total</td>
+          <td>${fmtL(sum('prior_month'))}</td>
+          <td>${fmtL(sum('baseline'))}</td>
+          <td>${fmtL(sum('additional_needed'))}</td>
+          <td>${fmtL(sum('target'))}</td>
+          <td style="font-size:.72rem">${closedSum != null ? `~${closedSum} closed / ~${incomingSum} incoming` : '—'}</td>
+        </tr>`;
+    } else {
+      tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      if (tfoot) tfoot.innerHTML = '';
+    }
+  }
+
+  // Roadmap timeline
+  const rm = document.getElementById('tt-roadmap-timeline');
+  if (rm) {
+    const milestones = (period.milestones || []).slice().sort((a,b) => a.date.localeCompare(b.date));
+    if (!milestones.length) {
+      rm.innerHTML = '<p style="color:var(--text2);font-size:.8rem">No dated milestones recorded for this period.</p>';
+    } else {
+      const today = new Date().toISOString().slice(0,10);
+      rm.innerHTML = `<div style="display:flex;flex-direction:column;gap:0">` +
+        milestones.map((m, i) => {
+          const isPast = m.date < today;
+          const dotColor = m.status === 'done' ? '#27AE60' : isPast ? '#C0392B' : '#2E86C1';
+          const dateLabel = new Date(m.date + 'T00:00:00').toLocaleDateString('en-IN', {day:'numeric', month:'short'});
+          return `<div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="display:flex;flex-direction:column;align-items:center;width:16px">
+              <div style="width:12px;height:12px;border-radius:50%;background:${dotColor};flex-shrink:0;margin-top:3px"></div>
+              ${i < milestones.length - 1 ? '<div style="width:2px;flex:1;background:var(--border);min-height:28px"></div>' : ''}
+            </div>
+            <div style="padding-bottom:18px">
+              <div style="font-size:.68rem;font-weight:700;color:${dotColor};text-transform:uppercase;letter-spacing:.4px">${dateLabel}</div>
+              <div style="font-size:.85rem;color:var(--text);margin-top:2px">${m.label}</div>
+            </div>
+          </div>`;
+        }).join('') + `</div>`;
+    }
+  }
 }
 
 
@@ -3528,6 +3820,7 @@ async function loadData() {
     ['Actions',                 () => renderActions(data)],
     ['Insurer details',         () => renderInsurerDetailsView(data)],
     ['June leaderboard',        () => renderJuneLeaderboard(data)],
+    ['Target tracker',          () => renderTargetTracker(data)],
   ];
   const failures = [];
   for (const [label, fn] of renderSteps) {
