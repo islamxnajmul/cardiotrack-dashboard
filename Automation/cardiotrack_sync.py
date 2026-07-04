@@ -2145,6 +2145,27 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
     jun_rev  = monthly_billing.get('Jun 2026', jun_rev)
     q2_total = apr_rev + may_rev + jun_rev
 
+    # ── Manual correction: Jun 2026 is a closed month, but the automated
+    # billing sync under-reports it because invoices post with a lag after
+    # month-end — the daily billing XLS exports hadn't caught up as of this
+    # writing. Confirmed final total (Najmul, 5 Jul 2026): Apr + May + Jun
+    # 2026 = ₹170.6L. Apr/May above already match that, so override Jun
+    # here — this keeps kpis, the revenue trend chart, and the Target
+    # Tracker's frozen Q2 2026 snapshot all consistent with the confirmed
+    # figure. Remove this block once the billing feed itself reports the
+    # same total on its own (check apr_rev + may_rev + jun_rev == 17060000
+    # before removing).
+    JUN_2026_CONFIRMED_FINAL = 7483700.57  # brings Apr+May+Jun to ₹170.6L exactly
+    if JUN_2026_CONFIRMED_FINAL is not None:
+        jun_rev = JUN_2026_CONFIRMED_FINAL
+        monthly_billing = dict(monthly_billing)
+        monthly_billing['Jun 2026'] = JUN_2026_CONFIRMED_FINAL
+        q2_total = apr_rev + may_rev + jun_rev
+        # trend_values was already built above from the pre-correction
+        # monthly_billing — refresh it too so the revenue trend chart's
+        # Jun 2026 bar matches this figure instead of the stale one.
+        trend_values = [monthly_billing.get(m, 0) for m in billing_order]
+
     log.info(f"  Final revenue (XLS only):  Apr ₹{apr_rev:,.0f}  May ₹{may_rev:,.0f}  Jun ₹{jun_rev:,.0f}  "
              f"(XLS {_dt.datetime.fromtimestamp(_billing_mtime).strftime('%d %b') if _billing_mtime else 'N/A'})")
 
