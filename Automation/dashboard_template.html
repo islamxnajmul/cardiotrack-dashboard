@@ -807,11 +807,6 @@
               <div style="font-size:1.25rem;font-weight:800;color:#1A5276;margin-top:4px" id="tt-incoming-req">—</div>
               <div style="font-size:.66rem;color:#1A5276;margin-top:2px">new orders to place</div>
             </div>
-            <div style="border:1px solid #D6EAF8;border-radius:8px;padding:11px 14px;background:#EBF5FB">
-              <div style="font-size:.65rem;font-weight:700;color:#1A5276;text-transform:uppercase;letter-spacing:.5px">Closed Orders Required</div>
-              <div style="font-size:1.25rem;font-weight:800;color:#1A5276;margin-top:4px" id="tt-closed-req">—</div>
-              <div style="font-size:.66rem;color:#1A5276;margin-top:2px">orders to close</div>
-            </div>
             <div style="border:1px solid #D5D8DC;border-radius:8px;padding:11px 14px;background:#F2F3F4">
               <div style="font-size:.65rem;font-weight:700;color:#566573;text-transform:uppercase;letter-spacing:.5px">Target Achievement</div>
               <div style="font-size:1.25rem;font-weight:800;color:#0D1B2A;margin-top:4px" id="tt-ach-pct-tile">—</div>
@@ -868,7 +863,6 @@
                   <th>Incoming Achieved</th>
                   <th>Closed Achieved</th>
                   <th>Incoming Required</th>
-                  <th>Closed Required</th>
                   <th>Achievement %</th>
                 </tr>
               </thead>
@@ -1254,7 +1248,6 @@ function renderTargetPeriod(periodName) {
   // Orders required + achievement tiles
   const ordReq = period.orders_required || {};
   set('tt-incoming-req', ordReq.incoming != null ? ordReq.incoming.toLocaleString() + ' orders' : '—');
-  set('tt-closed-req',   ordReq.closed   != null ? ordReq.closed.toLocaleString()   + ' orders' : '—');
   const achPctStr = achPct + '%';
   set('tt-ach-pct-tile', achPctStr);
   set('tt-ach-pct-sub',  period.status === 'open' ? 'of target reached so far' : 'of target reached');
@@ -1314,7 +1307,6 @@ function renderTargetPeriod(periodName) {
           <td style="color:#1565C0;font-weight:600">${incAch != null ? incAch.toLocaleString() : '—'}</td>
           <td style="color:#1565C0;font-weight:600">${clAch  != null ? clAch.toLocaleString()  : '—'}</td>
           <td>${row.orders_needed?.incoming ?? '—'}</td>
-          <td>${row.orders_needed?.closed   ?? '—'}</td>
           <td style="font-weight:700;color:${act.revenue != null ? pctColor : 'var(--text2)'}">${act.revenue != null ? rowAchPct + '%' : '—'}</td>
         </tr>`;
       });
@@ -1331,7 +1323,6 @@ function renderTargetPeriod(periodName) {
           <td style="color:#1565C0">${anyOrderData ? totIncAch.toLocaleString() : '—'}</td>
           <td style="color:#1565C0">${anyOrderData ? totClAch.toLocaleString()  : '—'}</td>
           <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>
-          <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
           <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
         </tr>`;
     } else {
