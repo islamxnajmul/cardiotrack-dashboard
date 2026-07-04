@@ -586,9 +586,9 @@
     {
       "name": "Thyrocare ECG - June",
       "month": "June",
-      "delta": 375000.0,
+      "delta": 1800000,
       "probability": 1.0,
-      "weighted": 0.0,
+      "weighted": 1800000,
       "add_closed": 0.0,
       "add_incoming": 0.0,
       "type": "Prospect",
