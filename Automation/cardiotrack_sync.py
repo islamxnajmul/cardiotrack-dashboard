@@ -1041,43 +1041,24 @@ def _parse_monthly_targets(rows: list) -> dict:
         cl_actual_col   = hcol("closed",   "cases")
         conv_col        = hcol("conversion")
 
-        # ── Fix for July 2026+ "Additional vs Total" column confusion ────────────
-        # The Jul 2026 sheet has two sets of order columns:
-        #   [Add_Inc | Add_Cl | Total_Inc | Total_Cl | Total_Rev]
-        # "Total Incoming orders" has a header (→ inc_col via "total"+"incoming"),
-        # "Closed orders to achieve" is the ADDITIONAL closed (→ closed_col via
-        #   "closed"+"achieve"), but "Total Closed" has NO header.
-        # Result: inc_col points to Total Incoming (correct), closed_col points to
-        # Additional Closed (wrong). Fix: if inc_col has "total" but closed_col
-        # doesn't, closed_col is the additional column; Total Closed = inc_col + 1.
-        if inc_col is not None and closed_col is not None:
-            inc_hdr_val = (hdr[inc_col]    if inc_col    < len(hdr) else "")
-            cl_hdr_val  = (hdr[closed_col] if closed_col < len(hdr) else "")
-            if "total" in inc_hdr_val and "total" not in cl_hdr_val:
-                _try_cl = inc_col + 1      # Total Closed sits right after Total Incoming
-                if _try_cl < len(hdr):
-                    closed_col = _try_cl
-                # Also fix rev_col if it's pointing at the actual-revenue column
-                if rev_col is not None:
-                    rv_hdr_val = (hdr[rev_col] if rev_col < len(hdr) else "")
-                    if "total" not in rv_hdr_val:
-                        _try_rev = inc_col + 2   # Total Revenue = Total Incoming + 2
-                        if _try_rev < len(hdr):
-                            rev_col = _try_rev
-
-        # Fallback when closed_col is still None (all headers empty)
-        if closed_col is None and inc_col is not None:
-            hdr_val = (hdr[inc_col] if inc_col < len(hdr) else "")
-            if "add" in hdr_val:          # "additional" / "additonal" style header
-                _orig      = inc_col
-                _total_inc = _orig + 2
-                _total_cl  = _orig + 3
-                _total_rev = _orig + 4
-                if _total_cl < len(hdr):
-                    inc_col    = _total_inc   # Total Incoming orders
-                    closed_col = _total_cl    # Total Closed orders
-                if rev_col is None and _total_rev < len(hdr):
-                    rev_col = _total_rev      # Total Revenue target
+        # ── Positional override when inc_col is the "Total Incoming" column ────────
+        # Jul 2026+ sheets have paired columns: [..., Total_Inc, Total_Cl, Total_Rev]
+        # When inc_col was found via "total"+"incoming", Total Closed is always
+        # inc_col + 1. Override closed_col unconditionally — headers on the closed
+        # column may say "Total" yet hold only additional-orders values, so header-
+        # based checks are unreliable. Use column position instead.
+        if inc_col is not None:
+            _inc_hv = (hdr[inc_col] if inc_col < len(hdr) else "")
+            if "total" in _inc_hv and "incoming" in _inc_hv:
+                _cl_pos  = inc_col + 1
+                _rev_pos = inc_col + 2
+                if _cl_pos < len(hdr):
+                    closed_col = _cl_pos    # unconditional override → Total Closed
+                if _rev_pos < len(hdr) and rev_col != _rev_pos:
+                    # Only override rev_col if it's not already the right column
+                    _rv_hv = (hdr[rev_col] if rev_col is not None and rev_col < len(hdr) else "")
+                    if "total" not in _rv_hv:
+                        rev_col = _rev_pos  # Total Revenue
 
         if inc_col is None and closed_col is None and rev_col is None:
             i += 1
