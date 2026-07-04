@@ -959,92 +959,125 @@ def _normalize_month(raw: str, fallback_name: str = "") -> str:
 
 
 def _parse_monthly_targets(rows: list) -> dict:
-    """Walk the Plan sheet for '<Month> 2026 Month' section blocks.
+    """Walk the Plan sheet for '<Month> YYYY Month' section blocks.
 
-    Each block has a header row like:
-        ('May 2026 Month', None, None, ...)
-    followed by a column-header row with 'Total Incoming orders to achieve'
-    and 'Total closed orders to achieve', then per-insurer rows, then a
-    trailing total row with mostly Nones.
+    Detects any month dynamically — no hardcoded list needed.  Each block has
+    a section header like ('July 2026 Month', ...) followed by a column-header
+    row (Insurer Name | … | Revenue | … | Additional Incoming … | Closed …),
+    then per-insurer rows.
+
+    Also parses the Revenue column (insurer-level revenue TARGET for that
+    month) which newer sections (Jul 2026 onwards) include alongside the
+    order-count columns.
 
     Returns:
-        {"May 2026": {"incoming_required": N, "closed_required": N},
-         "Jun 2026": {...}}
+        {"Jul 2026": {
+            "incoming_required":    N,
+            "closed_required":      N,
+            "total_revenue_target": N,    # sum of Revenue column; 0 if absent
+            "by_insurer": {
+                "Canonical Name": {
+                    "incoming_required": N,
+                    "closed_required":   N,
+                    "revenue_target":    N,
+                }
+            }
+        }}
     """
-    targets = {}
-    # Tag JSON keys consistently with the rest of the dataset (3-letter month).
-    SECTION_MAP = {
-        "may 2026 month":  "May 2026",
-        "june 2026 month": "Jun 2026",
-        "jun 2026 month":  "Jun 2026",
-        "april 2026 month":"Apr 2026",
-        "apr 2026 month":  "Apr 2026",
-    }
+    # ── Inline month-name → "Mmm YYYY" converter ─────────────────────────────
+    _MON_ABBR = {1:"Jan",2:"Feb",3:"Mar",4:"Apr",5:"May",6:"Jun",
+                 7:"Jul",8:"Aug",9:"Sep",10:"Oct",11:"Nov",12:"Dec"}
+    _MON_NUM  = {v.lower():k for k,v in _MON_ABBR.items()}
+    _SECTION_RE = re.compile(
+        r'^(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|'
+        r'Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)'
+        r'\s+(\d{4})\s+Month\b',
+        re.IGNORECASE
+    )
 
+    def _head_to_key(raw: str):
+        """'July 2026 Month' → 'Jul 2026', None if no match."""
+        m = _SECTION_RE.match(raw.strip())
+        if not m:
+            return None
+        mon_num = _MON_NUM.get(m.group(1).lower()[:3], 0)
+        return f"{_MON_ABBR[mon_num]} {m.group(2)}" if mon_num else None
+
+    targets = {}
     i = 0
     while i < len(rows):
-        first = rows[i]
-        head = str(first[0] or "").strip().lower() if first else ""
-        if head in SECTION_MAP:
-            json_key = SECTION_MAP[head]
-            # Next row should be column headers
-            if i + 1 >= len(rows):
+        first    = rows[i]
+        head_raw = str(first[0] or "").strip() if first else ""
+        json_key = _head_to_key(head_raw)
+        if json_key is None:
+            i += 1
+            continue
+
+        # Next row should be column headers
+        if i + 1 >= len(rows):
+            break
+        hdr_row = rows[i + 1]
+        hdr = [str(c or "").strip().lower() for c in hdr_row]
+
+        def hcol(*needles):
+            for j, h in enumerate(hdr):
+                if all(n in h for n in needles):
+                    return j
+            return None
+
+        inc_col    = hcol("incoming", "achieve")
+        closed_col = hcol("closed",   "achieve")
+        rev_col    = hcol("revenue")     # "Revenue" or "Revenue ₹"
+
+        if inc_col is None and closed_col is None and rev_col is None:
+            i += 1
+            continue
+
+        inc_total = 0.0
+        cl_total  = 0.0
+        per_insurer: dict = {}
+        j = i + 2
+        while j < len(rows):
+            row  = rows[j]
+            name = str(row[0] or "").strip() if row else ""
+            # Stop on truly blank row OR next section header
+            if not name:
+                j += 1
+                if not any(c for c in (row or [])):
+                    break
+                continue
+            if _head_to_key(name):   # next section starts — stop here
                 break
-            hdr_row = rows[i + 1]
-            hdr = [str(c or "").strip().lower() for c in hdr_row]
-
-            def hcol(*needles):
-                for j, h in enumerate(hdr):
-                    if all(n in h for n in needles):
-                        return j
-                return None
-
-            inc_col    = hcol("incoming", "achieve")
-            closed_col = hcol("closed",   "achieve")
-            if inc_col is None and closed_col is None:
-                i += 1
+            if "total" in name.lower() or "target" in name.lower():
+                j += 1
                 continue
 
-            inc_total = 0.0
-            cl_total  = 0.0
-            per_insurer = {}
-            j = i + 2
-            while j < len(rows):
-                row = rows[j]
-                name = str(row[0] or "").strip() if row else ""
-                # Stop on a blank line OR when we hit the next section header
-                if not name:
-                    j += 1
-                    if not any(c for c in (row or [])):    # truly empty → end
-                        break
-                    continue
-                if name.lower() in SECTION_MAP:
-                    break
-                if "total" in name.lower() or "target" in name.lower():
-                    j += 1
-                    continue
-                inc_val = safe_float(row[inc_col]) if (inc_col is not None and inc_col < len(row)) else 0
-                cl_val  = safe_float(row[closed_col]) if (closed_col is not None and closed_col < len(row)) else 0
-                # Skip rows where both required values are 0 — they're noise
-                if inc_val > 0 or cl_val > 0:
-                    canon_name = _canonical_insurer_name(name)
-                    existing = per_insurer.get(canon_name, {"incoming_required": 0, "closed_required": 0})
-                    per_insurer[canon_name] = {
-                        "incoming_required": existing["incoming_required"] + int(round(inc_val)),
-                        "closed_required":   existing["closed_required"]   + int(round(cl_val)),
-                    }
-                    inc_total += inc_val
-                    cl_total  += cl_val
-                j += 1
+            inc_val = safe_float(row[inc_col]) if (inc_col is not None and inc_col < len(row)) else 0
+            cl_val  = safe_float(row[closed_col]) if (closed_col is not None and closed_col < len(row)) else 0
+            rev_val = safe_float(row[rev_col])    if (rev_col  is not None and rev_col  < len(row)) else 0
 
-            targets[json_key] = {
-                "incoming_required": int(round(inc_total)),
-                "closed_required":   int(round(cl_total)),
-                "by_insurer":        per_insurer,
-            }
-            i = j
-            continue
-        i += 1
+            if inc_val > 0 or cl_val > 0 or rev_val > 0:
+                canon_name = _canonical_insurer_name(name)
+                existing   = per_insurer.get(canon_name, {
+                    "incoming_required": 0, "closed_required": 0, "revenue_target": 0
+                })
+                per_insurer[canon_name] = {
+                    "incoming_required": existing["incoming_required"] + int(round(inc_val)),
+                    "closed_required":   existing["closed_required"]   + int(round(cl_val)),
+                    "revenue_target":    existing["revenue_target"]    + round(rev_val),
+                }
+                inc_total += inc_val
+                cl_total  += cl_val
+            j += 1
+
+        targets[json_key] = {
+            "incoming_required":    int(round(inc_total)),
+            "closed_required":      int(round(cl_total)),
+            "total_revenue_target": round(sum(d["revenue_target"] for d in per_insurer.values())),
+            "by_insurer":           per_insurer,
+        }
+        i = j
+        continue
 
     return targets
 
@@ -1839,22 +1872,26 @@ def _find_billing_for_insurer(insurer: str, billing_dict: dict) -> float:
 def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
                                  q2_total: float, q2_target: int,
                                  pipeline: list | None = None,
-                                 monthly_by_insurer: dict | None = None) -> list:
+                                 monthly_by_insurer: dict | None = None,
+                                 monthly_targets: dict | None = None) -> list:
     """Build d["targets"] — the period model behind the Target Tracker tab.
 
     Q2 2026 is always present as a closed historical entry.
-    All subsequent entries (Jul 2026, Aug 2026, …) are generated dynamically
-    from pipeline items in Quarter Target.xlsx — one entry per unique month_label
-    found in the pipeline, ordered chronologically.
+    All subsequent entries (Jul 2026, Aug 2026, …) are generated dynamically —
+    one entry per unique future month found in EITHER the pipeline rows OR the
+    'Month' section tables (e.g. 'July 2026 Month') in Quarter Target.xlsx.
 
-    No future months are hardcoded here; the list grows automatically when the
-    user adds a new month's rows to the Drive spreadsheet.
+    Priority per month:
+      1. 'Month' section table (has explicit Revenue column per insurer) — use
+         the Revenue value directly as the insurer's target.
+      2. Pipeline items (delta rows) — compute target as prior_month + delta.
 
-    Narrative content (milestones, key accounts, quick wins) per period is
-    stored in _PERIOD_NARRATIVES above — new months get empty lists until notes
-    are hand-added there.
+    New months appear automatically when added to the Drive spreadsheet.
+    Narrative content (milestones, key accounts, quick wins) is in
+    _PERIOD_NARRATIVES — new months get empty lists until hand-added.
     """
     _mbi = monthly_by_insurer or {}
+    _mt  = monthly_targets    or {}
 
     q2_entry = {
         "period":     "Q2 2026",
@@ -1871,19 +1908,18 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
 
     periods = [q2_entry]
 
-    if not pipeline:
-        return periods
-
-    # ── Group pipeline items by month_label, skip Q2 / historical months ──────
+    # ── Collect future months from both pipeline items AND section tables ──────
     from collections import defaultdict as _dd
     HISTORICAL = {"Apr 2026", "May 2026", "Jun 2026"}
-    by_month: dict = _dd(list)
-    for p in pipeline:
+
+    by_pipeline: dict = _dd(list)
+    for p in (pipeline or []):
         ml = p.get("month_label")
         if ml and ml not in HISTORICAL:
-            by_month[ml].append(p)
+            by_pipeline[ml].append(p)
 
-    if not by_month:
+    all_future_months = (set(by_pipeline.keys()) | set(_mt.keys())) - HISTORICAL
+    if not all_future_months:
         return periods
 
     def _label_sort_key(label: str):
@@ -1893,40 +1929,67 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
         except Exception:
             return (9999, 99)
 
-    for month_label in sorted(by_month.keys(), key=_label_sort_key):
-        items        = by_month[month_label]
-        prior_label  = _prior_month_label_of(month_label)
-        prior_billing = _mbi.get(prior_label, {})
+    for month_label in sorted(all_future_months, key=_label_sort_key):
+        mt_data        = _mt.get(month_label, {})
+        pipeline_items = by_pipeline.get(month_label, [])
+        narrative      = _PERIOD_NARRATIVES.get(month_label, {})
 
         by_insurer     = []
         total_target   = 0
         total_closed   = 0
         total_incoming = 0
 
-        for p in items:
-            insurer      = _strip_plan_month_suffix(p["name"])
-            prior_rev    = round(_find_billing_for_insurer(insurer, prior_billing))
-            delta        = round(p.get("delta", 0))
-            target_amt   = prior_rev + delta
-            add_closed   = int(p.get("add_closed",   0) or 0)
-            add_incoming = int(p.get("add_incoming", 0) or 0)
+        if mt_data and mt_data.get("by_insurer"):
+            # ── PRIMARY: use Revenue column from 'Month' section table ────────
+            for ins_name, ins_data in mt_data["by_insurer"].items():
+                rev_target   = ins_data.get("revenue_target", 0)
+                add_closed   = ins_data.get("closed_required", 0)
+                add_incoming = ins_data.get("incoming_required", 0)
+                by_insurer.append({
+                    "insurer":           ins_name,
+                    "prior_month":       None,
+                    "baseline":          None,
+                    "additional_needed": None,
+                    "target":            rev_target,
+                    "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
+                                         if (add_closed or add_incoming) else None,
+                })
+                total_target   += rev_target
+                total_closed   += add_closed
+                total_incoming += add_incoming
+            # Prefer the sheet's own total (may include rows we didn't parse)
+            sheet_total = mt_data.get("total_revenue_target", 0)
+            if sheet_total > total_target:
+                total_target = sheet_total
 
-            by_insurer.append({
-                "insurer":           insurer,
-                "prior_month":       prior_rev or None,
-                "baseline":          prior_rev or None,
-                "additional_needed": delta,
-                "target":            target_amt,
-                "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
-                                     if (add_closed or add_incoming) else None,
-            })
-            total_target   += target_amt
-            total_closed   += add_closed
-            total_incoming += add_incoming
+        elif pipeline_items:
+            # ── FALLBACK: build from pipeline delta rows ───────────────────────
+            prior_label   = _prior_month_label_of(month_label)
+            prior_billing = _mbi.get(prior_label, {})
+            for p in pipeline_items:
+                insurer      = _strip_plan_month_suffix(p["name"])
+                prior_rev    = round(_find_billing_for_insurer(insurer, prior_billing))
+                delta        = round(p.get("delta", 0))
+                target_amt   = prior_rev + delta
+                add_closed   = int(p.get("add_closed",   0) or 0)
+                add_incoming = int(p.get("add_incoming", 0) or 0)
+                by_insurer.append({
+                    "insurer":           insurer,
+                    "prior_month":       prior_rev or None,
+                    "baseline":          prior_rev or None,
+                    "additional_needed": delta,
+                    "target":            target_amt,
+                    "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
+                                         if (add_closed or add_incoming) else None,
+                })
+                total_target   += target_amt
+                total_closed   += add_closed
+                total_incoming += add_incoming
+        else:
+            continue   # no data for this month at all
 
         total_baseline   = sum(item.get("prior_month") or 0 for item in by_insurer)
-        total_additional = sum(item["additional_needed"] for item in by_insurer)
-        narrative        = _PERIOD_NARRATIVES.get(month_label, {})
+        total_additional = sum(item.get("additional_needed") or 0 for item in by_insurer)
 
         periods.append({
             "period":            month_label,
@@ -1934,8 +1997,8 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
             "status":            "open",
             "months":            [month_label],
             "target":            round(total_target),
-            "baseline":          round(total_baseline),
-            "additional_needed": round(total_additional),
+            "baseline":          round(total_baseline) or None,
+            "additional_needed": round(total_additional) or None,
             "orders_required":   {"closed": total_closed, "incoming": total_incoming},
             "by_insurer":        by_insurer,
             "milestones":        narrative.get("milestones",   []),
@@ -1949,7 +2012,8 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
 def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
                          q2_total: float, q2_target: int,
                          pipeline: list | None = None,
-                         monthly_by_insurer: dict | None = None) -> list:
+                         monthly_by_insurer: dict | None = None,
+                         monthly_targets: dict | None = None) -> list:
     """Wraps _build_targets_period_model so a bug there can't take down the
     whole sync — the dashboard's other tabs keep working either way."""
     try:
@@ -1957,6 +2021,7 @@ def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
             apr_rev, may_rev, jun_rev, q2_total, q2_target,
             pipeline=pipeline,
             monthly_by_insurer=monthly_by_insurer,
+            monthly_targets=monthly_targets,
         )
     except Exception as e:
         log.warning(f"  _build_targets_period_model failed, Target Tracker will show no periods: {e}")
@@ -2546,7 +2611,8 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
         # Never let a problem here take down the whole sync — worst case the
         # Target Tracker tab just shows no periods until this is fixed.
         "targets": _safe_build_targets(apr_rev, may_rev, jun_rev, q2_total, Q2_TARGET,
-                                        pipeline=pipeline, monthly_by_insurer=_mb_ins),
+                                        pipeline=pipeline, monthly_by_insurer=_mb_ins,
+                                        monthly_targets=qt.get("monthly_targets", {})),
     }
 
 
