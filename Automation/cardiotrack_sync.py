@@ -1041,11 +1041,31 @@ def _parse_monthly_targets(rows: list) -> dict:
         cl_actual_col   = hcol("closed",   "cases")
         conv_col        = hcol("conversion")
 
-        # ── Fallback for "Additional orders" style headers (July 2026+) ──────────
-        # When only "Additonal/Additional Incoming orders to achieve" is labelled
-        # at inc_col, the remaining cols have EMPTY headers but follow the pattern:
+        # ── Fix for July 2026+ "Additional vs Total" column confusion ────────────
+        # The Jul 2026 sheet has two sets of order columns:
         #   [Add_Inc | Add_Cl | Total_Inc | Total_Cl | Total_Rev]
-        # Re-point inc_col → Total Incoming and infer closed_col / rev_col.
+        # "Total Incoming orders" has a header (→ inc_col via "total"+"incoming"),
+        # "Closed orders to achieve" is the ADDITIONAL closed (→ closed_col via
+        #   "closed"+"achieve"), but "Total Closed" has NO header.
+        # Result: inc_col points to Total Incoming (correct), closed_col points to
+        # Additional Closed (wrong). Fix: if inc_col has "total" but closed_col
+        # doesn't, closed_col is the additional column; Total Closed = inc_col + 1.
+        if inc_col is not None and closed_col is not None:
+            inc_hdr_val = (hdr[inc_col]    if inc_col    < len(hdr) else "")
+            cl_hdr_val  = (hdr[closed_col] if closed_col < len(hdr) else "")
+            if "total" in inc_hdr_val and "total" not in cl_hdr_val:
+                _try_cl = inc_col + 1      # Total Closed sits right after Total Incoming
+                if _try_cl < len(hdr):
+                    closed_col = _try_cl
+                # Also fix rev_col if it's pointing at the actual-revenue column
+                if rev_col is not None:
+                    rv_hdr_val = (hdr[rev_col] if rev_col < len(hdr) else "")
+                    if "total" not in rv_hdr_val:
+                        _try_rev = inc_col + 2   # Total Revenue = Total Incoming + 2
+                        if _try_rev < len(hdr):
+                            rev_col = _try_rev
+
+        # Fallback when closed_col is still None (all headers empty)
         if closed_col is None and inc_col is not None:
             hdr_val = (hdr[inc_col] if inc_col < len(hdr) else "")
             if "add" in hdr_val:          # "additional" / "additonal" style header
