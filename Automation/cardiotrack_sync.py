@@ -1896,7 +1896,7 @@ def _prior_month_label_of(month_label: str) -> str:
 
 
 def _find_billing_for_insurer(insurer: str, billing_dict: dict) -> float:
-    """Look up insurer revenue in {{insurer: amount}} using canonical name matching."""
+    """Look up insurer revenue in {insurer: amount} using canonical name matching."""
     canon = _canonical_insurer_name(insurer)
     for k, v in billing_dict.items():
         if _canonical_insurer_name(k) == canon:
@@ -1904,11 +1904,21 @@ def _find_billing_for_insurer(insurer: str, billing_dict: dict) -> float:
     return 0.0
 
 
+def _find_orders_for_insurer(insurer: str, orders_dict: dict) -> int:
+    """Look up order count in {insurer: count} using canonical name matching."""
+    canon = _canonical_insurer_name(insurer)
+    for k, v in orders_dict.items():
+        if _canonical_insurer_name(k) == canon:
+            return int(v or 0)
+    return 0
+
+
 def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
                                  q2_total: float, q2_target: int,
                                  pipeline: list | None = None,
                                  monthly_by_insurer: dict | None = None,
-                                 monthly_targets: dict | None = None) -> list:
+                                 monthly_targets: dict | None = None,
+                                 orders_monthly: dict | None = None) -> list:
     """Build d["targets"] — the period model behind the Target Tracker tab.
 
     Q2 2026 is always present as a closed historical entry.
@@ -1925,8 +1935,10 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
     Narrative content (milestones, key accounts, quick wins) is in
     _PERIOD_NARRATIVES — new months get empty lists until hand-added.
     """
-    _mbi = monthly_by_insurer or {}
-    _mt  = monthly_targets    or {}
+    _mbi    = monthly_by_insurer or {}
+    _mt     = monthly_targets    or {}
+    _om_inc = (orders_monthly or {}).get("incoming", {})   # {month: {insurer: count}}
+    _om_cl  = (orders_monthly or {}).get("closed",   {})
 
     q2_entry = {
         "period":     "Q2 2026",
@@ -1988,7 +2000,7 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
                     "target":            rev_target,
                     "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
                                          if (add_closed or add_incoming) else None,
-                    # Actuals from the sheet's "Incoming cases / Closed cases" cols
+                    # Sheet actuals (used as fallback; Gmail actuals applied below)
                     "incoming_actual":   ins_data.get("incoming_actual"),
                     "closed_actual":     ins_data.get("closed_actual"),
                     "conversion":        ins_data.get("conversion"),
@@ -2020,12 +2032,42 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
                     "target":            target_amt,
                     "orders_needed":     {"closed": add_closed, "incoming": add_incoming}
                                          if (add_closed or add_incoming) else None,
+                    "incoming_actual":   None,
+                    "closed_actual":     None,
+                    "conversion":        None,
                 })
                 total_target   += target_amt
                 total_closed   += add_closed
                 total_incoming += add_incoming
         else:
             continue   # no data for this month at all
+
+        # ── Overlay Gmail actuals (primary source for current-month orders) ──
+        # Gmail CSVs ("Incoming Order Count Insurer Wise" / "Closed Case Count
+        # Insurer Wise") are downloaded fresh each Actions run and take priority
+        # over any sheet-level "Incoming cases" / "Closed cases" column values.
+        inc_gmail = _om_inc.get(month_label, {})
+        cl_gmail  = _om_cl.get(month_label, {})
+        if inc_gmail or cl_gmail:
+            for entry in by_insurer:
+                ins = entry["insurer"]
+                g_inc = _find_orders_for_insurer(ins, inc_gmail)
+                g_cl  = _find_orders_for_insurer(ins, cl_gmail)
+                if g_inc > 0:
+                    entry["incoming_actual"] = g_inc
+                if g_cl > 0:
+                    entry["closed_actual"] = g_cl
+                # Recalculate conversion from Gmail-sourced actuals
+                inc_a = entry.get("incoming_actual") or 0
+                cl_a  = entry.get("closed_actual")   or 0
+                if inc_a > 0:
+                    entry["conversion"] = round(cl_a / inc_a, 4)
+
+        # ── Weighted pipeline for this month ─────────────────────────────────
+        weighted_pipe = round(sum(
+            p.get("delta", 0) * p.get("probability", 0)
+            for p in pipeline_items
+        ))
 
         total_baseline   = sum(item.get("prior_month") or 0 for item in by_insurer)
         total_additional = sum(item.get("additional_needed") or 0 for item in by_insurer)
@@ -2039,6 +2081,7 @@ def _build_targets_period_model(apr_rev: float, may_rev: float, jun_rev: float,
             "baseline":          round(total_baseline) or None,
             "additional_needed": round(total_additional) or None,
             "orders_required":   {"closed": total_closed, "incoming": total_incoming},
+            "weighted_pipeline": weighted_pipe,
             "by_insurer":        by_insurer,
             "milestones":        narrative.get("milestones",   []),
             "key_accounts":      narrative.get("key_accounts", []),
@@ -2052,7 +2095,8 @@ def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
                          q2_total: float, q2_target: int,
                          pipeline: list | None = None,
                          monthly_by_insurer: dict | None = None,
-                         monthly_targets: dict | None = None) -> list:
+                         monthly_targets: dict | None = None,
+                         orders_monthly: dict | None = None) -> list:
     """Wraps _build_targets_period_model so a bug there can't take down the
     whole sync — the dashboard's other tabs keep working either way."""
     try:
@@ -2061,6 +2105,7 @@ def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
             pipeline=pipeline,
             monthly_by_insurer=monthly_by_insurer,
             monthly_targets=monthly_targets,
+            orders_monthly=orders_monthly,
         )
     except Exception as e:
         log.warning(f"  _build_targets_period_model failed, Target Tracker will show no periods: {e}")
@@ -2651,7 +2696,8 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
         # Target Tracker tab just shows no periods until this is fixed.
         "targets": _safe_build_targets(apr_rev, may_rev, jun_rev, q2_total, Q2_TARGET,
                                         pipeline=pipeline, monthly_by_insurer=_mb_ins,
-                                        monthly_targets=qt.get("monthly_targets", {})),
+                                        monthly_targets=qt.get("monthly_targets", {}),
+                                        orders_monthly={"incoming": inc_monthly, "closed": cl_monthly}),
     }
 
 
