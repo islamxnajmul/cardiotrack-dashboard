@@ -867,6 +867,7 @@
                   <th>Revenue Gap</th>
                   <th>Incoming Achieved</th>
                   <th>Closed Achieved</th>
+                  <th>Conversion %</th>
                   <th>Incoming Required</th>
                   <th>Closed Required</th>
                   <th>Achievement %</th>
@@ -1286,9 +1287,9 @@ function renderTargetPeriod(periodName) {
     ? period.quick_wins.map(q => `<li><strong>${q.label}</strong> — ${q.note}</li>`).join('')
     : '<li style="color:var(--text2)">No quick wins logged for this period.</li>';
 
-  // By-insurer table (9 cols):
+  // By-insurer table (10 cols):
   // Insurer | Rev Target | Rev Achieved | Rev Gap |
-  // Incoming Achieved | Closed Achieved | Incoming Required | Closed Required | Achievement %
+  // Incoming Achieved | Closed Achieved | Conversion % | Incoming Required | Closed Required | Achievement %
   const tbody = document.getElementById('tt-insurer-tbody');
   const tfoot = document.getElementById('tt-insurer-tfoot');
   if (tbody) {
@@ -1306,6 +1307,8 @@ function renderTargetPeriod(periodName) {
         const clAch  = row.closed_actual   != null ? row.closed_actual   : null;
         if (incAch != null) { totIncAch += incAch; anyOrderData = true; }
         if (clAch  != null) { totClAch  += clAch;  anyOrderData = true; }
+        const convPct = (incAch != null && clAch != null && incAch > 0)
+          ? (clAch / incAch * 100).toFixed(1) : null;
         return `<tr>
           <td style="text-align:left">${row.insurer}</td>
           <td style="font-weight:700">${fmtL(row.target)}</td>
@@ -1313,6 +1316,7 @@ function renderTargetPeriod(periodName) {
           <td style="color:${act.revenue != null ? gapColor : 'var(--text2)'}">${act.revenue != null ? fmtL(rowGap) : '—'}</td>
           <td style="color:#1565C0;font-weight:600">${incAch != null ? incAch.toLocaleString() : '—'}</td>
           <td style="color:#1565C0;font-weight:600">${clAch  != null ? clAch.toLocaleString()  : '—'}</td>
+          <td style="font-weight:600">${convPct != null ? convPct + '%' : '—'}</td>
           <td>${row.orders_needed?.incoming ?? '—'}</td>
           <td>${row.orders_needed?.closed   ?? '—'}</td>
           <td style="font-weight:700;color:${act.revenue != null ? pctColor : 'var(--text2)'}">${act.revenue != null ? rowAchPct + '%' : '—'}</td>
@@ -1322,7 +1326,9 @@ function renderTargetPeriod(periodName) {
       const sumTarget = period.by_insurer.reduce((s, r) => s + (r.target || 0), 0);
       const totalGap  = sumTarget - actTotalRev;
       const totalPct  = sumTarget > 0 ? Math.round(actTotalRev / sumTarget * 100) : 0;
-      const totOrd    = period.orders_required || {};
+      const totOrd     = period.orders_required || {};
+      const totConvPct = (anyOrderData && totIncAch > 0)
+        ? (totClAch / totIncAch * 100).toFixed(1) : null;
       if (tfoot) tfoot.innerHTML = `<tr style="background:#EAF1F8;font-weight:800">
           <td style="text-align:left">Total</td>
           <td>${fmtL(sumTarget)}</td>
@@ -1330,12 +1336,13 @@ function renderTargetPeriod(periodName) {
           <td style="color:${anyActualMatched ? (totalGap <= 0 ? '#1E8449' : '#C0392B') : 'var(--text2)'}">${anyActualMatched ? fmtL(totalGap) : '—'}</td>
           <td style="color:#1565C0">${anyOrderData ? totIncAch.toLocaleString() : '—'}</td>
           <td style="color:#1565C0">${anyOrderData ? totClAch.toLocaleString()  : '—'}</td>
+          <td>${totConvPct != null ? totConvPct + '%' : '—'}</td>
           <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>
           <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
           <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
         </tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="9" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
       if (tfoot) tfoot.innerHTML = '';
     }
   }
