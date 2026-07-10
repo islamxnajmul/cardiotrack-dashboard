@@ -857,6 +857,7 @@
 
         <!-- BY INSURER PANEL -->
         <div class="tab-panel" id="tt-insurer">
+          <p id="tt-pacing-caption" style="font-size:.72rem;color:var(--text2);margin:0 0 10px"></p>
           <div style="overflow-x:auto">
             <table id="tt-insurer-table">
               <thead>
@@ -869,6 +870,9 @@
                   <th>Closed Achieved</th>
                   <th>Conversion %</th>
                   <th>Incoming Required</th>
+                  <th>Should Have Incoming</th>
+                  <th>Incoming Delta</th>
+                  <th>New Daily Incoming Required</th>
                   <th>Closed Required</th>
                   <th>Achievement %</th>
                 </tr>
@@ -1191,6 +1195,61 @@ function _ttActualForInsurer(d, period, insurerName) {
   };
 }
 
+// Auto-scaling daily pacing helpers — parse "Mon YYYY" (e.g. "Jul 2026")
+// into a real date so days-in-month / days-elapsed / days-remaining are
+// computed fresh for whichever month the open period covers. Nothing here
+// is hardcoded to July, so this keeps working unchanged for Aug 2026 and
+// every month after it.
+function _ttParseMonthLabel(label) {
+  const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const parts = (label || '').trim().split(/\s+/);
+  if (parts.length < 2) return null;
+  const key  = parts[0].toLowerCase().slice(0, 3);
+  const year = parseInt(parts[1], 10);
+  if (!(key in MONTHS) || !year) return null;
+  return { year, month: MONTHS[key] };
+}
+
+function _ttDaysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+// Pacing window (days in month / elapsed / remaining) for an open period's
+// month, relative to today's real date.
+function _ttPacingWindow(period) {
+  if (period.status !== 'open' || !period.months || !period.months[0]) return null;
+  const m = _ttParseMonthLabel(period.months[0]);
+  if (!m) return null;
+  const daysInMonth = _ttDaysInMonth(m.year, m.month);
+  const today = new Date();
+  let daysElapsed;
+  if (today.getFullYear() === m.year && today.getMonth() === m.month) {
+    daysElapsed = today.getDate();
+  } else if (today.getFullYear() > m.year || (today.getFullYear() === m.year && today.getMonth() > m.month)) {
+    daysElapsed = daysInMonth;   // month has fully passed
+  } else {
+    daysElapsed = 0;             // month hasn't started yet
+  }
+  return { daysInMonth, daysElapsed, remainingDays: Math.max(daysInMonth - daysElapsed, 0) };
+}
+
+// Per-insurer incoming pacing vs. the period's "additional incoming orders
+// needed" — are they on track given how many days have elapsed/remain.
+//   Daily Incoming Target   = Incoming Required ÷ Days in Month
+//   Should Have Incoming    = Daily Incoming Target × Days Elapsed
+//   Incoming Delta          = Should Have Incoming − Incoming Achieved
+//   New Daily Incoming Req. = Incoming Delta ÷ Remaining Days
+function _ttIncomingPacing(row, pacing) {
+  const req = row.orders_needed ? row.orders_needed.incoming : null;
+  if (req == null || !pacing) return null;
+  const achieved     = row.incoming_actual != null ? row.incoming_actual : 0;
+  const dailyTarget  = pacing.daysInMonth > 0 ? req / pacing.daysInMonth : 0;
+  const shouldHave   = dailyTarget * pacing.daysElapsed;
+  const delta        = shouldHave - achieved;
+  const newDaily     = pacing.remainingDays > 0 ? delta / pacing.remainingDays : null;
+  return { shouldHave, delta, newDaily };
+}
+
 function _ttComputeAchieved(d, period) {
   if (period.status === 'closed') return period.achieved || 0;
   const labels = d.monthly_trend?.labels || [];
@@ -1287,14 +1346,25 @@ function renderTargetPeriod(periodName) {
     ? period.quick_wins.map(q => `<li><strong>${q.label}</strong> — ${q.note}</li>`).join('')
     : '<li style="color:var(--text2)">No quick wins logged for this period.</li>';
 
-  // By-insurer table (10 cols):
+  // By-insurer table (13 cols):
   // Insurer | Rev Target | Rev Achieved | Rev Gap |
-  // Incoming Achieved | Closed Achieved | Conversion % | Incoming Required | Closed Required | Achievement %
+  // Incoming Achieved | Closed Achieved | Conversion % | Incoming Required |
+  // Should Have Incoming | Incoming Delta | New Daily Incoming Required |
+  // Closed Required | Achievement %
+  const pacingWindow = _ttPacingWindow(period);
+  const captionEl = document.getElementById('tt-pacing-caption');
+  if (captionEl) {
+    captionEl.textContent = pacingWindow
+      ? `Pacing as of day ${pacingWindow.daysElapsed} of ${pacingWindow.daysInMonth} in ${period.period} — ${pacingWindow.remainingDays} day${pacingWindow.remainingDays === 1 ? '' : 's'} remaining.`
+      : '';
+  }
+
   const tbody = document.getElementById('tt-insurer-tbody');
   const tfoot = document.getElementById('tt-insurer-tfoot');
   if (tbody) {
     if (period.by_insurer && period.by_insurer.length) {
       let actTotalRev = 0, totIncAch = 0, totClAch = 0, anyActualMatched = false, anyOrderData = false;
+      let totShouldHave = 0, totDelta = 0, anyPacing = false;
       const rows = period.by_insurer.map(row => {
         const act       = _ttActualForInsurer(d, period, row.insurer);
         const achRev    = act.revenue != null ? act.revenue : 0;
@@ -1309,6 +1379,25 @@ function renderTargetPeriod(periodName) {
         if (clAch  != null) { totClAch  += clAch;  anyOrderData = true; }
         const convPct = (incAch != null && clAch != null && incAch > 0)
           ? (clAch / incAch * 100).toFixed(1) : null;
+
+        const pace = _ttIncomingPacing(row, pacingWindow);
+        let paceCells;
+        if (pace) {
+          totShouldHave += pace.shouldHave;
+          totDelta      += pace.delta;
+          anyPacing      = true;
+          const deltaColor = pace.delta > 0 ? '#C0392B' : '#1E8449';
+          const deltaText  = (pace.delta > 0 ? '+' : '') + pace.delta.toFixed(1);
+          const newDailyText  = pace.newDaily != null ? pace.newDaily.toFixed(1) : 'Month over';
+          const newDailyColor = pace.newDaily == null ? 'var(--text2)' : pace.newDaily > 0 ? '#B45309' : '#1E8449';
+          paceCells = `
+          <td>${pace.shouldHave.toFixed(1)}</td>
+          <td style="font-weight:600;color:${deltaColor}">${deltaText}</td>
+          <td style="font-weight:700;color:${newDailyColor}">${newDailyText}</td>`;
+        } else {
+          paceCells = `<td>—</td><td>—</td><td>—</td>`;
+        }
+
         return `<tr>
           <td style="text-align:left">${row.insurer}</td>
           <td style="font-weight:700">${fmtL(row.target)}</td>
@@ -1317,7 +1406,7 @@ function renderTargetPeriod(periodName) {
           <td style="color:#1565C0;font-weight:600">${incAch != null ? incAch.toLocaleString() : '—'}</td>
           <td style="color:#1565C0;font-weight:600">${clAch  != null ? clAch.toLocaleString()  : '—'}</td>
           <td style="font-weight:600">${convPct != null ? convPct + '%' : '—'}</td>
-          <td>${row.orders_needed?.incoming ?? '—'}</td>
+          <td>${row.orders_needed?.incoming ?? '—'}</td>${paceCells}
           <td>${row.orders_needed?.closed   ?? '—'}</td>
           <td style="font-weight:700;color:${act.revenue != null ? pctColor : 'var(--text2)'}">${act.revenue != null ? rowAchPct + '%' : '—'}</td>
         </tr>`;
@@ -1329,6 +1418,13 @@ function renderTargetPeriod(periodName) {
       const totOrd     = period.orders_required || {};
       const totConvPct = (anyOrderData && totIncAch > 0)
         ? (totClAch / totIncAch * 100).toFixed(1) : null;
+      const totNewDaily = anyPacing && pacingWindow && pacingWindow.remainingDays > 0
+        ? (totDelta / pacingWindow.remainingDays) : null;
+      const totPaceCells = anyPacing
+        ? `<td>${totShouldHave.toFixed(1)}</td>
+           <td style="color:${totDelta > 0 ? '#C0392B' : '#1E8449'}">${(totDelta > 0 ? '+' : '') + totDelta.toFixed(1)}</td>
+           <td style="color:${totNewDaily == null ? 'var(--text2)' : totNewDaily > 0 ? '#B45309' : '#1E8449'}">${totNewDaily != null ? totNewDaily.toFixed(1) : 'Month over'}</td>`
+        : `<td>—</td><td>—</td><td>—</td>`;
       if (tfoot) tfoot.innerHTML = `<tr style="background:#EAF1F8;font-weight:800">
           <td style="text-align:left">Total</td>
           <td>${fmtL(sumTarget)}</td>
@@ -1337,12 +1433,12 @@ function renderTargetPeriod(periodName) {
           <td style="color:#1565C0">${anyOrderData ? totIncAch.toLocaleString() : '—'}</td>
           <td style="color:#1565C0">${anyOrderData ? totClAch.toLocaleString()  : '—'}</td>
           <td>${totConvPct != null ? totConvPct + '%' : '—'}</td>
-          <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>
+          <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>${totPaceCells}
           <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
           <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
         </tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="10" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
       if (tfoot) tfoot.innerHTML = '';
     }
   }
