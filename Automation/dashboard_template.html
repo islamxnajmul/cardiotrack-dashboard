@@ -1238,7 +1238,12 @@ function _ttPacingWindow(period) {
 //   Daily Incoming Target   = Incoming Required ÷ Days in Month
 //   Should Have Incoming    = Daily Incoming Target × Days Elapsed
 //   Incoming Delta          = Should Have Incoming − Incoming Achieved
-//   New Daily Incoming Req. = Incoming Delta ÷ Remaining Days
+//   New Daily Incoming Req. = (Incoming Required − Incoming Achieved) ÷ Remaining Days
+// Note: "New Daily Incoming Required" is deliberately based on the total
+// remaining gap to the FULL month's requirement, not on the pace-based
+// "Incoming Delta" above — it answers "how many/day for the rest of the
+// month to hit the target", independent of whether they're currently
+// ahead or behind pace.
 function _ttIncomingPacing(row, pacing) {
   const req = row.orders_needed ? row.orders_needed.incoming : null;
   if (req == null || !pacing) return null;
@@ -1246,8 +1251,9 @@ function _ttIncomingPacing(row, pacing) {
   const dailyTarget  = pacing.daysInMonth > 0 ? req / pacing.daysInMonth : 0;
   const shouldHave   = dailyTarget * pacing.daysElapsed;
   const delta        = shouldHave - achieved;
-  const newDaily     = pacing.remainingDays > 0 ? delta / pacing.remainingDays : null;
-  return { shouldHave, delta, newDaily };
+  const remainingReq = req - achieved;
+  const newDaily      = pacing.remainingDays > 0 ? remainingReq / pacing.remainingDays : null;
+  return { shouldHave, delta, remainingReq, newDaily };
 }
 
 function _ttComputeAchieved(d, period) {
@@ -1364,7 +1370,7 @@ function renderTargetPeriod(periodName) {
   if (tbody) {
     if (period.by_insurer && period.by_insurer.length) {
       let actTotalRev = 0, totIncAch = 0, totClAch = 0, anyActualMatched = false, anyOrderData = false;
-      let totShouldHave = 0, totDelta = 0, anyPacing = false;
+      let totShouldHave = 0, totDelta = 0, totRemainingReq = 0, anyPacing = false;
       const rows = period.by_insurer.map(row => {
         const act       = _ttActualForInsurer(d, period, row.insurer);
         const achRev    = act.revenue != null ? act.revenue : 0;
@@ -1383,9 +1389,10 @@ function renderTargetPeriod(periodName) {
         const pace = _ttIncomingPacing(row, pacingWindow);
         let paceCells;
         if (pace) {
-          totShouldHave += pace.shouldHave;
-          totDelta      += pace.delta;
-          anyPacing      = true;
+          totShouldHave   += pace.shouldHave;
+          totDelta        += pace.delta;
+          totRemainingReq += pace.remainingReq;
+          anyPacing        = true;
           const deltaColor = pace.delta > 0 ? '#C0392B' : '#1E8449';
           const deltaText  = (pace.delta > 0 ? '+' : '') + pace.delta.toFixed(1);
           const newDailyText  = pace.newDaily != null ? pace.newDaily.toFixed(1) : 'Month over';
@@ -1419,7 +1426,7 @@ function renderTargetPeriod(periodName) {
       const totConvPct = (anyOrderData && totIncAch > 0)
         ? (totClAch / totIncAch * 100).toFixed(1) : null;
       const totNewDaily = anyPacing && pacingWindow && pacingWindow.remainingDays > 0
-        ? (totDelta / pacingWindow.remainingDays) : null;
+        ? (totRemainingReq / pacingWindow.remainingDays) : null;
       const totPaceCells = anyPacing
         ? `<td>${totShouldHave.toFixed(1)}</td>
            <td style="color:${totDelta > 0 ? '#C0392B' : '#1E8449'}">${(totDelta > 0 ? '+' : '') + totDelta.toFixed(1)}</td>
