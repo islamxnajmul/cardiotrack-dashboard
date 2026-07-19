@@ -897,9 +897,9 @@
                     <th colspan="3">Revenue</th>
                   </tr>
                   <tr>
-                    <th>MTD</th><th>Last Month</th><th>Δ</th>
-                    <th>MTD</th><th>Last Month</th><th>Δ</th>
-                    <th>MTD</th><th>Last Month</th><th>Δ</th>
+                    <th id="tt-sdlm-mtd-1">MTD</th><th>Last Month</th><th>Δ</th>
+                    <th id="tt-sdlm-mtd-2">MTD</th><th>Last Month</th><th>Δ</th>
+                    <th id="tt-sdlm-mtd-3">MTD</th><th>Last Month</th><th>Δ</th>
                   </tr>
                 </thead>
                 <tbody id="tt-sdlm-tbody"></tbody>
@@ -907,7 +907,7 @@
               </table>
             </div>
             <p style="font-size:.66rem;color:var(--text2);margin:8px 0 0">
-              Incoming counts are based on order entry date among orders that have since been billed — very recent entries that haven't closed yet may not be reflected, so the most recent 1–2 weeks of "Incoming" can undercount slightly.
+              Incoming MTD uses the same authoritative running count as the "Incoming Achieved" column above. The Last Month column is estimated from order-entry dates among orders that have since been billed — since last month has fully elapsed, this is effectively final and not subject to the same-month undercount.
             </p>
           </div>
         </div>
@@ -1349,9 +1349,20 @@ function _ttSameDayLastMonthData(d, period) {
     const lKey = _ttFindInsurerKey(lastSums, row.insurer);
     const c = cKey ? curSums[cKey]   : { incoming: 0, closed: 0, revenue: 0 };
     const l = lKey ? lastSums[lKey]  : { incoming: 0, closed: 0, revenue: 0 };
+    // Incoming MTD (current side only) uses the authoritative Gmail-sourced
+    // running count already shown in "Incoming Achieved" above — NOT the
+    // day-level proxy summed from daily_by_insurer. That proxy is built from
+    // orders that have since been billed (Order Entry Date on rows that also
+    // have an Order Closure Date), so for the in-progress current month it
+    // systematically undercounts — recently-entered orders that haven't
+    // closed yet simply aren't in that dataset. The "Last Month" side doesn't
+    // have this problem (that month is fully elapsed, so the proxy is
+    // effectively complete) and has no better authoritative source, so it
+    // still uses the day-level proxy.
+    const curIncoming = row.incoming_actual || 0;
     return {
       insurer:  row.insurer,
-      incoming: mk(c.incoming, l.incoming),
+      incoming: mk(curIncoming, l.incoming),
       closed:   mk(c.closed,   l.closed),
       revenue:  mk(c.revenue,  l.revenue),
     };
@@ -1411,6 +1422,14 @@ function renderSameDayLastMonth(d, period) {
   if (captionEl) {
     captionEl.textContent = `Day 1–${sdlm.curDay} of ${sdlm.curLabel} vs. day 1–${sdlm.priorDay} of ${sdlm.priorLabel} (same elapsed point in the month).`;
   }
+
+  // Header cells say "<Month> MTD" instead of a bare "MTD" so each column
+  // is self-explanatory without reading the caption.
+  const curMonthShort = (sdlm.curLabel || '').split(' ')[0];
+  ['tt-sdlm-mtd-1', 'tt-sdlm-mtd-2', 'tt-sdlm-mtd-3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = curMonthShort ? `${curMonthShort} MTD` : 'MTD';
+  });
 
   const rowsHtml = sdlm.rows.map(r => `<tr>
       <td style="text-align:left">${r.insurer}</td>
