@@ -2189,6 +2189,16 @@ def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
         return []
 
 
+def _safe_build_daily_by_insurer(records: list) -> dict:
+    """Wraps _build_daily_by_insurer so a bug there can't take down the whole
+    sync — worst case the "Same Day Last Month" comparison just shows nothing."""
+    try:
+        return _build_daily_by_insurer(records)
+    except Exception as e:
+        log.warning(f"  _build_daily_by_insurer failed, Same Day Last Month comparison will show no data: {e}")
+        return {}
+
+
 def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
     """Combine all sources into one JSON-serialisable dict."""
     log.info("Building dashboard data…")
@@ -2775,6 +2785,11 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
                                         pipeline=pipeline, monthly_by_insurer=_mb_ins,
                                         monthly_targets=qt.get("monthly_targets", {}),
                                         orders_monthly={"incoming": inc_monthly, "closed": cl_monthly}),
+
+        # ── Day-level incoming/closed/revenue per insurer (current + prior month) ──
+        # Powers the Target Tracker → By Insurer "Same Day Last Month" comparison.
+        # Never let a problem here take down the whole sync.
+        "daily_by_insurer": _safe_build_daily_by_insurer(detailed_records),
     }
 
 
@@ -2885,7 +2900,8 @@ def read_detailed_billing_files() -> list:
 
             # Order Entry Date (col 7) — optional, may be None for some rows
             entry_val = row[7] if len(row) > 7 else None
-            entry_month = entry_val.strftime("%b %Y") if isinstance(entry_val, datetime) else None
+            entry_dt  = entry_val if isinstance(entry_val, datetime) else None
+            entry_month = entry_dt.strftime("%b %Y") if entry_dt else None
 
             def _sf(v):
                 try: return float(v) if v not in (None, '') else 0.0
@@ -2896,6 +2912,7 @@ def read_detailed_billing_files() -> list:
                 "date":        date_val,
                 "month":       date_val.strftime("%b %Y"),
                 "entry_month": entry_month,   # month of order entry (for incoming counts)
+                "entry_date":  entry_dt,      # full Order Entry Date — used for day-level "Same Day Last Month" pacing
                 "pkg":         _sf(row[12]),
                 "anc":         _sf(row[13]),
                 "video":       _sf(row[14]),
@@ -2913,6 +2930,70 @@ def read_detailed_billing_files() -> list:
     log.info(f"  Detailed billing: {len(records)} rows from {n_files} files"
              + (f" ({total_dupes} cross-file duplicates removed)" if total_dupes else ""))
     return records
+
+
+def _build_daily_by_insurer(records: list) -> dict:
+    """Day-level {date_iso: {insurer: {incoming, closed, revenue}}} used by the
+    Target Tracker → By Insurer "Same Day Last Month" comparison.
+
+    Incoming is keyed by Order Entry Date, Closed/Revenue by Order Closure Date
+    (the same date the rest of the pipeline already treats as the source of
+    truth for closed orders and billed revenue). Only rows within the current
+    and previous calendar month (± a few days of buffer) are kept — that is
+    all the client-side comparison needs, and it keeps dashboard_data.json small.
+
+    Caveat: because this dataset only contains orders that have *closed*
+    (Order Closure Date is required for a row to exist at all — see
+    read_detailed_billing_files), the "incoming" count for the most recent
+    days of an in-progress month will understate true incoming orders (some
+    of them simply haven't closed yet). Turnaround is short (median ~3 days,
+    95th percentile ~12 days) so the understatement is modest, but it is not
+    exact — this is a pacing indicator, not a reconciled order count.
+    """
+    from collections import defaultdict as _dd
+
+    today = datetime.now()
+    # Window: first day of the month before last, through today + a few days —
+    # comfortably covers "current month vs. same day last month" regardless of
+    # which day of the month the sync happens to run on.
+    window_start_year, window_start_month = today.year, today.month - 2
+    if window_start_month <= 0:
+        window_start_month += 12
+        window_start_year  -= 1
+    window_start = datetime(window_start_year, window_start_month, 1)
+
+    daily: dict = _dd(lambda: _dd(lambda: {"incoming": 0, "closed": 0, "revenue": 0.0}))
+
+    for r in records:
+        ins = r.get("insurer")
+        if not ins:
+            continue
+
+        entry_dt = r.get("entry_date")
+        if isinstance(entry_dt, datetime) and entry_dt >= window_start:
+            key = entry_dt.strftime("%Y-%m-%d")
+            daily[key][ins]["incoming"] += 1
+
+        close_dt = r.get("date")
+        if isinstance(close_dt, datetime) and close_dt >= window_start:
+            key = close_dt.strftime("%Y-%m-%d")
+            daily[key][ins]["closed"]  += 1
+            daily[key][ins]["revenue"] += r.get("total", 0) or 0
+
+    # Collapse defaultdicts to plain dicts (json.dumps chokes on lambdas
+    # inside defaultdicts, and it's cleaner to hand JS plain objects) and
+    # round revenue for a tidier payload.
+    out: dict = {}
+    for date_key, ins_map in daily.items():
+        out[date_key] = {
+            ins: {
+                "incoming": vals["incoming"],
+                "closed":   vals["closed"],
+                "revenue":  round(vals["revenue"], 2),
+            }
+            for ins, vals in ins_map.items()
+        }
+    return out
 
 
 def _orders_from_billing(records: list) -> dict:
