@@ -1523,13 +1523,6 @@ function renderSameDayLastMonth(d, period) {
 // Last Month table above, but works at the whole-tracker-total level rather
 // than per-insurer.
 
-// Sum {insurer: number} → grand total. Used for authoritative full-month
-// totals (d.orders_monthly[label].incoming/closed, summed across insurers).
-function _ttGrandTotal(dict) {
-  if (!dict) return 0;
-  return Object.values(dict).reduce((s, v) => s + (v || 0), 0);
-}
-
 // Company-wide (all insurers summed) daily incoming/closed/revenue for
 // day 1..numDays of the given year/month, straight from daily_by_insurer.
 function _ttDailyTotalsSeries(daily, year, month, numDays) {
@@ -1578,21 +1571,35 @@ function _ttBuildMtdTrendData(d, period) {
   const authRevenueCur  = _ttComputeAchieved(d, period);
 
   // Authoritative FULL prior-month totals (that month is fully elapsed, so
-  // these are final) — same sources as the "Last Month" columns added to
-  // the main table.
+  // these are final). Population MUST match how the current-month figure
+  // above is computed, or "This Month" and "Last Month" end up counting
+  // different sets of insurers and the comparison becomes meaningless:
+  //   - Incoming/Closed: authIncomingCur/authClosedCur only sum the ~9
+  //     insurers tracked in period.by_insurer, so the prior-month figure
+  //     must be restricted to that same set too — the raw orders_monthly
+  //     dict can contain untracked/legacy insurer names that would
+  //     otherwise inflate the total (this was the bug: summing every key
+  //     in the dict pulled in insurers the table doesn't count at all).
+  //   - Revenue: authRevenueCur (_ttComputeAchieved) is the whole-company
+  //     monthly total, not restricted to tracked insurers, so the prior
+  //     month must use that same whole-company figure for consistency.
   const priorOrders = d.orders_monthly?.[priorLabel] || {};
-  const authIncomingLastTotal = _ttGrandTotal(priorOrders.incoming);
-  const authClosedLastTotal   = _ttGrandTotal(priorOrders.closed);
-  const priorRevByIns = d.monthly_trend?.by_insurer?.[priorLabel];
-  let authRevenueLastTotal;
-  if (priorRevByIns) {
-    authRevenueLastTotal = Object.values(priorRevByIns).reduce((s, v) => s + (v || 0), 0);
-  } else {
-    const labels = d.monthly_trend?.labels || [];
-    const values = d.monthly_trend?.values || [];
-    const idx = labels.indexOf(priorLabel);
-    authRevenueLastTotal = idx >= 0 ? (values[idx] || 0) : 0;
+
+  function trackedSum(dict) {
+    if (!dict) return 0;
+    return period.by_insurer.reduce((s, row) => {
+      const key = _ttFindInsurerKey(dict, row.insurer);
+      return s + (key ? (dict[key] || 0) : 0);
+    }, 0);
   }
+
+  const authIncomingLastTotal = trackedSum(priorOrders.incoming);
+  const authClosedLastTotal   = trackedSum(priorOrders.closed);
+
+  const _mtLabels = d.monthly_trend?.labels || [];
+  const _mtValues = d.monthly_trend?.values || [];
+  const _priorIdx = _mtLabels.indexOf(priorLabel);
+  const authRevenueLastTotal = _priorIdx >= 0 ? (_mtValues[_priorIdx] || 0) : 0;
 
   // Scale a raw daily proxy series so it sums to a known-accurate total —
   // preserves the day-to-day shape (useful for spotting slow/fast days)
