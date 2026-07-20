@@ -865,9 +865,12 @@
                   <th>Insurer</th>
                   <th>Revenue Target</th>
                   <th>Revenue Achieved</th>
+                  <th>Revenue Last Month</th>
                   <th>Revenue Gap</th>
                   <th>Incoming Achieved</th>
+                  <th>Incoming Last Month</th>
                   <th>Closed Achieved</th>
+                  <th>Closed Last Month</th>
                   <th>Conversion %</th>
                   <th>Incoming Required</th>
                   <th>Should Have Incoming</th>
@@ -1243,6 +1246,18 @@ function _ttDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
 
+// "Jul 2026" → "Jun 2026" — used to look up full prior-month totals
+// (d.monthly_trend.by_insurer / d.orders_monthly) for the By Insurer table's
+// "Last Month" columns.
+function _ttPriorMonthLabel(label) {
+  const m = _ttParseMonthLabel(label);
+  if (!m) return null;
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let py = m.year, pm = m.month - 1;
+  if (pm < 0) { pm = 11; py -= 1; }
+  return `${MONTH_NAMES[pm]} ${py}`;
+}
+
 // Pacing window (days in month / elapsed / remaining) for an open period's
 // month, relative to today's real date.
 function _ttPacingWindow(period) {
@@ -1567,6 +1582,12 @@ function renderTargetPeriod(periodName) {
     if (period.by_insurer && period.by_insurer.length) {
       let actTotalRev = 0, totIncAch = 0, totClAch = 0, anyActualMatched = false, anyOrderData = false;
       let totShouldHave = 0, totDelta = 0, totRemainingReq = 0, anyPacing = false;
+      let totRevLast = 0, anyRevLastMatched = false;
+      let totIncLast = 0, anyIncLastMatched = false;
+      let totClLast  = 0, anyClLastMatched  = false;
+      const priorMonthLabel  = _ttPriorMonthLabel(period.months && period.months[0]);
+      const revLastDict      = d.monthly_trend?.by_insurer?.[priorMonthLabel];
+      const ordersLastDict   = d.orders_monthly?.[priorMonthLabel];
       const rows = period.by_insurer.map(row => {
         const act       = _ttActualForInsurer(d, period, row.insurer);
         const achRev    = act.revenue != null ? act.revenue : 0;
@@ -1581,6 +1602,22 @@ function renderTargetPeriod(periodName) {
         if (clAch  != null) { totClAch  += clAch;  anyOrderData = true; }
         const convPct = (incAch != null && clAch != null && incAch > 0)
           ? (clAch / incAch * 100).toFixed(1) : null;
+
+        // Full prior-month totals achieved (not day-cutoff — the whole
+        // month, since last month has fully closed out). Same accurate
+        // sources as the current-month columns, just looked up one month
+        // back: monthly_trend for revenue, orders_monthly for order counts.
+        const revLastKey = _ttFindInsurerKey(revLastDict, row.insurer);
+        const revLast    = revLastKey ? (revLastDict[revLastKey] || 0) : null;
+        if (revLast != null) { totRevLast += revLast; anyRevLastMatched = true; }
+
+        const incLastKey = _ttFindInsurerKey(ordersLastDict?.incoming, row.insurer);
+        const incLast    = incLastKey ? (ordersLastDict.incoming[incLastKey] || 0) : null;
+        if (incLast != null) { totIncLast += incLast; anyIncLastMatched = true; }
+
+        const clLastKey = _ttFindInsurerKey(ordersLastDict?.closed, row.insurer);
+        const clLast    = clLastKey ? (ordersLastDict.closed[clLastKey] || 0) : null;
+        if (clLast != null) { totClLast += clLast; anyClLastMatched = true; }
 
         const pace = _ttIncomingPacing(row, pacingWindow);
         let paceCells;
@@ -1605,9 +1642,12 @@ function renderTargetPeriod(periodName) {
           <td style="text-align:left">${row.insurer}</td>
           <td style="font-weight:700">${fmtL(row.target)}</td>
           <td style="font-weight:700;color:#1E8449">${act.revenue != null ? fmtL(act.revenue) : '—'}</td>
+          <td style="color:var(--text2)">${revLast != null ? fmtL(revLast) : '—'}</td>
           <td style="color:${act.revenue != null ? gapColor : 'var(--text2)'}">${act.revenue != null ? fmtL(rowGap) : '—'}</td>
           <td style="color:#1565C0;font-weight:600">${incAch != null ? incAch.toLocaleString() : '—'}</td>
+          <td style="color:var(--text2)">${incLast != null ? incLast.toLocaleString() : '—'}</td>
           <td style="color:#1565C0;font-weight:600">${clAch  != null ? clAch.toLocaleString()  : '—'}</td>
+          <td style="color:var(--text2)">${clLast != null ? clLast.toLocaleString() : '—'}</td>
           <td style="font-weight:600">${convPct != null ? convPct + '%' : '—'}</td>
           <td>${row.orders_needed?.incoming ?? '—'}</td>${paceCells}
           <td>${row.orders_needed?.closed   ?? '—'}</td>
@@ -1632,16 +1672,19 @@ function renderTargetPeriod(periodName) {
           <td style="text-align:left">Total</td>
           <td>${fmtL(sumTarget)}</td>
           <td style="color:#1E8449">${anyActualMatched ? fmtL(actTotalRev) : '—'}</td>
+          <td style="color:var(--text2)">${anyRevLastMatched ? fmtL(totRevLast) : '—'}</td>
           <td style="color:${anyActualMatched ? (totalGap <= 0 ? '#1E8449' : '#C0392B') : 'var(--text2)'}">${anyActualMatched ? fmtL(totalGap) : '—'}</td>
           <td style="color:#1565C0">${anyOrderData ? totIncAch.toLocaleString() : '—'}</td>
+          <td style="color:var(--text2)">${anyIncLastMatched ? totIncLast.toLocaleString() : '—'}</td>
           <td style="color:#1565C0">${anyOrderData ? totClAch.toLocaleString()  : '—'}</td>
+          <td style="color:var(--text2)">${anyClLastMatched ? totClLast.toLocaleString() : '—'}</td>
           <td>${totConvPct != null ? totConvPct + '%' : '—'}</td>
           <td>${totOrd.incoming != null ? totOrd.incoming.toLocaleString() : '—'}</td>${totPaceCells}
           <td>${totOrd.closed   != null ? totOrd.closed.toLocaleString()   : '—'}</td>
           <td style="font-weight:700">${anyActualMatched && sumTarget > 0 ? totalPct + '%' : '—'}</td>
         </tr>`;
     } else {
-      tbody.innerHTML = `<tr><td colspan="13" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="16" style="color:var(--text2)">No insurer-level breakdown recorded for this period.</td></tr>`;
       if (tfoot) tfoot.innerHTML = '';
     }
   }
