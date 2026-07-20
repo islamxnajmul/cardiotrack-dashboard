@@ -910,7 +910,7 @@
               </table>
             </div>
             <p style="font-size:.66rem;color:var(--text2);margin:8px 0 0">
-              Incoming MTD uses the same authoritative running count as the "Incoming Achieved" column above. The Last Month column is estimated from order-entry dates among orders that have since been billed — since last month has fully elapsed, this is effectively final and not subject to the same-month undercount.
+              Incoming MTD uses the same authoritative running count as the "Incoming Achieved" column above. Incoming Last Month is estimated from order-entry dates among orders that have since been billed, then scaled per insurer to reconcile with that insurer's true full last-month total (some entered orders never convert to a billed case and would otherwise be undercounted even after the month has fully closed out) — it's a reconciled estimate, not an exact daily figure.
             </p>
           </div>
 
@@ -949,7 +949,7 @@
 
             </div>
             <p style="font-size:.66rem;color:var(--text2);margin:10px 0 0">
-              "This Month" stops at today; its daily shape is estimated from orders that have since billed (Incoming especially can undercount very recent days) and is scaled to reconcile with the authoritative MTD total shown above the chart. "Last Month (Same Day)" uses that same estimate unscaled, cut off at the same day-of-month — it matches the Same Day Last Month table above exactly. "Last Month Total" is a separate flat reference line at last month's authoritative full-month result (matches the "Last Month" column in the main table), so it won't necessarily line up with where the "Last Month (Same Day)" line stops.
+              "This Month" stops at today; its daily shape is estimated from orders that have since billed and scaled to reconcile with the authoritative MTD total shown above the chart. For Incoming, "Last Month (Same Day)" uses that same estimate scaled per insurer against each insurer's true full last-month total (matches the Same Day Last Month table above exactly); for Closed/Revenue it's the raw daily figure, unscaled, since that proxy is already accurate. "Last Month Total" is a separate flat reference line at last month's authoritative full-month result (matches the "Last Month" column in the main table).
             </p>
           </div>
         </div>
@@ -1372,6 +1372,49 @@ function _ttSumInsurerDays(daily, year, month, uptoDay) {
   return out;
 }
 
+// Incoming is a special case: daily_by_insurer only contains orders that
+// have since been BILLED (a row needs both an Order Entry Date and an Order
+// Closure Date to exist at all — see read_detailed_billing_files). That's
+// not just a closure-time lag that resolves itself once the month is over —
+// some entered orders are rejected/cancelled/never convert to a billed case
+// and are PERMANENTLY invisible to this dataset. In practice that means even
+// a fully-elapsed month's raw day-level proxy can undercount true incoming
+// by a large margin (seen in production: ~45%, not the ~5-10% a pure
+// closure-lag model would predict).
+//
+// Fix: reconcile each insurer's raw daily proxy against ITS OWN true
+// full-month incoming total (d.orders_monthly — sourced from the actual
+// "Incoming Order Count Insurer Wise" Gmail report, not this proxy) by a
+// constant per-insurer scale factor = trueFullMonth / proxyFullMonth. This
+// assumes each insurer's shortfall is roughly uniform across the month —
+// not exact, but far closer to reality than the raw, unscaled figure, and
+// it's the best estimate available without a true day-level incoming source.
+// Falls back to a straight-line (day-fraction) estimate for any insurer with
+// zero proxy signal for that month at all.
+function _ttReconciledPriorIncoming(daily, py, pm, priorDay, priorDaysInMonth, trueFullByInsurer, trackedInsurers) {
+  const cutoffSums = _ttSumInsurerDays(daily, py, pm, priorDay);
+  const fullSums    = priorDay === priorDaysInMonth ? cutoffSums : _ttSumInsurerDays(daily, py, pm, priorDaysInMonth);
+  const perInsurer = {};
+  trackedInsurers.forEach(insurerName => {
+    const cKey    = _ttFindInsurerKey(cutoffSums, insurerName);
+    const fKey    = _ttFindInsurerKey(fullSums,   insurerName);
+    const trueKey = _ttFindInsurerKey(trueFullByInsurer, insurerName);
+    const cutoffRaw = cKey ? (cutoffSums[cKey].incoming || 0) : 0;
+    const fullRaw    = fKey ? (fullSums[fKey].incoming   || 0) : 0;
+    const trueFull   = trueKey ? (trueFullByInsurer[trueKey] || 0) : 0;
+    let estimate;
+    if (fullRaw > 0) {
+      estimate = cutoffRaw * (trueFull / fullRaw);
+    } else if (priorDaysInMonth > 0) {
+      estimate = trueFull * (priorDay / priorDaysInMonth);
+    } else {
+      estimate = 0;
+    }
+    perInsurer[insurerName] = estimate;
+  });
+  return perInsurer;
+}
+
 function _ttSameDayLastMonthData(d, period) {
   if (period.status !== 'open' || !period.by_insurer || !period.by_insurer.length) return null;
   const m = _ttParseMonthLabel(period.months && period.months[0]);
@@ -1384,11 +1427,17 @@ function _ttSameDayLastMonthData(d, period) {
   const curDay   = pacing.daysElapsed;
   const priorDay = Math.min(curDay, priorDaysInMonth);
 
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const priorLabel = `${MONTH_NAMES[pm]} ${py}`;
+
   const daily    = d.daily_by_insurer || {};
   const curSums  = _ttSumInsurerDays(daily, m.year, m.month, curDay);
   const lastSums = _ttSumInsurerDays(daily, py, pm, priorDay);
 
-  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const trackedNames    = period.by_insurer.map(r => r.insurer);
+  const trueFullIncoming = d.orders_monthly?.[priorLabel]?.incoming || {};
+  const reconciledIncoming = _ttReconciledPriorIncoming(
+    daily, py, pm, priorDay, priorDaysInMonth, trueFullIncoming, trackedNames);
 
   const mk = (cur, last) => {
     const delta = cur - last;
@@ -1403,20 +1452,18 @@ function _ttSameDayLastMonthData(d, period) {
     const lKey = _ttFindInsurerKey(lastSums, row.insurer);
     const c = cKey ? curSums[cKey]   : { incoming: 0, closed: 0, revenue: 0 };
     const l = lKey ? lastSums[lKey]  : { incoming: 0, closed: 0, revenue: 0 };
-    // Incoming MTD (current side only) uses the authoritative Gmail-sourced
-    // running count already shown in "Incoming Achieved" above — NOT the
-    // day-level proxy summed from daily_by_insurer. That proxy is built from
-    // orders that have since been billed (Order Entry Date on rows that also
-    // have an Order Closure Date), so for the in-progress current month it
-    // systematically undercounts — recently-entered orders that haven't
-    // closed yet simply aren't in that dataset. The "Last Month" side doesn't
-    // have this problem (that month is fully elapsed, so the proxy is
-    // effectively complete) and has no better authoritative source, so it
-    // still uses the day-level proxy.
-    const curIncoming = row.incoming_actual || 0;
+    // Incoming MTD (current side) uses the authoritative Gmail-sourced
+    // running count already shown in "Incoming Achieved" above (not the
+    // day-level proxy — see the note on _ttReconciledPriorIncoming above).
+    // Incoming Last Month uses that same reconciliation, anchored to each
+    // insurer's true full LAST month total. Closed/Revenue don't have this
+    // problem — a row only needs a closure date to exist in the proxy at
+    // all, so both are already accurate — and keep using the raw proxy.
+    const curIncoming  = row.incoming_actual || 0;
+    const lastIncoming = reconciledIncoming[row.insurer] || 0;
     return {
       insurer:  row.insurer,
-      incoming: mk(curIncoming, l.incoming),
+      incoming: mk(curIncoming, lastIncoming),
       closed:   mk(c.closed,   l.closed),
       revenue:  mk(c.revenue,  l.revenue),
     };
@@ -1430,7 +1477,7 @@ function _ttSameDayLastMonthData(d, period) {
 
   return {
     curLabel:   period.months[0],
-    priorLabel: `${MONTH_NAMES[pm]} ${py}`,
+    priorLabel,
     curDay, priorDay,
     rows,
     totals: {
@@ -1607,13 +1654,9 @@ function _ttBuildMtdTrendData(d, period) {
   // Scale the CURRENT month's raw daily proxy so it sums to the
   // authoritative total above — preserves the day-to-day shape (useful for
   // spotting slow/fast days) while guaranteeing the chart's endpoint always
-  // matches the stat header above it. Only applied to the current month:
-  // the proxy is already accurate enough for a fully-elapsed prior month,
-  // and NOT scaling it is what keeps "Last Month (Same Day)" identical to
-  // the Same Day Last Month table above (same raw, unscaled figure). If
-  // there's no proxy signal at all yet (very early in the month, nothing
-  // has closed), the whole total is placed on the most recent day since
-  // the shape is unknowable.
+  // matches the stat header above it. If there's no proxy signal at all yet
+  // (very early in the month, nothing has closed), the whole total is
+  // placed on the most recent day since the shape is unknowable.
   function scaleToAuthTotal(rawArr, authTotal) {
     const proxySum = rawArr.reduce((s, v) => s + v, 0);
     if (proxySum > 0) return rawArr.map(v => v * (authTotal / proxySum));
@@ -1622,9 +1665,48 @@ function _ttBuildMtdTrendData(d, period) {
     return out;
   }
 
-  function buildMetric(key, curAuthTotal, priorAuthTotal) {
+  // Incoming's prior-month daily series is reconciled per insurer against
+  // that insurer's TRUE full-month total (same logic and same result as
+  // _ttReconciledPriorIncoming used by the Same Day Last Month table — see
+  // the long comment there). This is NOT the same as scaleToAuthTotal: that
+  // applies one blanket factor to a single company-wide series, this scales
+  // each insurer individually before summing, because different insurers
+  // can have very different shortfalls (conversion rates vary a lot by
+  // insurer). Closed/Revenue don't need this — their raw proxy is already
+  // accurate — so they keep using priorSeries directly.
+  function reconciledIncomingDaily() {
+    const fullSums = _ttSumInsurerDays(daily, py, pm, daysInPrior);
+    const trueFullIncoming = priorOrders.incoming || {};
+    const scales = {};
+    trackedNames.forEach(insurerName => {
+      const fKey    = _ttFindInsurerKey(fullSums, insurerName);
+      const trueKey = _ttFindInsurerKey(trueFullIncoming, insurerName);
+      scales[insurerName] = {
+        fullRaw:  fKey ? (fullSums[fKey].incoming || 0) : 0,
+        trueFull: trueKey ? (trueFullIncoming[trueKey] || 0) : 0,
+      };
+    });
+    const out = [];
+    for (let i = 0; i < daysInPrior; i++) {
+      const day = i + 1;
+      const key = `${py}-${String(pm + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayObj = daily[key] || {};
+      let total = 0;
+      trackedNames.forEach(insurerName => {
+        const k = _ttFindInsurerKey(dayObj, insurerName);
+        const raw = k ? (dayObj[k].incoming || 0) : 0;
+        const { fullRaw, trueFull } = scales[insurerName];
+        if (fullRaw > 0) total += raw * (trueFull / fullRaw);
+        else if (daysInPrior > 0) total += trueFull / daysInPrior;
+      });
+      out.push(total);
+    }
+    return out;
+  }
+
+  function buildMetric(key, curAuthTotal, priorAuthTotal, priorDailyOverride) {
     const curDaily   = scaleToAuthTotal(curSeries.slice(0, curDay).map(r => r[key]), curAuthTotal);
-    const priorDaily = priorSeries.map(r => r[key]);   // raw, tracked-only, unscaled
+    const priorDaily = priorDailyOverride || priorSeries.map(r => r[key]);   // raw, tracked-only
 
     const curCum = new Array(daysInCur).fill(null);
     let run = 0;
@@ -1638,16 +1720,7 @@ function _ttBuildMtdTrendData(d, period) {
     for (let i = 0; i < sameDay; i++) priorCumSameDay[i] = priorCumFull[i];
 
     const totalMtd         = curDay > 0 ? (curCum[curDay - 1] || 0) : 0;
-    // Full prior month uses the authoritative total directly (matches the
-    // main table's "Last Month" column) rather than the raw proxy's own
-    // full-month sum, which — like the current month — can undercount by a
-    // small amount even for a fully-elapsed month (a handful of orders can
-    // take a long time to close). "Last Month (Same Day)" deliberately
-    // stays on the raw, unscaled figure so it's identical to the Same Day
-    // Last Month table; the two numbers not lining up with each other is
-    // expected (one is a same-day pace estimate, the other is the final
-    // authoritative result), not a bug.
-    const lastMonthTotal   = priorAuthTotal;
+    const lastMonthTotal   = priorAuthTotal;   // matches the main table's "Last Month" column exactly
     const lastMonthSameDay = sameDay > 0 ? (priorCumSameDay[sameDay - 1] || 0) : 0;
 
     const lastTotalFlat = new Array(daysInCur).fill(lastMonthTotal);
@@ -1667,7 +1740,7 @@ function _ttBuildMtdTrendData(d, period) {
   return {
     curLabel, priorLabel, curDay, sameDay, daysInCur, daysInPrior,
     labels: Array.from({ length: daysInCur }, (_, i) => `${curLabel.split(' ')[0]} ${i + 1}`),
-    incoming: buildMetric('incoming', authIncomingCur, authIncomingLastTotal),
+    incoming: buildMetric('incoming', authIncomingCur, authIncomingLastTotal, reconciledIncomingDaily()),
     closed:   buildMetric('closed',   authClosedCur,   authClosedLastTotal),
     revenue:  buildMetric('revenue',  authRevenueCur,  authRevenueLastTotal),
   };
