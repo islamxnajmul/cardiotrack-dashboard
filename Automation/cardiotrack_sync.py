@@ -54,6 +54,13 @@ BILLING_FILE         = INPUT  / "Daily_Insurer_Billing_Data.xls"
 # Zoho report is split when row-count exceeds the export limit.
 DETAILED_BILLING_FILE1 = INPUT / "Daily_Insurer_Billing.xls"
 DETAILED_BILLING_FILE2 = INPUT / "Daily_Insurer_Billing_2.xls"
+# True day-level incoming order counts (Zoho "Added Time", NOT gated by
+# whether the order later bills — unlike Daily_Insurer_Billing*.xls). Powers
+# the Target Tracker → By Insurer day-level Incoming figures directly instead
+# of the closed-orders proxy. Only covers a recent rolling window as
+# delivered; _merge_incoming_volume_cache() persists it into sync_log.json
+# so earlier days survive once the window rolls past them.
+INCOMING_VOLUME_FILE = INPUT / "Incoming_Volume.xlsx"
 
 DASHBOARD_HTML = OUTPUT / "Cardiotrack_Dashboard.html"
 DATA_JSON      = OUTPUT / "dashboard_data.json"
@@ -88,6 +95,7 @@ CSV_EMAIL_MAP = {
 # Excel/XLS reports (Zoho sends these as .xls / .xlsx attachments)
 XLS_EMAIL_MAP = {
     'Daily Insurer Billing Data':        BILLING_FILE,
+    'Incoming Volume 2':                 INCOMING_VOLUME_FILE,
     # Daily_Insurer_Billing.xls and Daily_Insurer_Billing_2.xls are handled
     # separately by sync_billing_files_smart() which scans ALL recent billing
     # emails and routes each file to the correct destination by content (Bajaj
@@ -1531,6 +1539,102 @@ def read_weekly_file(path: Path, label: str) -> list:
     return records
 
 
+def read_incoming_volume_file() -> list:
+    """Load Incoming_Volume.xlsx — true day-level incoming order counts per
+    insurer, sourced from Zoho's "Added Time" field.
+
+    Unlike the Daily_Insurer_Billing*.xls proxy (which only sees an order
+    once it has *closed*), this counts every order as of when it was added,
+    full stop — no gating on eventual billing status. Columns: Insurer Name
+    Plain | Date of Added Time | Policy Number Distinct Count.
+
+    The date column comes through as plain text ("01 Jun 2026"), not an
+    Excel date, in the samples seen so far — handle both just in case Zoho
+    changes the export format.
+
+    Only covers a recent rolling window as delivered (currently ~7 weeks);
+    see _merge_incoming_volume_cache() for how older days are preserved once
+    the window rolls past them.
+    """
+    if not INCOMING_VOLUME_FILE.exists():
+        return []
+    try:
+        wb = openpyxl.load_workbook(INCOMING_VOLUME_FILE, read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+    except Exception as e:
+        log.warning(f"Cannot open {INCOMING_VOLUME_FILE.name}: {e}")
+        return []
+
+    if len(rows) < 2:
+        return []
+
+    records = []
+    for row in rows[1:]:
+        if not row or len(row) < 3:
+            continue
+        ins_raw, date_raw, count_raw = row[0], row[1], row[2]
+        if ins_raw is None or date_raw is None:
+            continue
+
+        ins = _canonical_insurer_name(str(ins_raw).strip())
+        if not ins:
+            continue
+
+        if isinstance(date_raw, datetime):
+            dt = date_raw
+        else:
+            try:
+                dt = datetime.strptime(str(date_raw).strip(), "%d %b %Y")
+            except Exception:
+                continue
+
+        try:
+            count = int(count_raw) if count_raw not in (None, '') else 0
+        except Exception:
+            count = 0
+
+        records.append({"insurer": ins, "date": dt, "count": count})
+
+    log.info(f"  Incoming Volume: {len(records)} rows read")
+    return records
+
+
+def _merge_incoming_volume_cache(sync_data: dict | None) -> dict:
+    """Build {date_iso: {insurer: count}} from the freshest Incoming_Volume.xlsx,
+    merged into a permanent cache persisted in sync_log.json.
+
+    The source report only carries a recent rolling window, so without this
+    merge, days that roll off the window (e.g. once we're two months past
+    them) would silently disappear from daily_by_insurer and the Target
+    Tracker "Same Day Last Month" / MTD trend features would quietly revert
+    to the closed-orders proxy for them. Merge rule: freshest file always
+    wins for a given (date, insurer) pair when it has a value; the cache
+    fills in anything the current file doesn't cover.
+    """
+    fresh: dict = {}
+    for r in read_incoming_volume_file():
+        key = r["date"].strftime("%Y-%m-%d")
+        fresh.setdefault(key, {})
+        fresh[key][r["insurer"]] = fresh[key].get(r["insurer"], 0) + r["count"]
+
+    cache: dict = {}
+    if sync_data is not None:
+        cache = sync_data.get("daily_incoming_cache", {})
+
+    merged: dict = {k: dict(v) for k, v in cache.items()}
+    for date_key, ins_counts in fresh.items():
+        merged.setdefault(date_key, {})
+        for ins, count in ins_counts.items():
+            merged[date_key][ins] = count
+
+    if sync_data is not None:
+        sync_data["daily_incoming_cache"] = merged
+
+    return merged
+
+
 def read_revenue_file(path: Path) -> list:
     """Read Revenue_Generated_Insurer_Wise.csv → list of {month, insurer, amount}.
 
@@ -2189,11 +2293,11 @@ def _safe_build_targets(apr_rev: float, may_rev: float, jun_rev: float,
         return []
 
 
-def _safe_build_daily_by_insurer(records: list) -> dict:
+def _safe_build_daily_by_insurer(records: list, incoming_cache: dict | None = None) -> dict:
     """Wraps _build_daily_by_insurer so a bug there can't take down the whole
     sync — worst case the "Same Day Last Month" comparison just shows nothing."""
     try:
-        return _build_daily_by_insurer(records)
+        return _build_daily_by_insurer(records, incoming_cache=incoming_cache)
     except Exception as e:
         log.warning(f"  _build_daily_by_insurer failed, Same Day Last Month comparison will show no data: {e}")
         return {}
@@ -2787,9 +2891,15 @@ def build_dashboard_data(sync_data=None) -> dict:  # type: dict | None
                                         orders_monthly={"incoming": inc_monthly, "closed": cl_monthly}),
 
         # ── Day-level incoming/closed/revenue per insurer (current + prior month) ──
-        # Powers the Target Tracker → By Insurer "Same Day Last Month" comparison.
-        # Never let a problem here take down the whole sync.
-        "daily_by_insurer": _safe_build_daily_by_insurer(detailed_records),
+        # Powers the Target Tracker → By Insurer "Same Day Last Month" comparison
+        # and MTD trend charts. Incoming comes from the real Incoming_Volume.xlsx
+        # report (merged into a permanent cache in sync_log.json so it survives
+        # that report's rolling window); Closed/Revenue come from the detailed
+        # billing records, which are already exact. Never let a problem here
+        # take down the whole sync.
+        "daily_by_insurer": _safe_build_daily_by_insurer(
+            detailed_records,
+            incoming_cache=_merge_incoming_volume_cache(sync_data)),
     }
 
 
@@ -2932,23 +3042,28 @@ def read_detailed_billing_files() -> list:
     return records
 
 
-def _build_daily_by_insurer(records: list) -> dict:
+def _build_daily_by_insurer(records: list, incoming_cache: dict | None = None) -> dict:
     """Day-level {date_iso: {insurer: {incoming, closed, revenue}}} used by the
-    Target Tracker → By Insurer "Same Day Last Month" comparison.
+    Target Tracker → By Insurer "Same Day Last Month" comparison and MTD
+    trend charts.
 
-    Incoming is keyed by Order Entry Date, Closed/Revenue by Order Closure Date
-    (the same date the rest of the pipeline already treats as the source of
-    truth for closed orders and billed revenue). Only rows within the current
-    and previous calendar month (± a few days of buffer) are kept — that is
-    all the client-side comparison needs, and it keeps dashboard_data.json small.
+    Closed/Revenue are keyed by Order Closure Date from the detailed billing
+    records (the same date the rest of the pipeline already treats as the
+    source of truth for closed orders and billed revenue) — this is exact,
+    no estimation needed.
 
-    Caveat: because this dataset only contains orders that have *closed*
-    (Order Closure Date is required for a row to exist at all — see
-    read_detailed_billing_files), the "incoming" count for the most recent
-    days of an in-progress month will understate true incoming orders (some
-    of them simply haven't closed yet). Turnaround is short (median ~3 days,
-    95th percentile ~12 days) so the understatement is modest, but it is not
-    exact — this is a pacing indicator, not a reconciled order count.
+    Incoming is DIFFERENT: `incoming_cache` (built from Incoming_Volume.xlsx
+    by _merge_incoming_volume_cache — Zoho's "Added Time", not gated on
+    whether the order ever bills) is the real source and is applied last,
+    overwriting whatever's there. The Order-Entry-Date proxy derived from
+    `records` below is only a FALLBACK for any day incoming_cache doesn't
+    cover — it undercounts (a row only exists in the billing export once the
+    order has *closed*, so orders that are rejected/cancelled/still pending
+    are invisible to it), which is exactly the bug the real report fixes.
+
+    Only rows within the current and previous calendar month (± a few days
+    of buffer) are kept — that's all the client-side comparison needs, and
+    it keeps dashboard_data.json small.
     """
     from collections import defaultdict as _dd
 
@@ -2961,6 +3076,7 @@ def _build_daily_by_insurer(records: list) -> dict:
         window_start_month += 12
         window_start_year  -= 1
     window_start = datetime(window_start_year, window_start_month, 1)
+    window_start_key = window_start.strftime("%Y-%m-%d")
 
     daily: dict = _dd(lambda: _dd(lambda: {"incoming": 0, "closed": 0, "revenue": 0.0}))
 
@@ -2969,6 +3085,8 @@ def _build_daily_by_insurer(records: list) -> dict:
         if not ins:
             continue
 
+        # Fallback only — overwritten below by incoming_cache wherever it
+        # has data for this (date, insurer).
         entry_dt = r.get("entry_date")
         if isinstance(entry_dt, datetime) and entry_dt >= window_start:
             key = entry_dt.strftime("%Y-%m-%d")
@@ -2993,6 +3111,19 @@ def _build_daily_by_insurer(records: list) -> dict:
             }
             for ins, vals in ins_map.items()
         }
+
+    # Overlay TRUE day-level incoming counts — replaces the proxy above
+    # wherever we have real data, which is the whole reason the day-level
+    # Incoming figures used to undercount.
+    if incoming_cache:
+        for date_key, ins_counts in incoming_cache.items():
+            if date_key < window_start_key:
+                continue   # keep payload bounded to the same window as everything else
+            out.setdefault(date_key, {})
+            for ins, count in ins_counts.items():
+                out[date_key].setdefault(ins, {"incoming": 0, "closed": 0, "revenue": 0})
+                out[date_key][ins]["incoming"] = count
+
     return out
 
 
