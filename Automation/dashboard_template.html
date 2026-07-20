@@ -913,6 +913,45 @@
               Incoming MTD uses the same authoritative running count as the "Incoming Achieved" column above. The Last Month column is estimated from order-entry dates among orders that have since been billed — since last month has fully elapsed, this is effectively final and not subject to the same-month undercount.
             </p>
           </div>
+
+          <!-- MTD TREND CHARTS — three line charts (Incoming / Closed / Revenue),
+               each plotting This Month MTD against Last Month's full trajectory.
+               Auto-updates daily off the browser's current date; only shown for
+               the open (current) period, and re-renders whenever the period
+               dropdown changes. -->
+          <div id="tt-mtd-charts-block" style="margin-top:28px">
+            <div class="card-title" style="margin-bottom:10px">📈 MTD Trend</div>
+            <div style="display:grid;grid-template-columns:1fr;gap:22px" id="tt-mtd-charts-grid">
+
+              <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;background:#FFF">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                  <div style="font-size:.82rem;font-weight:700;color:#0D1B2A">Incoming Orders</div>
+                  <div id="tt-mtd-stats-incoming" style="display:flex;flex-wrap:wrap;gap:14px;font-size:.68rem"></div>
+                </div>
+                <div class="chart-wrap" style="height:260px"><canvas id="tt-mtd-chart-incoming"></canvas></div>
+              </div>
+
+              <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;background:#FFF">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                  <div style="font-size:.82rem;font-weight:700;color:#0D1B2A">Closed Orders</div>
+                  <div id="tt-mtd-stats-closed" style="display:flex;flex-wrap:wrap;gap:14px;font-size:.68rem"></div>
+                </div>
+                <div class="chart-wrap" style="height:260px"><canvas id="tt-mtd-chart-closed"></canvas></div>
+              </div>
+
+              <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;background:#FFF">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+                  <div style="font-size:.82rem;font-weight:700;color:#0D1B2A">Revenue</div>
+                  <div id="tt-mtd-stats-revenue" style="display:flex;flex-wrap:wrap;gap:14px;font-size:.68rem"></div>
+                </div>
+                <div class="chart-wrap" style="height:260px"><canvas id="tt-mtd-chart-revenue"></canvas></div>
+              </div>
+
+            </div>
+            <p style="font-size:.66rem;color:var(--text2);margin:10px 0 0">
+              "This Month" stops at today. "Last Month (Same Day)" is cut off at the same day-of-month for a like-for-like pace comparison; "Last Month Total" is a flat reference line at last month's full-month result. Incoming's daily shape is estimated from orders that have since billed and is scaled to reconcile with the authoritative MTD total shown above the chart.
+            </p>
+          </div>
         </div>
 
         <!-- ROADMAP PANEL -->
@@ -1477,6 +1516,270 @@ function renderSameDayLastMonth(d, period) {
   }
 }
 
+// ── MTD Trend charts (Incoming / Closed / Revenue) ──────────────────────
+// Day-by-day cumulative trend: This Month (to today) vs. Last Month (cut at
+// the same elapsed day, for pace) vs. Last Month Total (flat reference line
+// at last month's final result). Shares daily_by_insurer with the Same Day
+// Last Month table above, but works at the whole-tracker-total level rather
+// than per-insurer.
+
+// Sum {insurer: number} → grand total. Used for authoritative full-month
+// totals (d.orders_monthly[label].incoming/closed, summed across insurers).
+function _ttGrandTotal(dict) {
+  if (!dict) return 0;
+  return Object.values(dict).reduce((s, v) => s + (v || 0), 0);
+}
+
+// Company-wide (all insurers summed) daily incoming/closed/revenue for
+// day 1..numDays of the given year/month, straight from daily_by_insurer.
+function _ttDailyTotalsSeries(daily, year, month, numDays) {
+  const out = [];
+  for (let day = 1; day <= numDays; day++) {
+    const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dayObj = daily[key] || {};
+    let incoming = 0, closed = 0, revenue = 0;
+    for (const vals of Object.values(dayObj)) {
+      incoming += vals.incoming || 0;
+      closed   += vals.closed   || 0;
+      revenue  += vals.revenue  || 0;
+    }
+    out.push({ incoming, closed, revenue });
+  }
+  return out;
+}
+
+function _ttBuildMtdTrendData(d, period) {
+  if (period.status !== 'open' || !period.by_insurer || !period.by_insurer.length) return null;
+  const m = _ttParseMonthLabel(period.months && period.months[0]);
+  const pacing = _ttPacingWindow(period);
+  if (!m || !pacing || pacing.daysElapsed === 0) return null;
+
+  let py = m.year, pm = m.month - 1;
+  if (pm < 0) { pm = 11; py -= 1; }
+  const daysInCur   = pacing.daysInMonth;
+  const daysInPrior = _ttDaysInMonth(py, pm);
+  const curDay      = pacing.daysElapsed;
+  const sameDay     = Math.min(curDay, daysInPrior);
+
+  const daily = d.daily_by_insurer || {};
+  const curSeries   = _ttDailyTotalsSeries(daily, m.year, m.month, daysInCur);
+  const priorSeries = _ttDailyTotalsSeries(daily, py, pm, daysInPrior);
+
+  const curLabel   = period.months[0];
+  const priorLabel = _ttPriorMonthLabel(curLabel);
+
+  // Authoritative totals — the SAME numbers already shown elsewhere in this
+  // tab (Incoming/Closed Achieved columns, Revenue Achieved), not the raw
+  // day-level proxy. This matters most for Incoming: the proxy only counts
+  // orders that have since billed, so it undercounts an in-progress month
+  // (see the Same Day Last Month note above the table).
+  const authIncomingCur = period.by_insurer.reduce((s, r) => s + (r.incoming_actual || 0), 0);
+  const authClosedCur   = period.by_insurer.reduce((s, r) => s + (r.closed_actual   || 0), 0);
+  const authRevenueCur  = _ttComputeAchieved(d, period);
+
+  // Authoritative FULL prior-month totals (that month is fully elapsed, so
+  // these are final) — same sources as the "Last Month" columns added to
+  // the main table.
+  const priorOrders = d.orders_monthly?.[priorLabel] || {};
+  const authIncomingLastTotal = _ttGrandTotal(priorOrders.incoming);
+  const authClosedLastTotal   = _ttGrandTotal(priorOrders.closed);
+  const priorRevByIns = d.monthly_trend?.by_insurer?.[priorLabel];
+  let authRevenueLastTotal;
+  if (priorRevByIns) {
+    authRevenueLastTotal = Object.values(priorRevByIns).reduce((s, v) => s + (v || 0), 0);
+  } else {
+    const labels = d.monthly_trend?.labels || [];
+    const values = d.monthly_trend?.values || [];
+    const idx = labels.indexOf(priorLabel);
+    authRevenueLastTotal = idx >= 0 ? (values[idx] || 0) : 0;
+  }
+
+  // Scale a raw daily proxy series so it sums to a known-accurate total —
+  // preserves the day-to-day shape (useful for spotting slow/fast days)
+  // while guaranteeing the chart's endpoint always matches the authoritative
+  // figure shown in the stat header above it. If there's no proxy signal at
+  // all yet (e.g. very early in the month, nothing has closed), the whole
+  // total is placed on the most recent day since the shape is unknowable.
+  function scaleTo(rawArr, authTotal) {
+    const proxySum = rawArr.reduce((s, v) => s + v, 0);
+    if (proxySum > 0) return rawArr.map(v => v * (authTotal / proxySum));
+    const out = rawArr.map(() => 0);
+    if (out.length) out[out.length - 1] = authTotal;
+    return out;
+  }
+
+  function buildMetric(key, curAuthTotal, priorAuthTotal) {
+    const curDaily   = scaleTo(curSeries.slice(0, curDay).map(r => r[key]), curAuthTotal);
+    const priorDaily = scaleTo(priorSeries.map(r => r[key]), priorAuthTotal);
+
+    const curCum = new Array(daysInCur).fill(null);
+    let run = 0;
+    for (let i = 0; i < curDay; i++) { run += curDaily[i]; curCum[i] = run; }
+
+    const priorCumFull = [];
+    run = 0;
+    for (let i = 0; i < daysInPrior; i++) { run += priorDaily[i]; priorCumFull.push(run); }
+
+    const priorCumSameDay = new Array(daysInCur).fill(null);
+    for (let i = 0; i < sameDay; i++) priorCumSameDay[i] = priorCumFull[i];
+
+    const totalMtd         = curDay > 0 ? (curCum[curDay - 1] || 0) : 0;
+    const lastMonthTotal   = daysInPrior > 0 ? (priorCumFull[daysInPrior - 1] || 0) : 0;
+    const lastMonthSameDay = sameDay > 0 ? (priorCumSameDay[sameDay - 1] || 0) : 0;
+
+    const lastTotalFlat = new Array(daysInCur).fill(lastMonthTotal);
+
+    const varSameDay    = totalMtd - lastMonthSameDay;
+    const varSameDayPct = lastMonthSameDay > 0 ? (varSameDay / lastMonthSameDay * 100) : null;
+    const varTotal       = totalMtd - lastMonthTotal;
+    const varTotalPct    = lastMonthTotal > 0 ? (varTotal / lastMonthTotal * 100) : null;
+
+    return {
+      curDaily, priorDaily, curCum, priorCumSameDay, lastTotalFlat,
+      totalMtd, lastMonthTotal, lastMonthSameDay,
+      varSameDay, varSameDayPct, varTotal, varTotalPct,
+    };
+  }
+
+  return {
+    curLabel, priorLabel, curDay, sameDay, daysInCur, daysInPrior,
+    labels: Array.from({ length: daysInCur }, (_, i) => `${curLabel.split(' ')[0]} ${i + 1}`),
+    incoming: buildMetric('incoming', authIncomingCur, authIncomingLastTotal),
+    closed:   buildMetric('closed',   authClosedCur,   authClosedLastTotal),
+    revenue:  buildMetric('revenue',  authRevenueCur,  authRevenueLastTotal),
+  };
+}
+
+function _ttMtdStatChip(label, valueText, color) {
+  return `<div style="min-width:88px">
+    <div style="color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.3px;font-size:.58rem">${label}</div>
+    <div style="font-weight:800;color:${color || 'var(--navy)'};font-size:.76rem;margin-top:1px">${valueText}</div>
+  </div>`;
+}
+
+function _ttMtdVarianceText(delta, pct, fmtFn) {
+  if (delta === 0 && pct == null) return { text: '—', color: 'var(--text2)' };
+  const sign = delta > 0 ? '+' : '';
+  const pctText = pct != null ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)` : (delta > 0 ? ' (New)' : '');
+  const color = delta > 0 ? '#1E8449' : delta < 0 ? '#C0392B' : 'var(--text2)';
+  return { text: `${sign}${fmtFn(delta)}${pctText}`, color };
+}
+
+function _ttRenderOneMtdChart(chartKey, canvasId, statsElId, metric, labels, curLabel, priorLabel, targetVal, isRevenue) {
+  const fmtFn = isRevenue ? fmtL : (v => Math.round(v).toLocaleString());
+
+  const statsEl = document.getElementById(statsElId);
+  if (statsEl) {
+    const pct = targetVal > 0 ? (metric.totalMtd / targetVal * 100) : null;
+    const pctColor = pct == null ? 'var(--text2)' : pct >= 80 ? '#1E8449' : pct >= 50 ? '#B45309' : '#C0392B';
+    const vsSameDay = _ttMtdVarianceText(metric.varSameDay, metric.varSameDayPct, fmtFn);
+    const vsTotal   = _ttMtdVarianceText(metric.varTotal,   metric.varTotalPct,   fmtFn);
+    statsEl.innerHTML =
+      _ttMtdStatChip(`${curLabel.split(' ')[0]} MTD`, fmtFn(metric.totalMtd), '#1565C0') +
+      _ttMtdStatChip('% Achievement', pct != null ? pct.toFixed(0) + '%' : '—', pctColor) +
+      _ttMtdStatChip('vs Last Month (Same Day)', vsSameDay.text, vsSameDay.color) +
+      _ttMtdStatChip('vs Last Month Total', vsTotal.text, vsTotal.color);
+  }
+
+  destroyChart(chartKey);
+  const ctx = document.getElementById(canvasId)?.getContext('2d');
+  if (!ctx) return;
+
+  // Companion "daily" arrays, index-aligned to the shared x-axis, so the
+  // tooltip can show both the daily figure and the cumulative one plotted.
+  const curDailyAligned = new Array(labels.length).fill(null);
+  for (let i = 0; i < metric.curDaily.length; i++) curDailyAligned[i] = metric.curDaily[i];
+  const priorDailyAligned = new Array(labels.length).fill(null);
+  for (let i = 0; i < metric.priorCumSameDay.length; i++) {
+    priorDailyAligned[i] = metric.priorCumSameDay[i] != null ? metric.priorDaily[i] : null;
+  }
+
+  charts[chartKey] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `This Month (${curLabel.split(' ')[0]})`,
+          data: metric.curCum,
+          dailyValues: curDailyAligned,
+          borderColor: '#2E86C1', backgroundColor: 'rgba(46,134,193,.12)',
+          borderWidth: 2.5, pointRadius: 2, pointHoverRadius: 4,
+          tension: 0.25, fill: true, spanGaps: false, order: 1,
+        },
+        {
+          label: 'Last Month (Same Day)',
+          data: metric.priorCumSameDay,
+          dailyValues: priorDailyAligned,
+          borderColor: '#E8A838', backgroundColor: 'transparent',
+          borderWidth: 2, borderDash: [5, 4], pointRadius: 2, pointHoverRadius: 4,
+          tension: 0.25, spanGaps: false, order: 2,
+        },
+        {
+          label: `Last Month Total (${priorLabel.split(' ')[0]})`,
+          data: metric.lastTotalFlat,
+          borderColor: '#95A5A6', backgroundColor: 'transparent',
+          borderWidth: 1.5, borderDash: [2, 3], pointRadius: 0, pointHoverRadius: 0,
+          tension: 0, order: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          filter: (item) => item.raw != null,
+          callbacks: {
+            label: (ctx2) => {
+              const ds  = ctx2.dataset;
+              const val = ctx2.raw;
+              if (ds.dailyValues) {
+                const daily = ds.dailyValues[ctx2.dataIndex];
+                const dailyText = daily != null ? `  (day: ${fmtFn(daily)})` : '';
+                return `  ${ds.label}: ${fmtFn(val)}${dailyText}`;
+              }
+              return `  ${ds.label}: ${fmtFn(val)}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 45, autoSkip: true, maxTicksLimit: 12 }, grid: { display: false } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: isRevenue ? 'Revenue' : 'Orders', font: { size: 10 } },
+          ticks: { callback: v => fmtFn(v) }, grid: { color: '#EEF2F5' },
+        },
+      },
+    },
+  });
+}
+
+function renderMtdTrendCharts(d, period) {
+  const block = document.getElementById('tt-mtd-charts-block');
+  if (!block) return;
+
+  const data = _ttBuildMtdTrendData(d, period);
+  if (!data) {
+    block.style.display = 'none';
+    return;
+  }
+  block.style.display = '';
+
+  const incomingTarget = period.orders_required?.incoming || 0;
+  const closedTarget   = period.orders_required?.closed   || 0;
+  const revenueTarget  = period.target || 0;
+
+  _ttRenderOneMtdChart('ttMtdIncoming', 'tt-mtd-chart-incoming', 'tt-mtd-stats-incoming',
+    data.incoming, data.labels, data.curLabel, data.priorLabel, incomingTarget, false);
+  _ttRenderOneMtdChart('ttMtdClosed', 'tt-mtd-chart-closed', 'tt-mtd-stats-closed',
+    data.closed, data.labels, data.curLabel, data.priorLabel, closedTarget, false);
+  _ttRenderOneMtdChart('ttMtdRevenue', 'tt-mtd-chart-revenue', 'tt-mtd-stats-revenue',
+    data.revenue, data.labels, data.curLabel, data.priorLabel, revenueTarget, true);
+}
+
 function renderTargetTracker(d) {
   targetTrackerData = d;
   const targets = d.targets || [];
@@ -1690,6 +1993,7 @@ function renderTargetPeriod(periodName) {
   }
 
   renderSameDayLastMonth(d, period);
+  renderMtdTrendCharts(d, period);
 
   // Roadmap timeline
   const rm = document.getElementById('tt-roadmap-timeline');
