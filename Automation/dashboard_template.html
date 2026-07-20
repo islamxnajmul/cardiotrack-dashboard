@@ -949,7 +949,7 @@
 
             </div>
             <p style="font-size:.66rem;color:var(--text2);margin:10px 0 0">
-              "This Month" stops at today. "Last Month (Same Day)" is cut off at the same day-of-month for a like-for-like pace comparison; "Last Month Total" is a flat reference line at last month's full-month result. Incoming's daily shape is estimated from orders that have since billed and is scaled to reconcile with the authoritative MTD total shown above the chart.
+              "This Month" stops at today; its daily shape is estimated from orders that have since billed (Incoming especially can undercount very recent days) and is scaled to reconcile with the authoritative MTD total shown above the chart. "Last Month (Same Day)" uses that same estimate unscaled, cut off at the same day-of-month — it matches the Same Day Last Month table above exactly. "Last Month Total" is a separate flat reference line at last month's authoritative full-month result (matches the "Last Month" column in the main table), so it won't necessarily line up with where the "Last Month (Same Day)" line stops.
             </p>
           </div>
         </div>
@@ -1523,19 +1523,28 @@ function renderSameDayLastMonth(d, period) {
 // Last Month table above, but works at the whole-tracker-total level rather
 // than per-insurer.
 
-// Company-wide (all insurers summed) daily incoming/closed/revenue for
-// day 1..numDays of the given year/month, straight from daily_by_insurer.
-function _ttDailyTotalsSeries(daily, year, month, numDays) {
+// Daily incoming/closed/revenue for day 1..numDays of the given year/month,
+// summed ONLY over `trackedInsurers` (period.by_insurer's insurer names),
+// matched into each day's daily_by_insurer entry the same way the rest of
+// this tab already matches insurers (_ttFindInsurerKey). This population
+// MUST match the Same Day Last Month table and the main insurer table, or
+// the same nominal figure ("Incoming Last Month", "Closed Last Month", …)
+// shows different numbers in different places depending on which untracked/
+// legacy insurer names happen to be present in the raw data that day.
+function _ttDailyTotalsSeries(daily, year, month, numDays, trackedInsurers) {
   const out = [];
   for (let day = 1; day <= numDays; day++) {
     const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dayObj = daily[key] || {};
     let incoming = 0, closed = 0, revenue = 0;
-    for (const vals of Object.values(dayObj)) {
-      incoming += vals.incoming || 0;
-      closed   += vals.closed   || 0;
-      revenue  += vals.revenue  || 0;
-    }
+    trackedInsurers.forEach(insurerName => {
+      const k = _ttFindInsurerKey(dayObj, insurerName);
+      if (k) {
+        incoming += dayObj[k].incoming || 0;
+        closed   += dayObj[k].closed   || 0;
+        revenue  += dayObj[k].revenue  || 0;
+      }
+    });
     out.push({ incoming, closed, revenue });
   }
   return out;
@@ -1554,37 +1563,19 @@ function _ttBuildMtdTrendData(d, period) {
   const curDay      = pacing.daysElapsed;
   const sameDay     = Math.min(curDay, daysInPrior);
 
+  const trackedNames = period.by_insurer.map(r => r.insurer);
   const daily = d.daily_by_insurer || {};
-  const curSeries   = _ttDailyTotalsSeries(daily, m.year, m.month, daysInCur);
-  const priorSeries = _ttDailyTotalsSeries(daily, py, pm, daysInPrior);
+  const curSeries   = _ttDailyTotalsSeries(daily, m.year, m.month, daysInCur,   trackedNames);
+  const priorSeries = _ttDailyTotalsSeries(daily, py, pm, daysInPrior, trackedNames);
 
   const curLabel   = period.months[0];
   const priorLabel = _ttPriorMonthLabel(curLabel);
 
-  // Authoritative totals — the SAME numbers already shown elsewhere in this
-  // tab (Incoming/Closed Achieved columns, Revenue Achieved), not the raw
-  // day-level proxy. This matters most for Incoming: the proxy only counts
-  // orders that have since billed, so it undercounts an in-progress month
-  // (see the Same Day Last Month note above the table).
-  const authIncomingCur = period.by_insurer.reduce((s, r) => s + (r.incoming_actual || 0), 0);
-  const authClosedCur   = period.by_insurer.reduce((s, r) => s + (r.closed_actual   || 0), 0);
-  const authRevenueCur  = _ttComputeAchieved(d, period);
-
-  // Authoritative FULL prior-month totals (that month is fully elapsed, so
-  // these are final). Population MUST match how the current-month figure
-  // above is computed, or "This Month" and "Last Month" end up counting
-  // different sets of insurers and the comparison becomes meaningless:
-  //   - Incoming/Closed: authIncomingCur/authClosedCur only sum the ~9
-  //     insurers tracked in period.by_insurer, so the prior-month figure
-  //     must be restricted to that same set too — the raw orders_monthly
-  //     dict can contain untracked/legacy insurer names that would
-  //     otherwise inflate the total (this was the bug: summing every key
-  //     in the dict pulled in insurers the table doesn't count at all).
-  //   - Revenue: authRevenueCur (_ttComputeAchieved) is the whole-company
-  //     monthly total, not restricted to tracked insurers, so the prior
-  //     month must use that same whole-company figure for consistency.
-  const priorOrders = d.orders_monthly?.[priorLabel] || {};
-
+  // Sum a {insurer: number} dict restricted to tracked insurers — the same
+  // per-row _ttFindInsurerKey matching the Same Day Last Month table and
+  // the main insurer table's totals use, so every figure in this tab
+  // (table, same-day comparison, trend chart) is counting the same
+  // insurers.
   function trackedSum(dict) {
     if (!dict) return 0;
     return period.by_insurer.reduce((s, row) => {
@@ -1593,21 +1584,37 @@ function _ttBuildMtdTrendData(d, period) {
     }, 0);
   }
 
+  // Authoritative CURRENT-month totals — the SAME numbers already shown in
+  // the Incoming/Closed/Revenue Achieved columns above, not the raw
+  // day-level proxy. Matters most for Incoming, which undercounts an
+  // in-progress month (see the Same Day Last Month note above the table).
+  const authIncomingCur = period.by_insurer.reduce((s, r) => s + (r.incoming_actual || 0), 0);
+  const authClosedCur   = period.by_insurer.reduce((s, r) => s + (r.closed_actual   || 0), 0);
+  const authRevenueCur  = period.by_insurer.reduce(
+    (s, r) => s + (_ttActualForInsurer(d, period, r.insurer).revenue || 0), 0);
+
+  // Authoritative FULL prior-month totals — same tracked-only population,
+  // same source data as the main table's "Last Month" columns
+  // (d.orders_monthly for Incoming/Closed, d.monthly_trend.by_insurer for
+  // Revenue), so the flat "Last Month Total" reference line always matches
+  // those columns exactly.
+  const priorOrders   = d.orders_monthly?.[priorLabel] || {};
+  const priorRevByIns = d.monthly_trend?.by_insurer?.[priorLabel];
   const authIncomingLastTotal = trackedSum(priorOrders.incoming);
   const authClosedLastTotal   = trackedSum(priorOrders.closed);
+  const authRevenueLastTotal  = trackedSum(priorRevByIns);
 
-  const _mtLabels = d.monthly_trend?.labels || [];
-  const _mtValues = d.monthly_trend?.values || [];
-  const _priorIdx = _mtLabels.indexOf(priorLabel);
-  const authRevenueLastTotal = _priorIdx >= 0 ? (_mtValues[_priorIdx] || 0) : 0;
-
-  // Scale a raw daily proxy series so it sums to a known-accurate total —
-  // preserves the day-to-day shape (useful for spotting slow/fast days)
-  // while guaranteeing the chart's endpoint always matches the authoritative
-  // figure shown in the stat header above it. If there's no proxy signal at
-  // all yet (e.g. very early in the month, nothing has closed), the whole
-  // total is placed on the most recent day since the shape is unknowable.
-  function scaleTo(rawArr, authTotal) {
+  // Scale the CURRENT month's raw daily proxy so it sums to the
+  // authoritative total above — preserves the day-to-day shape (useful for
+  // spotting slow/fast days) while guaranteeing the chart's endpoint always
+  // matches the stat header above it. Only applied to the current month:
+  // the proxy is already accurate enough for a fully-elapsed prior month,
+  // and NOT scaling it is what keeps "Last Month (Same Day)" identical to
+  // the Same Day Last Month table above (same raw, unscaled figure). If
+  // there's no proxy signal at all yet (very early in the month, nothing
+  // has closed), the whole total is placed on the most recent day since
+  // the shape is unknowable.
+  function scaleToAuthTotal(rawArr, authTotal) {
     const proxySum = rawArr.reduce((s, v) => s + v, 0);
     if (proxySum > 0) return rawArr.map(v => v * (authTotal / proxySum));
     const out = rawArr.map(() => 0);
@@ -1616,8 +1623,8 @@ function _ttBuildMtdTrendData(d, period) {
   }
 
   function buildMetric(key, curAuthTotal, priorAuthTotal) {
-    const curDaily   = scaleTo(curSeries.slice(0, curDay).map(r => r[key]), curAuthTotal);
-    const priorDaily = scaleTo(priorSeries.map(r => r[key]), priorAuthTotal);
+    const curDaily   = scaleToAuthTotal(curSeries.slice(0, curDay).map(r => r[key]), curAuthTotal);
+    const priorDaily = priorSeries.map(r => r[key]);   // raw, tracked-only, unscaled
 
     const curCum = new Array(daysInCur).fill(null);
     let run = 0;
@@ -1631,7 +1638,16 @@ function _ttBuildMtdTrendData(d, period) {
     for (let i = 0; i < sameDay; i++) priorCumSameDay[i] = priorCumFull[i];
 
     const totalMtd         = curDay > 0 ? (curCum[curDay - 1] || 0) : 0;
-    const lastMonthTotal   = daysInPrior > 0 ? (priorCumFull[daysInPrior - 1] || 0) : 0;
+    // Full prior month uses the authoritative total directly (matches the
+    // main table's "Last Month" column) rather than the raw proxy's own
+    // full-month sum, which — like the current month — can undercount by a
+    // small amount even for a fully-elapsed month (a handful of orders can
+    // take a long time to close). "Last Month (Same Day)" deliberately
+    // stays on the raw, unscaled figure so it's identical to the Same Day
+    // Last Month table; the two numbers not lining up with each other is
+    // expected (one is a same-day pace estimate, the other is the final
+    // authoritative result), not a bug.
+    const lastMonthTotal   = priorAuthTotal;
     const lastMonthSameDay = sameDay > 0 ? (priorCumSameDay[sameDay - 1] || 0) : 0;
 
     const lastTotalFlat = new Array(daysInCur).fill(lastMonthTotal);
