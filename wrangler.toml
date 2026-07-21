@@ -3,7 +3,7 @@
 # If Cloudflare still complains, delete this file and use the GitHub Pages
 # deployment instead (.github/workflows/pages.yml).
 
-name = "cardiotrack-dashboard"
+name = "cardiotrack-dashboard-sales"
 compatibility_date = "2024-09-01"
 
 [assets]
