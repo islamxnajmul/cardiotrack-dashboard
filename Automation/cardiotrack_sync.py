@@ -639,8 +639,13 @@ def sync_gmail(force: bool = False) -> dict:
         # quotes that Gmail's parser breaks on, so it returns AND-of-keywords
         # matches instead of the exact phrase. The cure: search for the
         # distinctive inner phrase only — then verify the full subject below.
-        # CSV reports use filename:csv; billing XLS reports use filename:xls.
-        file_filter = "filename:xls" if is_xls_report else "filename:csv"
+        # CSV reports use filename:csv; XLS/XLSX reports use filename:xls OR
+        # filename:xlsx — Gmail's filename: operator is an exact-extension
+        # match, NOT a substring match, so "filename:xls" alone silently
+        # returns zero hits for a .xlsx attachment (confirmed live: the
+        # "Incoming Volume 2" report's real attachment is Incoming_Volume.xlsx
+        # and was showing up in gmail_status.missing every run until this fix).
+        file_filter = "(filename:xls OR filename:xlsx)" if is_xls_report else "filename:csv"
         query = f'subject:"{report_name}" has:attachment {file_filter}'
         log.info(f"Searching: {query}")
 
