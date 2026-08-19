@@ -598,12 +598,10 @@
   <div class="card" style="margin-bottom:20px">
     <div class="section-hdr">📦 Order Pipeline Health</div>
 
-    <!-- Month-filter tabs -->
+    <!-- Month-filter tabs — "All Q2" is static; the individual month tabs
+         (latest 6 months, auto-advancing) are injected by renderOrdersMonthTabs() -->
     <div id="orders-tabs" class="tabs" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
-      <div class="tab active" data-month="Q2"        onclick="filterOrders('Q2')">All Q2</div>
-      <div class="tab"        data-month="Apr 2026"  onclick="filterOrders('Apr 2026')">April 2026</div>
-      <div class="tab"        data-month="May 2026"  onclick="filterOrders('May 2026')">May 2026</div>
-      <div class="tab"        data-month="Jun 2026"  onclick="filterOrders('Jun 2026')">June 2026</div>
+      <div class="tab active" data-month="Q2" onclick="filterOrders('Q2')">All Q2</div>
     </div>
 
     <!-- Aggregate KPI row — shown when a specific month tab is selected -->
@@ -2302,6 +2300,61 @@ function _ordersForMonth(d, month) {
   };
 }
 
+// "Jul 2026" -> "July 2026" — used for tab labels and for matching against
+// d.month_wise (which uses full month names).
+function _ordersMonthLabel(m) {
+  const FULL = {jan:'January',feb:'February',mar:'March',apr:'April',may:'May',jun:'June',
+                jul:'July',aug:'August',sep:'September',oct:'October',nov:'November',dec:'December'};
+  const parts = (m || '').trim().split(/\s+/);
+  if (parts.length < 2) return m;
+  const full = FULL[parts[0].toLowerCase().slice(0, 3)];
+  return full ? `${full} ${parts[1]}` : m;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ORDER PIPELINE — dynamic month tabs (rolling window, latest 6 months)
+// ─────────────────────────────────────────────────────────────────
+// The individual month tabs are derived from d.orders_monthly_totals —
+// the same auto-advancing calendar window (built fresh from "now" every
+// sync) that already drives the orders trend chart. Taking the last 6
+// entries of that window means a new month (Jul 2026 today, Aug 2026
+// next, etc.) appears automatically and the oldest month drops off once
+// more than 6 are available — a pure data change, no HTML/JS edits
+// needed, matching the Target Tracker's design (see comment above
+// ttTab()). The static "All Q2" aggregate tab is left untouched.
+const ORDERS_MONTH_TABS_MAX = 6;
+
+function renderOrdersMonthTabs(d) {
+  const wrap = document.getElementById('orders-tabs');
+  if (!wrap) return;
+
+  const allMonths = (d.orders_monthly_totals || []).map(r => r.month);
+  const months = allMonths.slice(-ORDERS_MONTH_TABS_MAX);
+
+  // Rebuild only the individual-month tabs; keep the static "Q2" tab as-is.
+  wrap.querySelectorAll('.tab[data-month]').forEach(t => {
+    if (t.dataset.month !== 'Q2') t.remove();
+  });
+
+  months.forEach(m => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (ordersFilter === m ? ' active' : '');
+    tab.dataset.month = m;
+    tab.textContent = _ordersMonthLabel(m);
+    tab.onclick = () => filterOrders(m);
+    wrap.appendChild(tab);
+  });
+
+  // If the currently selected month tab fell out of the window (dropped as
+  // the oldest month), fall back to "All Q2" so the view never goes blank.
+  if (ordersFilter !== 'Q2' && !months.includes(ordersFilter)) {
+    filterOrders('Q2');
+  } else {
+    const q2Tab = wrap.querySelector('[data-month="Q2"]');
+    if (q2Tab) q2Tab.classList.toggle('active', ordersFilter === 'Q2');
+  }
+}
+
 function filterOrders(month) {
   ordersFilter = month;
   // Toggle active tab
@@ -2334,8 +2387,12 @@ function renderOrdersChart(d) {
   Object.entries(_rawOrders.incoming || {}).forEach(([k,v]) => { const c = _canonicalName(k); inc[c] = (inc[c]||0) + v; });
   Object.entries(_rawOrders.closed   || {}).forEach(([k,v]) => { const c = _canonicalName(k); cl[c]  = (cl[c]||0)  + v; });
 
-  const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
-  const _rawTargetMap = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+  // Show the required-target overlay for any month that actually has
+  // incoming/closed targets in monthly_targets (generalizes beyond the
+  // original May/Jun-only check so new months like Jul work automatically).
+  const _mtForFilter = d.monthly_targets?.[ordersFilter];
+  const showTargets = !!(_mtForFilter && ((_mtForFilter.incoming_required||0) > 0 || (_mtForFilter.closed_required||0) > 0));
+  const _rawTargetMap = _mtForFilter?.by_insurer || {};
   // Normalize target insurer names through _canonicalName so "Bajaj Company" → "Bajaj"
   const targetMap = {};
   Object.entries(_rawTargetMap).forEach(([k, v]) => {
@@ -2422,10 +2479,12 @@ function renderOrdersTable(d) {
   const tbody = document.getElementById('orders-tbody');
   const thead = document.getElementById('orders-thead');
 
-  // Targets exist only for May/June and only when one of those tabs is active.
-  // For All Q2 / April we stick with the simpler 5-column actuals view.
-  const showTargets = (ordersFilter === 'May 2026' || ordersFilter === 'Jun 2026');
-  const _rawTargetMapT = d.monthly_targets?.[ordersFilter]?.by_insurer || {};
+  // Show the required-target columns for any month that actually has
+  // incoming/closed targets in monthly_targets (generalizes beyond the
+  // original May/Jun-only check so new months like Jul work automatically).
+  const _mtForFilterT = d.monthly_targets?.[ordersFilter];
+  const showTargets = !!(_mtForFilterT && ((_mtForFilterT.incoming_required||0) > 0 || (_mtForFilterT.closed_required||0) > 0));
+  const _rawTargetMapT = _mtForFilterT?.by_insurer || {};
   // Normalize target insurer names through _canonicalName so "Bajaj Company" → "Bajaj"
   const targetMap = {};
   Object.entries(_rawTargetMapT).forEach(([k, v]) => {
@@ -3710,28 +3769,41 @@ function renderOrdersKPIRow(d) {
     if (!tot) tot = Object.values(byIns).reduce((s,r) => s + (r[field]||0), 0);
     return tot;
   }
+  // Apr 2026 has no incoming/closed requirement in monthly_targets (both 0),
+  // so sumReq() naturally yields 0 for it — no special-casing needed, which
+  // means this also works unchanged for every month added after Jun 2026.
   let reqInc = 0, reqCl = 0;
   if (ordersFilter === 'Q2') {
     reqInc = sumReq('May 2026','incoming_required') + sumReq('Jun 2026','incoming_required');
     reqCl  = sumReq('May 2026','closed_required')   + sumReq('Jun 2026','closed_required');
-  } else if (ordersFilter !== 'Apr 2026') {
+  } else {
     reqInc = sumReq(ordersFilter,'incoming_required');
     reqCl  = sumReq(ordersFilter,'closed_required');
   }
 
-  // Revenue achieved & target
+  // Revenue achieved & target.
+  // Apr/May/Jun 2026 keep using d.month_wise exactly as before (its Q2 plan
+  // targets differ from monthly_targets' total_revenue_target, so swapping
+  // sources would change the numbers shown for those months). Any month not
+  // in month_wise (Jul 2026 onward) falls back to the same generic revenue
+  // series/target fields the rest of the dashboard already uses, so new
+  // months work automatically without needing a month_wise entry.
   const monthWise = d.month_wise || [];
   let revAchieved = 0, revTarget = 0;
   if (ordersFilter === 'Q2') {
     revAchieved = (d.kpis?.apr_revenue||0) + (d.kpis?.may_revenue||0) + (d.kpis?.jun_revenue||0);
     revTarget   = d.kpis?.q2_target || 20000000;
   } else {
-    const mLabel = ordersFilter === 'Apr 2026' ? 'April 2026'
-                 : ordersFilter === 'May 2026' ? 'May 2026'
-                 : 'June 2026';
-    const r = monthWise.find(m => m.month === mLabel) || {};
-    revAchieved = r.achieved || 0;
-    revTarget   = r.target || 0;
+    const mLabel = _ordersMonthLabel(ordersFilter);
+    const r = monthWise.find(m => m.month === mLabel);
+    if (r) {
+      revAchieved = r.achieved || 0;
+      revTarget   = r.target || 0;
+    } else {
+      const idx = (d.monthly_trend?.labels || []).indexOf(ordersFilter);
+      revAchieved = idx >= 0 ? (d.monthly_trend.values[idx] || 0) : 0;
+      revTarget   = d.monthly_targets?.[ordersFilter]?.total_revenue_target || 0;
+    }
   }
 
   // Build one card
@@ -4574,6 +4646,7 @@ async function loadData() {
     ['Revenue trend',   () => renderRevTrendChart(data)],
     ['Month chart',     () => renderMonthChart(data)],
     ['Order targets',   () => renderOrderTargets(data)],
+    ['Orders month tabs', () => renderOrdersMonthTabs(data)],
     ['Orders chart',    () => renderOrdersChart(data)],
     ['Orders table',    () => renderOrdersTable(data)],
     ['Orders KPI row',  () => renderOrdersKPIRow(data)],
