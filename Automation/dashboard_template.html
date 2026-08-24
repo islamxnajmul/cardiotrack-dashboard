@@ -604,6 +604,19 @@
       <div class="tab active" data-month="Q2" onclick="filterOrders('Q2')">All Q2</div>
     </div>
 
+    <!-- Conversion % overview — one row per month, same rolling 6-month
+         window as the tabs above. Injected by renderOrdersConversionTable();
+         no months or conversion values are hardcoded here. -->
+    <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">
+      🎯 Conversion % — Closed ÷ Incoming (rolling 6 months)
+    </p>
+    <div style="overflow-x:auto;margin-bottom:16px">
+      <table id="orders-conv-table">
+        <thead><tr><th>Month</th><th>Incoming</th><th>Closed</th><th>Conversion %</th></tr></thead>
+        <tbody id="orders-conv-tbody"></tbody>
+      </table>
+    </div>
+
     <!-- Aggregate KPI row — shown when a specific month tab is selected -->
     <div id="orders-kpi-row" style="display:none"></div>
 
@@ -2353,6 +2366,35 @@ function renderOrdersMonthTabs(d) {
     const q2Tab = wrap.querySelector('[data-month="Q2"]');
     if (q2Tab) q2Tab.classList.toggle('active', ordersFilter === 'Q2');
   }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// ORDER PIPELINE — Conversion % overview (rolling 6-month window)
+// ─────────────────────────────────────────────────────────────────
+// One row per month, drawn from the exact same window as the tabs above
+// (the last ORDERS_MONTH_TABS_MAX entries of d.orders_monthly_totals) —
+// so a new month appears here automatically the moment it appears as a
+// tab, and the oldest month drops off the same way. Conversion % =
+// Actual Closed Orders ÷ Actual Incoming Orders × 100 for that month;
+// nothing here is hardcoded (no month names, no conversion figures).
+function renderOrdersConversionTable(d) {
+  const tbody = document.getElementById('orders-conv-tbody');
+  if (!tbody) return;
+
+  const allMonths = d.orders_monthly_totals || [];
+  const months = allMonths.slice(-ORDERS_MONTH_TABS_MAX);
+
+  tbody.innerHTML = months.map(r => {
+    const inc  = r.incoming || 0;
+    const cl   = r.closed   || 0;
+    const conv = inc ? cl / inc : 0;
+    return `<tr>
+      <td>${_ordersMonthLabel(r.month)}</td>
+      <td>${inc.toLocaleString()}</td>
+      <td>${cl.toLocaleString()}</td>
+      <td>${inc ? convBadge(conv) : '<span style="color:var(--text2)">—</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 
 function filterOrders(month) {
@@ -4647,6 +4689,7 @@ async function loadData() {
     ['Month chart',     () => renderMonthChart(data)],
     ['Order targets',   () => renderOrderTargets(data)],
     ['Orders month tabs', () => renderOrdersMonthTabs(data)],
+    ['Orders conversion table', () => renderOrdersConversionTable(data)],
     ['Orders chart',    () => renderOrdersChart(data)],
     ['Orders table',    () => renderOrdersTable(data)],
     ['Orders KPI row',  () => renderOrdersKPIRow(data)],
