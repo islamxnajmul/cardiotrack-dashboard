@@ -604,15 +604,17 @@
       <div class="tab active" data-month="Q2" onclick="filterOrders('Q2')">All Q2</div>
     </div>
 
-    <!-- Conversion % overview — one row per month, same rolling 6-month
-         window as the tabs above. Injected by renderOrdersConversionTable();
-         no months or conversion values are hardcoded here. -->
+    <!-- Incoming / Closed / Conversion % overview — insurer-wise, one
+         3-column group per month in the same rolling 6-month window as the
+         tabs above. Header + rows are injected by
+         renderOrdersConversionTable(); no insurer names, month names,
+         order counts, or conversion values are hardcoded here. -->
     <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">
-      🎯 Conversion % — Closed ÷ Incoming (rolling 6 months)
+      🎯 Incoming / Closed / Conversion % by Insurer (rolling 6 months)
     </p>
     <div style="overflow-x:auto;margin-bottom:16px">
       <table id="orders-conv-table">
-        <thead><tr><th>Month</th><th>Incoming</th><th>Closed</th><th>Conversion %</th></tr></thead>
+        <thead id="orders-conv-thead"></thead>
         <tbody id="orders-conv-tbody"></tbody>
       </table>
     </div>
@@ -2369,32 +2371,81 @@ function renderOrdersMonthTabs(d) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// ORDER PIPELINE — Conversion % overview (rolling 6-month window)
+// ORDER PIPELINE — Incoming / Closed / Conversion % by insurer
+// (rolling 6-month window)
 // ─────────────────────────────────────────────────────────────────
-// One row per month, drawn from the exact same window as the tabs above
-// (the last ORDERS_MONTH_TABS_MAX entries of d.orders_monthly_totals) —
-// so a new month appears here automatically the moment it appears as a
-// tab, and the oldest month drops off the same way. Conversion % =
-// Actual Closed Orders ÷ Actual Incoming Orders × 100 for that month;
-// nothing here is hardcoded (no month names, no conversion figures).
+// One row per insurer, one 3-column group (Incoming | Closed | Conv %) per
+// month — drawn from the exact same window as the tabs above (the last
+// ORDERS_MONTH_TABS_MAX entries of d.orders_monthly_totals, resolved via
+// the same _ordersForMonth() lookup the per-month insurer table uses), so
+// a new month appears here — and as its own column group — automatically
+// the moment it appears as a tab, and the oldest month drops off the same
+// way. Conversion % = Actual Closed Orders ÷ Actual Incoming Orders × 100
+// for that insurer in that month; nothing here is hardcoded (no insurer
+// names, month names, order counts, or conversion figures).
 function renderOrdersConversionTable(d) {
+  const thead = document.getElementById('orders-conv-thead');
   const tbody = document.getElementById('orders-conv-tbody');
-  if (!tbody) return;
+  if (!thead || !tbody) return;
 
-  const allMonths = d.orders_monthly_totals || [];
+  const allMonths = (d.orders_monthly_totals || []).map(r => r.month);
   const months = allMonths.slice(-ORDERS_MONTH_TABS_MAX);
 
-  tbody.innerHTML = months.map(r => {
-    const inc  = r.incoming || 0;
-    const cl   = r.closed   || 0;
-    const conv = inc ? cl / inc : 0;
-    return `<tr>
-      <td>${_ordersMonthLabel(r.month)}</td>
-      <td>${inc.toLocaleString()}</td>
-      <td>${cl.toLocaleString()}</td>
-      <td>${inc ? convBadge(conv) : '<span style="color:var(--text2)">—</span>'}</td>
-    </tr>`;
+  // Per-month, per-insurer incoming/closed, canonical-name-summed the same
+  // way renderOrdersTable() does for the single-month breakdown above.
+  const byMonth = months.map(m => {
+    const raw = _ordersForMonth(d, m);
+    const inc = {}, cl = {};
+    Object.entries(raw.incoming || {}).forEach(([k,v]) => { const c = _canonicalName(k); inc[c] = (inc[c]||0) + v; });
+    Object.entries(raw.closed   || {}).forEach(([k,v]) => { const c = _canonicalName(k); cl[c]  = (cl[c]||0)  + v; });
+    return { month: m, inc, cl };
+  });
+
+  // Union of insurers across every month shown, same Test/Cardiotrack
+  // exclusion used elsewhere in this card, sorted by total incoming (desc).
+  const insurerSet = new Set();
+  byMonth.forEach(({inc, cl}) => {
+    Object.keys(inc).forEach(k => insurerSet.add(k));
+    Object.keys(cl).forEach(k => insurerSet.add(k));
+  });
+  const insurers = Array.from(insurerSet)
+    .filter(k => !k.includes('Test') && !k.includes('Cardiotrack'))
+    .sort((a, b) => {
+      const totA = byMonth.reduce((s, m) => s + (m.inc[a] || 0), 0);
+      const totB = byMonth.reduce((s, m) => s + (m.inc[b] || 0), 0);
+      return totB - totA;
+    });
+
+  // Two-row header: month name spans its 3 sub-columns (Incoming/Closed/Conv %).
+  thead.innerHTML = '<tr>'
+    + '<th rowspan="2" style="vertical-align:bottom">Insurer</th>'
+    + months.map(m => `<th colspan="3" style="text-align:center">${_ordersMonthLabel(m)}</th>`).join('')
+    + '</tr><tr>'
+    + months.map(() => '<th>Incoming</th><th>Closed</th><th>Conv %</th>').join('')
+    + '</tr>';
+
+  const dash = '<span style="color:var(--text2)">—</span>';
+  const convCell = (inc, cl) => inc ? convBadge(cl / inc) : dash;
+  const numCell  = v => v ? v.toLocaleString('en-IN') : dash;
+
+  let rows = insurers.map(ins => {
+    const cells = byMonth.map(({inc, cl}) => {
+      const i = inc[ins] || 0, c = cl[ins] || 0;
+      return `<td>${numCell(i)}</td><td>${numCell(c)}</td><td>${convCell(i, c)}</td>`;
+    }).join('');
+    return `<tr><td>${shortName(ins)}</td>${cells}</tr>`;
   }).join('');
+
+  // Totals row — incoming/closed/conversion per month across the insurers shown.
+  const totCells = byMonth.map(({inc, cl}) => {
+    const totInc = insurers.reduce((s, i) => s + (inc[i] || 0), 0);
+    const totCl  = insurers.reduce((s, i) => s + (cl[i]  || 0), 0);
+    return `<td>${numCell(totInc)}</td><td>${numCell(totCl)}</td><td>${convCell(totInc, totCl)}</td>`;
+  }).join('');
+  rows += `<tr style="font-weight:700;background:var(--surface);border-top:2px solid var(--border)">`
+    + `<td>Total</td>${totCells}</tr>`;
+
+  tbody.innerHTML = rows;
 }
 
 function filterOrders(month) {
